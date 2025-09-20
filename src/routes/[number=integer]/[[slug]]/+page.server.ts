@@ -35,7 +35,7 @@ export async function load({ params }) {
 		updatedAt: postRecord.updatedAt,
 		publishedAt: postRecord.publishedAt,
 		title: postRecord.title,
-		slug: postRecord.slug ?? undefined,
+		slug: postRecord.slug,
 		hideTitle: postRecord.hideTitle,
 		body,
 		tags: postRecord.postsToTags.map((entry) => entry.tag.name)

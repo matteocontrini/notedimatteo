@@ -7,7 +7,12 @@
 
 <article class="mt-4">
 	<div>
-		<a href={resolve('/[number=integer]/[[slug]]', { number: post.number.toString(), slug: post.slug })}>
+		<a
+			href={resolve('/[number=integer]/[[slug]]', {
+				number: post.number.toString(),
+				slug: post.slug ?? undefined
+			})}
+		>
 			#{post.number}
 		</a>
 
