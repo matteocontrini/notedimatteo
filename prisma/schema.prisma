@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id          Int           @id @default(autoincrement())
+  number      Int           @unique
+  category    String
+  createdAt   DateTime      @default(now()) @db.Timestamptz()
+  updatedAt   DateTime?     @default(now()) @db.Timestamptz()
+  publishedAt DateTime?     @default(now()) @db.Timestamptz()
+  title       String?
+  slug        String?
+  hideTitle   Boolean
+  body        String
+  postsToTags PostsToTags[]
+
+  @@map("posts")
+}
+
+model Tag {
+  name        String        @id
+  postsToTags PostsToTags[]
+
+  @@map("tags")
+}
+
+model PostsToTags {
+  postId  Int
+  tagName String
+  post    Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag     Tag  @relation(fields: [tagName], references: [name], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([postId, tagName])
+  @@map("posts_tags")
+}

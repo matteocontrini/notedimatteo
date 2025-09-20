@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { posts } from '$lib/server/db/schema';
+	import type { Post } from '$lib/types';
 
 	interface Props {
-		post: typeof posts.$inferSelect;
+		post: Post;
 	}
 
 	let { post }: Props = $props();
@@ -25,6 +25,12 @@
 		</a>
 
 		/
+
+		{#each post.tags as tag(tag)}
+			<a href="/archivio/{tag}" class="mr-1">
+				#{tag}
+			</a>
+		{/each}
 
 		<a href="/2"> #cloud </a>
 
