@@ -24,10 +24,6 @@ export async function load({ params }) {
 		error(404);
 	}
 
-	if (postRecord.category !== params.category) {
-		error(404);
-	}
-
 	const post: Post = {
 		id: postRecord.id,
 		number: postRecord.number,
@@ -42,8 +38,14 @@ export async function load({ params }) {
 		tags: postRecord.postsToTags.map((entry) => entry.tag.name)
 	};
 
-	if (post.slug && params.slug !== post.slug) {
-		redirect(307, `/${post.category}/${post.number}/${post.slug}`);
+	const targetBase = `/${post.number}`;
+
+	if (post.slug) {
+		if (params.slug !== post.slug) {
+			redirect(307, `${targetBase}/${post.slug}`);
+		}
+	} else if (params.slug) {
+		redirect(307, targetBase);
 	}
 
 	return { post };

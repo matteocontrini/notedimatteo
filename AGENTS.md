@@ -1,1 +1,2 @@
+- Use Svelte 5 syntax.
 - Do not commit unless explicitly asked.

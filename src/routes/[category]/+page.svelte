@@ -7,7 +7,7 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="font-serif text-3xl font-medium mb-8">
+		<h2 class="font-serif text-2xl font-medium mb-8">
 			{data.category.label}
 		</h2>
 

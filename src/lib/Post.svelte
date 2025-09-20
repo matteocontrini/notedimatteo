@@ -2,6 +2,7 @@
 	import type { Post } from '$lib/types';
 
 	let { post }: { post: Post } = $props();
+	let postHref = $derived(post.slug ? `/${post.number}/${post.slug}` : `/${post.number}`);
 </script>
 
 <article class="mt-4">
@@ -16,7 +17,7 @@
 	</p>
 
 	<div class="mt-4 flex gap-2 flex-wrap">
-		<a href="/{post.category}/{post.number}">
+		<a href={postHref}>
 			#{post.number}
 		</a>
 
