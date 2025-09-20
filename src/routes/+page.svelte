@@ -1,9 +1,6 @@
 <script lang="ts">
-	import Post from '../lib/Post.svelte';
-
-	const monthFormatter = new Intl.DateTimeFormat('it-IT', { month: 'long' });
-	const formatMonthName = (year: number, month: number) =>
-		monthFormatter.format(new Date(Date.UTC(year, month - 1, 1)));
+	import Post from '$lib/Post.svelte';
+	import { formatMonthName } from '$lib/date';
 
 	let { data } = $props();
 </script>
