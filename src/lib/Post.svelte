@@ -5,7 +5,7 @@
 </script>
 
 <article class="mt-4">
-	{#if post.title}
+	{#if post.title && !post.hideTitle}
 		<h3 class="text-lg font-semibold">
 			{post.title}
 		</h3>
