@@ -2,10 +2,6 @@ import { db } from '$lib/server/db';
 import type { Post } from '$lib/types';
 import { error, redirect } from '@sveltejs/kit';
 
-function normaliseCategory(input: string) {
-	return input.toLowerCase().replace(/[^a-z]+/g, '');
-}
-
 export async function load({ params }) {
 	const number = Number(params.number);
 
@@ -28,7 +24,7 @@ export async function load({ params }) {
 		error(404);
 	}
 
-	if (normaliseCategory(postRecord.category) !== normaliseCategory(params.category)) {
+	if (postRecord.category !== params.category) {
 		error(404);
 	}
 
@@ -47,7 +43,7 @@ export async function load({ params }) {
 	};
 
 	if (post.slug && params.slug !== post.slug) {
-		redirect(307, `/${normaliseCategory(post.category)}/${post.number}/${post.slug}`);
+		redirect(307, `/${post.category}/${post.number}/${post.slug}`);
 	}
 
 	return { post };

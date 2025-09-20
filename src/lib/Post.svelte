@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { Post } from '$lib/types';
 
-	let { post }: { post: Post }
-		= $props();
+	let { post }: { post: Post } = $props();
 </script>
 
 <article class="mt-4">
@@ -17,7 +16,7 @@
 	</p>
 
 	<div class="mt-4 flex gap-2 flex-wrap">
-		<a href="/{post.category.toLowerCase().replace(/[^a-z]+/g, '')}/{post.number}">
+		<a href="/{post.category}/{post.number}">
 			#{post.number}
 		</a>
 

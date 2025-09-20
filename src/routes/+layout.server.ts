@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '$lib/categories';
 import { db } from '$lib/server/db';
 import type { CalendarItem } from '$lib/types';
 
@@ -14,7 +15,8 @@ export async function load() {
 	});
 
 	const categories = categoriesResults.map((category) => ({
-		name: category.category,
+		slug: category.category,
+		label: getCategoryLabel(category.category),
 		count: category._count._all
 	}));
 

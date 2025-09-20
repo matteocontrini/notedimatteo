@@ -38,8 +38,8 @@
 
 	<div class="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
 		<div class="flex gap-3 flex-wrap">
-			{#each data.categories as category(category.name)}
-				<Category label={category.name} count={category.count} />
+			{#each data.categories as category (category.slug)}
+				<Category slug={category.slug} label={category.label} count={category.count} />
 			{/each}
 		</div>
 

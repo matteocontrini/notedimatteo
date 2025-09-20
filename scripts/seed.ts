@@ -23,7 +23,7 @@ async function main() {
 	const seedPosts = [
 		{
 			number: 1,
-			category: 'Note',
+			category: 'note',
 			title: 'Hello, world',
 			slug: slugify('Hello, world'),
 			hideTitle: false,
@@ -31,7 +31,7 @@ async function main() {
 		},
 		{
 			number: 2,
-			category: 'Note',
+			category: 'note',
 			title: 'Database schema',
 			slug: slugify('Database schema'),
 			hideTitle: false,
@@ -39,7 +39,7 @@ async function main() {
 		},
 		{
 			number: 3,
-			category: 'TIL',
+			category: 'til',
 			title: 'Seeding data',
 			slug: slugify('Seeding data'),
 			hideTitle: false,
@@ -47,7 +47,7 @@ async function main() {
 		},
 		{
 			number: 4,
-			category: 'Cit.',
+			category: 'cit',
 			title: 'On simplicity',
 			slug: slugify('On simplicity'),
 			hideTitle: true,
@@ -55,7 +55,7 @@ async function main() {
 		},
 		{
 			number: 5,
-			category: 'Cit.',
+			category: 'cit',
 			title: 'Svelte 5 snapshot',
 			slug: slugify('Svelte 5 snapshot'),
 			hideTitle: false,
