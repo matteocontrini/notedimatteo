@@ -6,7 +6,7 @@ export interface Post {
 	updatedAt: Date | null;
 	publishedAt: Date | null;
 	title: string | null;
-	slug: string | null;
+	slug?: string;
 	hideTitle: boolean;
 	body: string;
 	tags: string[];
