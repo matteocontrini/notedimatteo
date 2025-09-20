@@ -7,7 +7,7 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h1 class="font-serif text-3xl font-medium">Tag · #{data.tag}</h1>
+		<h2 class="font-serif text-3xl font-medium mb-8">#{data.tag}</h2>
 
 		{#if data.posts.length === 0}
 			<p class="mt-4 text-slate-500">Nessun post con questo tag.</p>

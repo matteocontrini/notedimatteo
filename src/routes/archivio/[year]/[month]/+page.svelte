@@ -4,12 +4,12 @@
 	import { formatMonthName } from '$lib/date';
 
 	let { data } = $props();
-	const monthLabel = $derived(`${formatMonthName(data.year, data.month)} ${data.year}`);
+	const monthLabel = $derived(`${formatMonthName(data.year, data.month, true)} ${data.year}`);
 </script>
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h1 class="font-serif text-3xl font-medium">Archivio · {monthLabel}</h1>
+		<h2 class="font-serif text-3xl font-medium mb-8">{monthLabel}</h2>
 
 		{#if data.posts.length === 0}
 			<p class="mt-4 text-slate-500">Nessun post pubblicato in questo mese.</p>
