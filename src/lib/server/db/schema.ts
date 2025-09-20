@@ -22,17 +22,9 @@ export const posts = pgTable('posts', {
 	body: text().notNull()
 });
 
-export const postsRelations = relations(posts, ({ many }) => ({
-	postsToTags: many(postsToTags)
-}));
-
 export const tags = pgTable('tags', {
 	name: text().primaryKey()
 });
-
-export const tagsRelations = relations(tags, ({ many }) => ({
-	tagsToPosts: many(postsToTags)
-}));
 
 export const postsToTags = pgTable(
 	'posts_tags',
@@ -46,3 +38,16 @@ export const postsToTags = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.postId, table.tagName] })]
 );
+
+export const postsToTagsRelations = relations(postsToTags, ({ one }) => ({
+	post: one(posts, { fields: [postsToTags.postId], references: [posts.id] }),
+	tag:  one(tags,  { fields: [postsToTags.tagName], references: [tags.name] }),
+}));
+
+export const postsRelations = relations(posts, ({ many }) => ({
+	postsToTags: many(postsToTags)
+}));
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+	tagsToPosts: many(postsToTags)
+}));

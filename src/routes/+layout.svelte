@@ -4,7 +4,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
-	import Badge from './Badge.svelte';
+	import Category from './Category.svelte';
 
 	let { children, data } = $props();
 </script>
@@ -39,7 +39,7 @@
 	<div class="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
 		<div class="flex gap-3 flex-wrap">
 			{#each data.categories as category(category.name)}
-				<Badge label={category.name} count={category.count} />
+				<Category label={category.name} count={category.count} />
 			{/each}
 		</div>
 

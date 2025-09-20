@@ -14,7 +14,9 @@
     "lint": "prettier --check . && eslint .",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset": "RESET=1 tsx scripts/seed.ts"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
@@ -38,7 +40,9 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.20.0",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "tsx": "^4.19.2",
+    "dotenv": "^16.4.5"
   },
   "dependencies": {
     "@fontsource-variable/noto-serif": "^5.2.9",

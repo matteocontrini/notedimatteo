@@ -3,65 +3,55 @@
 @plugin '@tailwindcss/forms';
 
 @theme {
-  --font-sans: 'Open Sans Variable', sans-serif;
-  --font-serif: 'Noto Serif Variable', serif;
+	--font-sans: 'Open Sans Variable', sans-serif;
+	--font-serif: 'Noto Serif Variable', serif;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @utility container {
-  margin-inline: auto;
-  padding-inline: 2rem;
+	margin-inline: auto;
+	padding-inline: 2rem;
 }
 
 @layer base {
-  article {
-    a {
-      text-decoration: underline;
-      color: var(--color-sky-700);
+	article a,
+	a.link {
+		text-decoration: underline;
+		color: var(--color-sky-700);
 
-      .dark & {
-        color: var(--color-sky-500);
-      }
-    }
-  }
+		.dark & {
+			color: var(--color-sky-500);
+		}
+	}
 
-  hr {
-    border-color: var(--color-slate-300);
+	hr {
+		border-color: var(--color-slate-300);
 
-    .dark & {
-      border-color: var(--color-slate-700);
-    }
-  }
+		.dark & {
+			border-color: var(--color-slate-700);
+		}
+	}
 }
 
 @layer components {
-  input, select {
-    border-color: var(--color-slate-300);
+	input,
+	select {
+		border-color: var(--color-slate-300);
 
-    .dark & {
-      color: var(--color-white);
-      border-color: var(--color-slate-700);
-      background-color: var(--color-slate-700);
+		.dark & {
+			color: var(--color-white);
+			border-color: var(--color-slate-700);
+			background-color: var(--color-slate-700);
 
-      &::placeholder {
-        color: var(--color-slate-400);
-      }
-    }
+			&::placeholder {
+				color: var(--color-slate-400);
+			}
+		}
 
-    &:focus {
-      border-color: var(--color-slate-700);
-      @apply ring-0;
-    }
-  }
-
-  /* TODO: DRY */
-  a.link {
-    text-decoration: underline;
-    color: var(--color-sky-700);
-
-    .dark & {
-      color: var(--color-sky-500);
-    }
-  }
+		&:focus {
+			border-color: var(--color-slate-700);
+			@apply ring-0;
+		}
+	}
 }
