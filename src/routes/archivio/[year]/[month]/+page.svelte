@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Post from '$lib/Post.svelte';
-	import { formatMonthName, formatMonthParam } from '$lib/date';
+	import Sidebar from '$lib/Sidebar.svelte';
+	import { formatMonthName } from '$lib/date';
 
 	let { data } = $props();
 	const monthLabel = $derived(`${formatMonthName(data.year, data.month)} ${data.year}`);
@@ -20,32 +21,5 @@
 		{/if}
 	</div>
 
-	<div class="md:col-span-5">
-		<h2 class="font-serif text-2xl font-medium">Archivio</h2>
-
-		<ul class="mt-4">
-			{#each data.archive as month, index (month.year + '-' + month.month)}
-				{#if index === 0 || data.archive[index - 1].year !== month.year}
-					<li class="mt-2 font-semibold">{month.year}</li>
-				{/if}
-				<li class="mt-1">
-					<a href={`/archivio/${month.year}/${formatMonthParam(month.month)}`} class="link">
-						{formatMonthName(month.year, month.month)}
-					</a>
-					({month.postsCount})
-				</li>
-			{/each}
-		</ul>
-
-		<h2 class="mt-8 font-serif text-2xl font-medium">Tag</h2>
-
-		<ul class="mt-4 space-y-1">
-			{#each data.tags as tag(tag.name)}
-				<li>
-					<a href="/archivio/{tag.name}" class="link">#{tag.name}</a>
-					({tag.count})
-				</li>
-			{/each}
-		</ul>
-	</div>
+	<Sidebar archive={data.archive} tags={data.tags} />
 </div>
