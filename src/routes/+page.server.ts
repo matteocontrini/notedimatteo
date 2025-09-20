@@ -15,6 +15,11 @@ export async function load() {
 					tag: { select: { name: true } }
 				}
 			}
+		},
+		where: {
+			publishedAt: {
+				not: null
+			}
 		}
 	});
 

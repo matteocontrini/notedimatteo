@@ -1,11 +1,49 @@
 import { db } from '$lib/server/db';
+import type { CalendarItem } from '$lib/types';
 
 export async function load() {
-	// Extract tags
+	const categoriesResults = await db.post.groupBy({
+		by: ['category'],
+		_count: { _all: true },
+		orderBy: { category: 'asc' },
+		where: {
+			publishedAt: {
+				not: null
+			}
+		}
+	});
+
+	const categories = categoriesResults.map((category) => ({
+		name: category.category,
+		count: category._count._all
+	}));
+
+	const archive = await db.$queryRaw<CalendarItem[]>`
+		SELECT EXTRACT(YEAR FROM "publishedAt")::int AS "year",
+		       EXTRACT(MONTH FROM "publishedAt")::int AS "month",
+		       COUNT(*)::int AS "postsCount"
+		FROM "posts"
+		WHERE "publishedAt" IS NOT NULL
+		GROUP BY 1, 2
+		ORDER BY 1 DESC, 2 DESC
+	`;
+
 	const tagsResults = await db.tag.findMany({
 		select: {
 			name: true,
-			_count: { select: { postsToTags: true } }
+			_count: {
+				select: {
+					postsToTags: {
+						where: {
+							post: {
+								publishedAt: {
+									not: null
+								}
+							}
+						}
+					}
+				}
+			}
 		},
 		orderBy: { name: 'asc' }
 	});
@@ -16,8 +54,8 @@ export async function load() {
 	}));
 
 	return {
-		categories: [],
-		archive: [],
+		categories,
+		archive,
 		tags
 	};
 }

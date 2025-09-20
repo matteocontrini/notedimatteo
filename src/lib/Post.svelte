@@ -1,11 +1,8 @@
 <script lang="ts">
 	import type { Post } from '$lib/types';
 
-	interface Props {
-		post: Post;
-	}
-
-	let { post }: Props = $props();
+	let { post }: { post: Post }
+		= $props();
 </script>
 
 <article class="mt-4">
@@ -19,7 +16,7 @@
 		{@html post.body}
 	</p>
 
-	<div class="mt-4">
+	<div class="mt-4 flex gap-2 flex-wrap">
 		<a href="/{post.category.toLowerCase().replace(/[^a-z]+/g, '')}/{post.number}">
 			#{post.number}
 		</a>
@@ -27,15 +24,18 @@
 		/
 
 		{#each post.tags as tag(tag)}
-			<a href="/archivio/{tag}" class="mr-1">
+			<a href="/archivio/{tag}">
 				#{tag}
 			</a>
 		{/each}
 
-		<a href="/2"> #cloud </a>
-
 		/
 
-		<span class="text-slate-500"> 16:41 </span>
+		<span class="text-slate-500">
+			{new Date(post.publishedAt ?? post.createdAt).toLocaleTimeString('it-IT', {
+				hour: '2-digit',
+				minute: '2-digit'
+			})}
+		</span>
 	</div>
 </article>

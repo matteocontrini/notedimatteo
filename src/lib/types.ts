@@ -11,3 +11,9 @@ export interface Post {
 	body: string;
 	tags: string[];
 }
+
+export interface CalendarItem {
+	year: number;
+	month: number;
+	postsCount: number;
+}
