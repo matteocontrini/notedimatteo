@@ -12,9 +12,10 @@
 		</h3>
 	{/if}
 
-	<p class="mt-4">
+	<div class="mt-4 post-content">
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html post.body}
-	</p>
+	</div>
 
 	<div class="mt-4 flex gap-2 flex-wrap">
 		<a href={postHref}>

@@ -1,4 +1,5 @@
 import { db } from '$lib/server/db';
+import { renderMarkdown } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error, redirect } from '@sveltejs/kit';
 
@@ -24,6 +25,8 @@ export async function load({ params }) {
 		error(404);
 	}
 
+	const body = await renderMarkdown(postRecord.body);
+
 	const post: Post = {
 		id: postRecord.id,
 		number: postRecord.number,
@@ -34,7 +37,7 @@ export async function load({ params }) {
 		title: postRecord.title,
 		slug: postRecord.slug,
 		hideTitle: postRecord.hideTitle,
-		body: postRecord.body,
+		body,
 		tags: postRecord.postsToTags.map((entry) => entry.tag.name)
 	};
 

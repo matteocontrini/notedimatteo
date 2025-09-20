@@ -1,4 +1,5 @@
 import { db } from '$lib/server/db';
+import { renderMarkdown } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error } from '@sveltejs/kit';
 
@@ -34,10 +35,13 @@ export async function load({ params }) {
 		error(404);
 	}
 
-	const posts: Post[] = postsWithTags.map(({ postsToTags, ...post }) => ({
-		...post,
-		tags: postsToTags.map((entry) => entry.tag.name)
-	}));
+	const posts: Post[] = await Promise.all(
+		postsWithTags.map(async ({ postsToTags, body, ...post }) => ({
+			...post,
+			body: await renderMarkdown(body),
+			tags: postsToTags.map((entry) => entry.tag.name)
+		}))
+	);
 
 	return {
 		posts,

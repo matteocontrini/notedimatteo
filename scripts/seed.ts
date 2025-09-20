@@ -26,8 +26,15 @@ async function main() {
 			category: 'note',
 			title: 'Hello, world',
 			slug: slugify('Hello, world'),
-			hideTitle: false,
-			body: 'First note — getting the project started with SvelteKit and Prisma.'
+			hideTitle: true,
+			body: `Dolore sint occaecat dolore. Lorem magna dolore sit non. Tempor et eiusmod cupidatat est magna reprehenderit quis fugiat. Mollit eu mollit consectetur magna qui incididunt ad commodo ea.
+	
+Id enim et velit aliquip elit aute. Irure duis aute aliquip labore culpa laborum. Nostrud fugiat cupidatat veniam incididunt in fugiat aute officia irure consectetur Lorem culpa incididunt amet excepteur. Ut sit dolore nisi anim in sunt reprehenderit dolore tempor voluptate sit duis mollit excepteur exercitation. Elit fugiat sunt dolore ad sunt deserunt occaecat tempor ut sint dolore veniam qui. Voluptate nostrud dolore enim tempor aute. Aliqua cillum fugiat cupidatat aute culpa aliquip reprehenderit laborum. Nisi ad veniam sint ullamco reprehenderit adipisicing deserunt cupidatat eiusmod aliqua.
+
+Est proident aliqua dolore deserunt sint nulla laboris aute elit laboris ad minim. Laboris pariatur ad officia voluptate mollit duis nulla exercitation incididunt cupidatat pariatur ex. Incididunt culpa nisi voluptate fugiat anim nulla velit fugiat do incididunt in veniam. Consequat consequat exercitation enim nulla minim magna ipsum. Anim adipisicing qui consequat ad nostrud esse reprehenderit consequat.
+
+Lorem anim sunt officia velit velit culpa Lorem amet. Amet ullamco nostrud sit laboris est velit enim Lorem cillum. Qui est ea do laborum magna qui quis do duis minim non. Esse esse aliquip mollit tempor sit adipisicing consequat adipisicing veniam officia nulla deserunt labore excepteur. Irure Lorem velit qui ad minim adipisicing consequat. Aute cupidatat laborum incididunt cupidatat proident ex culpa in aute sint qui aliqua veniam non. Eu est sunt deserunt aliquip est sint ea non do officia adipisicing ipsum aute.
+`
 		},
 		{
 			number: 2,
@@ -61,7 +68,7 @@ async function main() {
 			hideTitle: false,
 			body: 'A brief look at Svelte 5 features and how they fit this project.'
 		}
-	] as const;
+	];
 
 	const tagMapping: Record<number, string[]> = {
 		1: ['svelte', 'prisma', 'postgres'],

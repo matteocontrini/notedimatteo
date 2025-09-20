@@ -65,4 +65,10 @@
       }
     }
   }
+
+  .post-content {
+    p {
+      @apply mb-2.5 last:mb-0;
+    }
+  }
 }

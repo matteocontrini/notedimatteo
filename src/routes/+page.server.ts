@@ -1,5 +1,6 @@
 import type { Post } from '$lib/types';
 import { db } from '$lib/server/db';
+import { renderMarkdown } from '$lib/server/markdown';
 
 export async function load() {
 	const limit = 20;
@@ -23,10 +24,13 @@ export async function load() {
 		}
 	});
 
-	const posts: Post[] = postsWithTags.map(({ postsToTags, ...post }) => ({
-		...post,
-		tags: postsToTags.map((entry) => entry.tag.name)
-	}));
+	const posts: Post[] = await Promise.all(
+		postsWithTags.map(async ({ postsToTags, body, ...post }) => ({
+			...post,
+			body: await renderMarkdown(body),
+			tags: postsToTags.map((entry) => entry.tag.name)
+		}))
+	);
 
 	return {
 		posts
