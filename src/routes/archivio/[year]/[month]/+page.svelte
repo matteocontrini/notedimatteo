@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Post from '$lib/Post.svelte';
-	import { formatMonthName } from '$lib/date';
+	import { formatMonthName, formatMonthParam } from '$lib/date';
 
 	let { data } = $props();
 	const monthLabel = $derived(`${formatMonthName(data.year, data.month)} ${data.year}`);
@@ -29,7 +29,7 @@
 					<li class="mt-2 font-semibold">{month.year}</li>
 				{/if}
 				<li class="mt-1">
-					<a href="/archivio/{month.year}/{month.month}" class="link">
+					<a href={`/archivio/${month.year}/${formatMonthParam(month.month)}`} class="link">
 						{formatMonthName(month.year, month.month)}
 					</a>
 					({month.postsCount})

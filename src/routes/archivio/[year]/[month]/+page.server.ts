@@ -1,10 +1,13 @@
 import { db } from '$lib/server/db';
 import type { Post } from '$lib/types';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 
-export async function load({ params }) {
-	const year = Number(params.year);
-	const month = Number(params.month);
+export async function load({ params, url }) {
+	const yearParam = params.year;
+	const monthParam = params.month;
+
+	const year = Number(yearParam);
+	const month = Number(monthParam);
 
 	if (!Number.isInteger(year) || !Number.isInteger(month)) {
 		error(404);
@@ -12,6 +15,12 @@ export async function load({ params }) {
 
 	if (month < 1 || month > 12) {
 		error(404);
+	}
+
+	const canonicalMonth = month.toString().padStart(2, '0');
+
+	if (monthParam !== canonicalMonth) {
+		throw redirect(307, `/archivio/${year}/${canonicalMonth}${url.search}`);
 	}
 
 	const monthStart = new Date(Date.UTC(year, month - 1, 1));
