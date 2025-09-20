@@ -7,8 +7,8 @@
 </script>
 
 <a
-	class="border border-slate-300 px-2 py-1 text-sm font-semibold hover:border-slate-700 dark:border-slate-500 dark:bg-slate-700"
-	class:border-slate-700={isCurrent}
+	class="border px-2 py-1 text-sm font-semibold hover:border-slate-700  dark:bg-slate-700 dark:hover:border-slate-300
+         {isCurrent ? 'border-slate-700 dark:border-slate-300' : 'border-slate-300 dark:border-slate-500'}"
 	href={link}
 >
 	{label}
