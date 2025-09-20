@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		slug: string;
@@ -8,7 +9,7 @@
 	}
 
 	let { slug, label, count }: Props = $props();
-	const link = `/${slug}`;
+	const link = resolve('/[category]', { category: slug });
 	const isCurrent = $derived(page.url.pathname === link);
 </script>
 

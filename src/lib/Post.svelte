@@ -36,7 +36,7 @@
 		<span class="text-slate-500">/</span>
 
 		{#each post.tags as tag(tag)}
-			<a href="/archivio/{tag}">
+			<a href={resolve('/archivio/[tag]', { tag })}>
 				#{tag}
 			</a>
 		{/each}

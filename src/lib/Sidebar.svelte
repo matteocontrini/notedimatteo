@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatMonthName, formatMonthParam } from '$lib/date';
 	import type { CalendarItem } from '$lib/types';
+	import { resolve } from '$app/paths';
 
 	interface TagSummary {
 		name: string;
@@ -25,7 +26,10 @@
 				<li class="mt-2 font-semibold">{month.year}</li>
 			{/if}
 			<li class="mt-1">
-				<a href={`/archivio/${month.year}/${formatMonthParam(month.month)}`} class="link">
+				<a class="link" href={resolve('/archivio/[year]/[month]', {
+					year: month.year.toString(),
+					month: formatMonthParam(month.month)
+				})}>
 					{formatMonthName(month.year, month.month)}
 				</a>
 				({month.postsCount})
@@ -38,7 +42,7 @@
 	<ul class="mt-4 space-y-1">
 		{#each tags as tag(tag.name)}
 			<li>
-				<a href={`/archivio/${tag.name}`} class="link">#{tag.name}</a>
+				<a class="link" href={resolve('/archivio/[tag]', { tag: tag.name })}>#{tag.name}</a>
 				({tag.count})
 			</li>
 		{/each}

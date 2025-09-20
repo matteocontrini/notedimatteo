@@ -5,6 +5,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
 	import Category from './Category.svelte';
+	import { resolve } from '$app/paths';
 
 	let { children, data } = $props();
 </script>
@@ -22,14 +23,14 @@
 <div class="container max-w-6xl mt-6">
 	<div class="flex justify-between items-center">
 		<h1 class="text-4xl font-serif">
-			<a href="/" class="hover:underline">
+			<a class="hover:underline" href={resolve('/')}>
 				Note di Matteo
 			</a>
 		</h1>
 
 		<ul>
 			<li>
-				<a href="/about" class="link">
+				<a class="link" href={resolve('/about')}>
 					Cos'è?
 				</a>
 			</li>
