@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Post from '../Post.svelte';
+	import Post from '../../Post.svelte';
 </script>
 
 <div class="lg:w-7/12">

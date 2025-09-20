@@ -6,11 +6,12 @@
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
 	import Badge from './Badge.svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<title>Note di Matteo</title>
 </svelte:head>
 
 <ModeWatcher />
@@ -37,11 +38,9 @@
 
 	<div class="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
 		<div class="flex gap-3 flex-wrap">
-			<Badge label="Note" count={56} />
-			<Badge label="TIL" count={56} />
-			<Badge label="News" count={56} />
-			<Badge label="Link" count={56} />
-			<Badge label="Cit." count={56} />
+			{#each data.categories as category(category.name)}
+				<Badge label={category.name} count={category.count} />
+			{/each}
 		</div>
 
 		<input type="text" placeholder="Cerca..." class="w-full max-w-[400px] h-9" />
