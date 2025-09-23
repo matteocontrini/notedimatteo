@@ -17,6 +17,14 @@
 <ModeWatcher />
 
 <div class="bg-[#0067B9] h-[18px]">
+	<div class="container max-w-6xl h-full flex items-center justify-end">
+		<a
+			class="text-white/80 text-xs uppercase hover:text-white"
+			href={resolve('/unpublished/new')}
+		>
+			new
+		</a>
+	</div>
 </div>
 
 <div class="container max-w-6xl mt-6">

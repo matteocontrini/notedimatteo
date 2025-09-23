@@ -67,6 +67,15 @@ Lorem anim sunt officia velit velit culpa Lorem amet. Amet ullamco nostrud sit l
 			slug: slugify('Svelte 5 snapshot'),
 			hideTitle: false,
 			body: 'A brief look at Svelte 5 features and how they fit this project.'
+		},
+		{
+			number: 6,
+			category: 'note',
+			title: 'Work in progress',
+			slug: slugify('Work in progress'),
+			hideTitle: false,
+			body: 'This entry remains unpublished to test draft listings.',
+			publishedAt: null
 		}
 	];
 
@@ -75,7 +84,8 @@ Lorem anim sunt officia velit velit culpa Lorem amet. Amet ullamco nostrud sit l
 		2: ['prisma', 'typescript'],
 		3: ['prisma', 'guide'],
 		4: ['thoughts'],
-		5: ['svelte', 'webdev']
+		5: ['svelte', 'webdev'],
+		6: ['draft']
 	};
 
 	const allTags = Array.from(new Set(Object.values(tagMapping).flat())).map((name) => ({ name }));
