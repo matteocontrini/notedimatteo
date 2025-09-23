@@ -35,6 +35,13 @@
 					<div class="text-sm text-slate-500">
 						Updated at: {post.updatedAt ? formatDateTime(post.updatedAt) : ''}
 					</div>
+
+					<a
+						class="text-sm text-slate-500 hover:underline"
+						href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
+					>
+						modifica
+					</a>
 				</header>
 
 				<div class="post-content mt-4">

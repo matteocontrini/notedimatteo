@@ -45,5 +45,16 @@
 				#{tag}
 			</a>
 		{/each}
+
+		{#if post.tags.length}
+			<span class="text-slate-500">/</span>
+		{/if}
+
+		<a
+			href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
+			class="text-slate-500 hover:underline"
+		>
+			modifica
+		</a>
 	</div>
 </article>
