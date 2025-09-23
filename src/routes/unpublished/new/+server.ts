@@ -19,7 +19,8 @@ export async function GET() {
 			slug: null,
 			hideTitle: false,
 			body: '',
-			publishedAt: null
+			publishedAt: null,
+			updatedAt: null
 		}
 	});
 

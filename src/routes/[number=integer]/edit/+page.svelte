@@ -56,7 +56,7 @@
 			<label class="block">
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ID</span>
 				<input
-					class="w-full h-9 bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-400"
+					class="w-full h-9"
 					name="id"
 					value={data.post.id.toString()}
 					readonly
@@ -77,37 +77,47 @@
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Slug</span>
 				<input class="w-full h-9" name="slug" value={optionalText(data.post.slug)} />
 			</label>
-		</section>
 
-		<section class="grid gap-4">
-			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Created at</span>
-				<input class="w-full h-9" type="datetime-local" name="createdAt"
-							 value={formatDatetimeLocal(data.post.createdAt)} />
-			</label>
-
-			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Updated at</span>
-				<input class="w-full h-9" type="datetime-local" name="updatedAt"
-							 value={formatDatetimeLocal(data.post.updatedAt)} />
-			</label>
-
-			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Published at</span>
-				<input class="w-full h-9" type="datetime-local" name="publishedAt"
-							 value={formatDatetimeLocal(data.post.publishedAt)} />
-			</label>
-		</section>
-
-		<section class="space-y-4">
-			<label class="block">
+			<label class="block md:col-span-2">
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags (comma separated)</span>
 				<input class="w-full h-9" name="tags" value={data.post.tags.join(', ')} />
 			</label>
 		</section>
 
-		<button type="button" class="w-full">
-			Save
-		</button>
+		<section class="grid gap-4">
+			<label class="block">
+				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Created at</span>
+				<input class="w-full h-9" type="datetime-local" name="createdAt" readonly
+							 value={formatDatetimeLocal(data.post.createdAt)} />
+			</label>
+
+			{#if data.post.updatedAt != null}
+				<label class="block">
+					<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Updated at</span>
+					<input class="w-full h-9" type="datetime-local" name="updatedAt" readonly
+								 value={formatDatetimeLocal(data.post.updatedAt)} />
+				</label>
+			{/if}
+
+			{#if data.post.publishedAt !== null}
+				<label class="block">
+					<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Published at</span>
+					<input class="w-full h-9" type="datetime-local" name="publishedAt" readonly
+								 value={formatDatetimeLocal(data.post.publishedAt)} />
+				</label>
+			{/if}
+		</section>
+
+		<section class="space-y-4">
+			<button type="button" class="w-full">
+				Save
+			</button>
+
+			{#if data.post.publishedAt === null}
+				<button type="button" class="w-full">
+					Save & publish
+				</button>
+			{/if}
+		</section>
 	</aside>
 </form>

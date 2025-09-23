@@ -47,6 +47,10 @@
       @apply outline-none shadow-none ring-0 border-slate-700;
     }
 
+    &[readonly] {
+      @apply text-slate-500 bg-slate-100 cursor-not-allowed;
+    }
+
     .dark & {
       @apply border-slate-500 bg-slate-700 text-white;
 
@@ -56,6 +60,10 @@
 
       &:focus {
         @apply border-slate-300;
+      }
+
+      &[readonly] {
+        @apply text-slate-400 bg-slate-800;
       }
     }
   }
