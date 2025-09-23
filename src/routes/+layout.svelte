@@ -1,6 +1,5 @@
 <script lang="ts">
-	import '@fontsource-variable/open-sans';
-	import '@fontsource-variable/noto-serif';
+	import '@fontsource-variable/inter';
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
@@ -22,7 +21,7 @@
 
 <div class="container max-w-6xl mt-6">
 	<div class="flex justify-between items-center">
-		<h1 class="text-4xl font-serif">
+		<h1 class="text-4xl font-bold">
 			<a class="hover:underline" href={resolve('/')}>
 				Note di Matteo
 			</a>
@@ -37,14 +36,16 @@
 		</ul>
 	</div>
 
-	<div class="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-		<div class="flex gap-3 flex-wrap">
+	<div class="mt-4 grid gap-20 md:grid-cols-12 items-center">
+		<div class="md:col-span-7 flex gap-3 flex-wrap">
 			{#each data.categories as category (category.slug)}
 				<Category slug={category.slug} label={category.label} count={category.count} />
 			{/each}
 		</div>
 
-		<input type="text" placeholder="Cerca..." class="w-full max-w-[400px] h-9" />
+		<div class="md:col-span-5">
+			<input type="text" placeholder="Cerca..." class="w-full h-9" />
+		</div>
 	</div>
 </div>
 

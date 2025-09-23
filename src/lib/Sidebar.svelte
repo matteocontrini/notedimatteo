@@ -18,7 +18,7 @@
 </script>
 
 <div class="md:col-span-5">
-	<h2 class="font-serif text-2xl font-medium">Archivio</h2>
+	<h2 class="text-2xl font-semibold">Archivio</h2>
 
 	<ul class="mt-4">
 		{#each archive as month, index (month.year + '-' + month.month)}
@@ -37,7 +37,7 @@
 		{/each}
 	</ul>
 
-	<h2 class="mt-8 font-serif text-2xl font-medium">Tag</h2>
+	<h2 class="mt-8 text-2xl font-medium">Tag</h2>
 
 	<ul class="mt-4 space-y-1">
 		{#each tags as tag(tag.name)}

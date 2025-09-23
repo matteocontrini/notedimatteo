@@ -7,7 +7,7 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="font-serif text-2xl font-medium mb-8">18 settembre 2025</h2>
+		<h2 class="text-2xl font-semibold mb-8">18 settembre 2025</h2>
 
 		{#each data.posts as post(post.id)}
 			<Post {post} />

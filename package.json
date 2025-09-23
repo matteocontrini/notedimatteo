@@ -43,13 +43,12 @@
     "vite": "^7.0.4"
   },
   "dependencies": {
-    "@fontsource-variable/noto-serif": "^5.2.9",
-    "@fontsource-variable/open-sans": "^5.2.7",
+    "@fontsource-variable/inter": "^5.2.8",
     "@prisma/client": "^6.16.2",
     "mode-watcher": "^1.1.0",
-    "unified": "^11.0.5",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
-    "remark-rehype": "^11.1.2"
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5"
   }
 }

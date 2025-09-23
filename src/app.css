@@ -3,8 +3,7 @@
 @plugin '@tailwindcss/forms';
 
 @theme {
-  --font-sans: 'Open Sans Variable', sans-serif;
-  --font-serif: 'Noto Serif Variable', serif;
+  --font-sans: 'Inter Variable', sans-serif;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));

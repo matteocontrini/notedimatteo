@@ -9,7 +9,7 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="font-serif text-2xl font-medium mb-8">{monthLabel}</h2>
+		<h2 class="text-2xl font-semibold mb-8">{monthLabel}</h2>
 
 		{#if data.posts.length === 0}
 			<p class="mt-4 text-slate-500">Nessun post pubblicato in questo mese.</p>
