@@ -143,30 +143,20 @@ const mutatePost = async ({
 
 export const actions = {
 	save: async (event) => {
-		const form = await superValidate(event.request, zod4(validationSchema));
+		const rawFormData = await event.request.formData();
+		const intent = rawFormData.get('intent');
+		const form = await superValidate(rawFormData, zod4(validationSchema));
 		if (!form.valid) {
 			return fail(400, { form });
 		}
 
+		const publish = intent === 'publish';
 		const result = await mutatePost({
 			params: event.params,
 			form: form as SuperValidated<PostFormValues>,
-			publish: false
+			publish
 		});
-		throw redirect(303, `/${result.number}/edit`);
-	},
-	publish: async (event) => {
-		const form = await superValidate(event.request, zod4(validationSchema));
-		if (!form.valid) {
-			return fail(400, { form });
-		}
 
-		const result = await mutatePost({
-			params: event.params,
-			form: form as SuperValidated<PostFormValues>,
-			publish: true
-		});
-		const target = result.slug ? `/${result.number}/${result.slug}` : `/${result.number}`;
-		throw redirect(303, target);
+		return { form };
 	}
 } satisfies Actions;

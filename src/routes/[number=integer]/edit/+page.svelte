@@ -142,12 +142,12 @@
 		</section>
 
 		<section class="space-y-4">
-			<button type="submit" class="w-full">
+			<button type="submit" class="w-full" name="intent" value="save">
 				Save
 			</button>
 
 			{#if data.post.publishedAt === null}
-				<button type="submit" class="w-full" formaction="?/publish">
+				<button type="submit" class="w-full" name="intent" value="publish">
 					Save & publish
 				</button>
 			{/if}
