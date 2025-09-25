@@ -7,10 +7,19 @@
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
 	const postForm = superForm<PostFormValues>(data.form, {
-		resetForm: false
+		resetForm: false,
+		delayMs: 200,
+		onError({ result }) {
+			console.error(result);
+			if (result.error.message) {
+				alert('Error: ' + result.error.message);
+			} else {
+				alert('Unknown error');
+			}
+		}
 	});
 
-	const { form: formData, errors: formErrors, enhance } = postForm;
+	const { form: formData, errors: formErrors, enhance, delayed, tainted, isTainted } = postForm;
 
 	let formElement: HTMLFormElement;
 
@@ -52,6 +61,17 @@
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
+
+{#if $delayed}
+	<div
+		class="fixed left-0 top-0 h-9 bg-white dark:bg-slate-900 w-full flex items-center border-b border-slate-200 dark:border-slate-700">
+		<div class="container max-w-6xl dark:text-white">
+			{#if $delayed}
+				Saving...
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <form
 	class="grid gap-12 md:grid-cols-12"
@@ -162,17 +182,17 @@
 		</section>
 
 		<section class="space-y-4">
-			<button type="submit" class="w-full" name="intent" value="save">
+			<button type="submit" class="w-full" name="intent" value="save" disabled={!isTainted($tainted)}>
 				Save
 			</button>
 
 			{#if data.post.publishedAt === null}
 				<button type="submit" class="w-full" name="intent" value="publish">
-					Save & publish
+					Publish
 				</button>
 			{:else}
 				<button type="submit" class="w-full" name="intent" value="unpublish">
-					Save & unpublish
+					Unpublish
 				</button>
 			{/if}
 		</section>
