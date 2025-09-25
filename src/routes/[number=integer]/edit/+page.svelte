@@ -6,9 +6,19 @@
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
+	let showSaved = $state(false);
+	let savedTimer: ReturnType<typeof setTimeout> | undefined;
+
 	const postForm = superForm<PostFormValues>(data.form, {
 		resetForm: false,
 		delayMs: 200,
+		onResult({ result }) {
+			if (result.type === 'success') {
+				showSaved = true;
+				clearTimeout(savedTimer);
+				savedTimer = setTimeout(() => (showSaved = false), 1000);
+			}
+		},
 		onError({ result }) {
 			console.error(result);
 			if (result.error.message) {
@@ -62,12 +72,14 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-{#if $delayed}
+{#if $delayed || showSaved}
 	<div
 		class="fixed left-0 top-0 h-9 bg-white dark:bg-slate-900 w-full flex items-center border-b border-slate-200 dark:border-slate-700">
 		<div class="container max-w-6xl dark:text-white">
 			{#if $delayed}
 				Saving...
+			{:else}
+				<span class="text-green-500 font-medium">Saved!</span>
 			{/if}
 		</div>
 	</div>
