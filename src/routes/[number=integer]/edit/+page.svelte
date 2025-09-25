@@ -4,6 +4,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { PostFormValues } from './schema';
 	import { categorySlugs, getCategoryLabel } from '$lib/categories';
+	import { autoResize } from '$lib/actions/auto-resize';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -46,31 +47,6 @@
 	const formatDatetimeLocal = (value: Date | null) =>
 		value ? new Date(value).toISOString().slice(0, 16) : '';
 
-	const TEXTAREA_BUFFER_PX = 12;
-
-	const autoResize = (node: HTMLTextAreaElement, value?: string) => {
-		const resize = () => {
-			node.style.height = 'auto';
-			node.style.height = `${node.scrollHeight + TEXTAREA_BUFFER_PX}px`;
-		};
-
-		resize();
-
-		node.addEventListener('input', resize);
-
-		return {
-			destroy() {
-				node.removeEventListener('input', resize);
-			},
-			update(newValue?: string) {
-				// ensure resize after content changes programmatically
-				if (newValue !== value) {
-					value = newValue;
-					resize();
-				}
-			}
-		};
-	};
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -117,9 +93,9 @@
 
 		<label class="block mt-6">
 			<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Body</span>
-			<textarea
-				class="w-full resize-none overflow-hidden"
-				use:autoResize={$formData.body}
+				<textarea
+					class="w-full resize-none overflow-hidden"
+					use:autoResize={$formData.body}
 				name="body"
 				rows="16"
 				bind:value={$formData.body}
