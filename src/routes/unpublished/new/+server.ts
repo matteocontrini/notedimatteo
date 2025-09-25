@@ -24,5 +24,5 @@ export async function GET() {
 		}
 	});
 
-	redirect(303, '/unpublished');
+	redirect(303, `/${nextNumber}/edit`);
 }

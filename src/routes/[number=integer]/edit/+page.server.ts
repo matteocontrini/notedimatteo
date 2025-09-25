@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import type { PostForEdit } from '$lib/types';
-import { error, redirect, fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -72,14 +72,16 @@ const parseTags = (value: string) =>
 		)
 	);
 
+type PostMutationIntent = 'save' | 'publish' | 'unpublish';
+
 const mutatePost = async ({
 	params,
 	form,
-	publish
+	intent
 }: {
 	params: { number: string };
 	form: SuperValidated<PostFormValues>;
-	publish: boolean;
+	intent: PostMutationIntent;
 }) => {
 	const currentNumber = Number(params.number);
 	if (!Number.isInteger(currentNumber)) {
@@ -88,7 +90,7 @@ const mutatePost = async ({
 
 	const postRecord = await db.post.findUnique({
 		where: { number: currentNumber },
-		select: { id: true }
+		select: { id: true, publishedAt: true }
 	});
 
 	if (!postRecord) {
@@ -112,7 +114,8 @@ const mutatePost = async ({
 				hideTitle,
 				body,
 				updatedAt: now,
-				...(publish ? { publishedAt: now } : {})
+				publishedAt:
+					intent === 'publish' ? now : intent === 'unpublish' ? null : postRecord.publishedAt
 			}
 		});
 
@@ -144,17 +147,18 @@ const mutatePost = async ({
 export const actions = {
 	save: async (event) => {
 		const rawFormData = await event.request.formData();
-		const intent = rawFormData.get('intent');
+		const intentValue = rawFormData.get('intent');
 		const form = await superValidate(rawFormData, zod4(validationSchema));
 		if (!form.valid) {
 			return fail(400, { form });
 		}
 
-		const publish = intent === 'publish';
-		const result = await mutatePost({
+		const intent = intentValue as PostMutationIntent;
+
+		await mutatePost({
 			params: event.params,
 			form: form as SuperValidated<PostFormValues>,
-			publish
+			intent
 		});
 
 		return { form };

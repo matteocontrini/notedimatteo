@@ -146,11 +146,15 @@
 				Save
 			</button>
 
-			{#if data.post.publishedAt === null}
-				<button type="submit" class="w-full" name="intent" value="publish">
-					Save & publish
-				</button>
-			{/if}
+		{#if data.post.publishedAt === null}
+			<button type="submit" class="w-full" name="intent" value="publish">
+				Save & publish
+			</button>
+		{:else}
+			<button type="submit" class="w-full" name="intent" value="unpublish">
+				Save & unpublish
+			</button>
+		{/if}
 		</section>
 	</aside>
 </form>
