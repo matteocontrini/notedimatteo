@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Sidebar from '$lib/Sidebar.svelte';
 	import { resolve } from '$app/paths';
+	import { format } from 'timeago.js';
 
 	let { data, form } = $props();
 
@@ -45,11 +46,16 @@
 					</div>
 
 					<div class="text-sm text-slate-500">
-						Created at: {formatDateTime(post.createdAt)}
+						Created at: {formatDateTime(post.createdAt)} ({format(post.createdAt)})
 					</div>
 
 					<div class="text-sm text-slate-500">
-						Updated at: {post.updatedAt ? formatDateTime(post.updatedAt) : ''}
+						Updated at:
+						{#if post.updatedAt}
+							{formatDateTime(post.updatedAt)} ({format(post.updatedAt)})
+						{:else}
+							-
+						{/if}
 					</div>
 
 					<div class="flex items-center gap-3">
