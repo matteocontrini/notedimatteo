@@ -12,6 +12,15 @@
 
 	const { form: formData, errors: formErrors, enhance } = postForm;
 
+	let formElement: HTMLFormElement;
+
+	const handleKeydown = (event: KeyboardEvent) => {
+		if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
+			event.preventDefault();
+			formElement?.requestSubmit();
+		}
+	};
+
 	const formatDatetimeLocal = (value: Date | null) =>
 		value ? new Date(value).toISOString().slice(0, 16) : '';
 
@@ -41,7 +50,16 @@
 		};
 	};
 </script>
-<form class="grid gap-12 md:grid-cols-12" method="POST" action="?/save" use:enhance>
+
+<svelte:window on:keydown={handleKeydown} />
+
+<form
+	class="grid gap-12 md:grid-cols-12"
+	bind:this={formElement}
+	method="POST"
+	action="?/save"
+	use:enhance
+>
 	<div class="md:col-span-7">
 		<label class="block">
 			<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Title</span>
@@ -148,15 +166,15 @@
 				Save
 			</button>
 
-		{#if data.post.publishedAt === null}
-			<button type="submit" class="w-full" name="intent" value="publish">
-				Save & publish
-			</button>
-		{:else}
-			<button type="submit" class="w-full" name="intent" value="unpublish">
-				Save & unpublish
-			</button>
-		{/if}
+			{#if data.post.publishedAt === null}
+				<button type="submit" class="w-full" name="intent" value="publish">
+					Save & publish
+				</button>
+			{:else}
+				<button type="submit" class="w-full" name="intent" value="unpublish">
+					Save & unpublish
+				</button>
+			{/if}
 		</section>
 	</aside>
 </form>
