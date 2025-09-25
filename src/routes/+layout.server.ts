@@ -30,29 +30,22 @@ export async function load() {
 		ORDER BY 1 DESC, 2 DESC
 	`;
 
-	const tagsResults = await db.tag.findMany({
-		select: {
-			name: true,
-			_count: {
-				select: {
-					postsToTags: {
-						where: {
-							post: {
-								publishedAt: {
-									not: null
-								}
-							}
-						}
-					}
+	const tagsResults = await db.postsToTags.groupBy({
+		by: ['tagName'],
+		_count: { _all: true },
+		where: {
+			post: {
+				publishedAt: {
+					not: null
 				}
 			}
 		},
-		orderBy: { name: 'asc' }
+		orderBy: { tagName: 'asc' }
 	});
 
 	const tags = tagsResults.map((tag) => ({
-		name: tag.name,
-		count: tag._count.postsToTags
+		name: tag.tagName,
+		count: tag._count._all
 	}));
 
 	return {
