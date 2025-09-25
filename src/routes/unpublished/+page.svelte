@@ -2,7 +2,7 @@
 	import Sidebar from '$lib/Sidebar.svelte';
 	import { resolve } from '$app/paths';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	const formatDateTime = (value: Date | string) =>
 		new Date(value).toLocaleString('it-IT', {
@@ -12,11 +12,27 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+
+	const confirmDeletion = (event: MouseEvent) => {
+		const button = event.currentTarget as HTMLButtonElement | null;
+		const postNumber = button?.dataset.postNumber;
+		const message = `Confirm deletion of post #${postNumber}?`;
+
+		if (!confirm(message)) {
+			event.preventDefault();
+		}
+	};
 </script>
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
 		<h2 class="text-3xl font-semibold mb-8">Unpublished</h2>
+
+		{#if form?.error}
+			<p class="text-red-600 font-medium">{form.error}</p>
+
+			<hr class="my-6" />
+		{/if}
 
 		{#each data.posts as post(post.id)}
 			<article class="mt-4">
@@ -36,12 +52,25 @@
 						Updated at: {post.updatedAt ? formatDateTime(post.updatedAt) : ''}
 					</div>
 
-					<a
-						class="text-sm text-slate-500 hover:underline"
-						href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
-					>
-						modifica
-					</a>
+					<div class="flex items-center gap-3">
+						<a
+							class="text-sm text-slate-500 hover:underline"
+							href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
+						>
+							modifica
+						</a>
+						<form method="post" action="?/delete" class="inline">
+							<input type="hidden" name="postId" value={post.id} />
+							<button
+								type="submit"
+								class="text-sm text-red-600 underline h-fit p-0 border-0 bg-transparent cursor-pointer"
+								data-post-number={post.number.toString()}
+								onclick={confirmDeletion}
+							>
+								elimina
+							</button>
+						</form>
+					</div>
 				</header>
 
 				<div class="post-content mt-4">
