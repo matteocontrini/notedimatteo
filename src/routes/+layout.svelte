@@ -5,8 +5,10 @@
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
 	import Category from './Category.svelte';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	let { children, data } = $props();
+	const searchQuery = $derived(page.url.searchParams.get('q') ?? '');
 </script>
 
 <svelte:head>
@@ -58,9 +60,22 @@
 			{/each}
 		</div>
 
-		<div class="md:col-span-5">
-			<input type="text" placeholder="Cerca..." class="w-full h-9" />
-		</div>
+		<form
+			class="md:col-span-5"
+			method="GET"
+			action={resolve('/cerca')}
+			role="search"
+			data-sveltekit-keepfocus
+		>
+			<input
+				type="search"
+				name="q"
+				value={searchQuery}
+				placeholder="Cerca..."
+				aria-label="Cerca nel sito"
+				class="w-full h-9"
+			/>
+		</form>
 	</div>
 </div>
 
