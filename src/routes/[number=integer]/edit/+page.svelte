@@ -6,7 +6,9 @@
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
-	const postForm = superForm<PostFormValues>(data.form);
+	const postForm = superForm<PostFormValues>(data.form, {
+		resetForm: false
+	});
 
 	const { form: formData, errors: formErrors, enhance } = postForm;
 
