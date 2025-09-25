@@ -120,6 +120,7 @@
 				name="body"
 				rows="16"
 				bind:value={$formData.body}
+				autofocus
 			></textarea>
 		</label>
 
