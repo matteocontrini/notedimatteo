@@ -14,16 +14,18 @@ export async function load() {
 		}
 	});
 
-	const categories = categoriesResults.map((category) => ({
-		slug: category.category,
-		label: getCategoryLabel(category.category),
-		count: category._count._all
-	}));
+	const categories = categoriesResults
+		.map((category) => ({
+			slug: category.category,
+			label: getCategoryLabel(category.category),
+			count: category._count._all
+		}))
+		.sort((x, y) => y.count - x.count);
 
 	const archive = await db.$queryRaw<CalendarItem[]>`
-		SELECT EXTRACT(YEAR FROM "publishedAt")::int AS "year",
-		       EXTRACT(MONTH FROM "publishedAt")::int AS "month",
-		       COUNT(*)::int AS "postsCount"
+		SELECT EXTRACT(YEAR FROM "publishedAt")::int  AS "year",
+					 EXTRACT(MONTH FROM "publishedAt")::int AS "month",
+					 COUNT(*)::int                          AS "postsCount"
 		FROM "posts"
 		WHERE "publishedAt" IS NOT NULL
 		GROUP BY 1, 2
