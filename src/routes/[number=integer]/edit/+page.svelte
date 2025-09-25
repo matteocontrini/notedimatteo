@@ -29,7 +29,7 @@
 		}
 	});
 
-	const { form: formData, errors: formErrors, enhance, delayed, tainted, isTainted } = postForm;
+	const { form: formData, errors: errors, enhance, delayed, tainted, isTainted } = postForm;
 
 	let formElement: HTMLFormElement;
 
@@ -98,8 +98,8 @@
 			<input class="w-full h-9" name="title" bind:value={$formData.title} />
 		</label>
 
-		{#if $formErrors.title}
-			<p class="mt-1 text-sm text-red-600">{$formErrors.title[0]}</p>
+		{#if $errors.title}
+			<p class="mt-1 text-sm text-red-600">{$errors.title[0]}</p>
 		{/if}
 
 		<label class="mt-3 flex items-center gap-3">
@@ -123,8 +123,8 @@
 			></textarea>
 		</label>
 
-		{#if $formErrors.body}
-			<p class="mt-1 text-sm text-red-600">{$formErrors.body[0]}</p>
+		{#if $errors.body}
+			<p class="mt-1 text-sm text-red-600">{$errors.body[0]}</p>
 		{/if}
 	</div>
 
@@ -144,8 +144,8 @@
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Number</span>
 				<input class="w-full h-9" type="number" name="number" bind:value={$formData.number} />
 
-				{#if $formErrors.number}
-					<p class="mt-1 text-sm text-red-600">{$formErrors.number[0]}</p>
+				{#if $errors.number}
+					<p class="mt-1 text-sm text-red-600">{$errors.number[0]}</p>
 				{/if}
 			</label>
 
@@ -153,8 +153,8 @@
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Category</span>
 				<input class="w-full h-9" name="category" bind:value={$formData.category} />
 
-				{#if $formErrors.category}
-					<p class="mt-1 text-sm text-red-600">{$formErrors.category[0]}</p>
+				{#if $errors.category}
+					<p class="mt-1 text-sm text-red-600">{$errors.category[0]}</p>
 				{/if}
 			</label>
 
