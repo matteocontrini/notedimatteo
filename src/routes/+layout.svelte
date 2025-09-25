@@ -79,7 +79,7 @@
 		</a>
 	</p>
 
-	<select class="px-2 py-1 sm:ml-auto pr-10"
+	<select class="pl-3 pr-10 py-0 h-9 sm:ml-auto"
 					bind:value={userPrefersMode.current}>
 		<option value="system">Automatico</option>
 		<option value="light">Chiaro</option>

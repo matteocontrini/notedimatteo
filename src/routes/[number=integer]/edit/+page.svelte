@@ -3,6 +3,7 @@
 	import { superForm } from 'sveltekit-superforms/client';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { PostFormValues } from './schema';
+	import { categorySlugs, getCategoryLabel } from '$lib/categories';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -30,6 +31,8 @@
 	});
 
 	const { form: formData, errors: errors, enhance, delayed, tainted, isTainted } = postForm;
+
+	const categoryOptions = categorySlugs.map(slug => ({ slug, label: getCategoryLabel(slug) }));
 
 	let formElement: HTMLFormElement;
 
@@ -152,7 +155,11 @@
 
 			<label class="block md:col-span-2">
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Category</span>
-				<input class="w-full h-9" name="category" bind:value={$formData.category} />
+				<select class="w-full h-9 py-0" name="category" bind:value={$formData.category}>
+					{#each categoryOptions as option (option.slug)}
+						<option value={option.slug}>{option.label}</option>
+					{/each}
+				</select>
 
 				{#if $errors.category}
 					<p class="mt-1 text-sm text-red-600">{$errors.category[0]}</p>
