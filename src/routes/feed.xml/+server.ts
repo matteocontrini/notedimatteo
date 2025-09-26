@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { renderMarkdown, renderMarkdownWithPreview } from '$lib/server/markdown';
+import { renderMarkdown } from '$lib/server/markdown';
 import { XMLBuilder } from 'fast-xml-parser';
 import type { RequestHandler } from './$types';
 
@@ -31,7 +31,7 @@ export const GET = (async () => {
 			const urlPath = `/${post.number}${post.slug ? `/${post.slug}` : ''}`;
 			const permalink = `${SITE_URL}${urlPath}`;
 			const title = post.title ? `#${post.number} / ${post.title}` : `#${post.number}`;
-			const { html, preview } = await renderMarkdownWithPreview(post.body);
+			const content = await renderMarkdown(post.body);
 			const categories = [post.category, ...post.postsToTags.map((entry) => entry.tag.name)];
 
 			return {
@@ -43,8 +43,8 @@ export const GET = (async () => {
 				},
 				pubDate: publishedAt.toUTCString(),
 				category: categories,
-				description: preview,
-				'content:encoded': { __cdata: html }
+				description: { __cdata: content },
+				'content:encoded': { __cdata: content }
 			};
 		})
 	);
