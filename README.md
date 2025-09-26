@@ -1,22 +1,16 @@
-# sv
+# Note di Matteo
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This repository contains the source code for the website [notedimatteo.it](https://notedimatteo.it).
 
-## Creating a project
+The project is built with SvelteKit (full stack with SSR) and uses a PostgreSQL database.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Configuration
 
-```sh
-# create a new project in the current directory
-npx sv create
+Refer to `.env.example` for the required environment variables. Create a `.env` file in the root directory and set the variables accordingly.
 
-# create a new project in my-app
-npx sv create my-app
-```
+## Development
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Install dependencies with `npm install` and start a development server:
 
 ```sh
 npm run dev
@@ -25,14 +19,18 @@ npm run dev
 npm run dev -- --open
 ```
 
-## Building
+## Production build
 
-To create a production version of your app:
+To build the production version:
 
 ```sh
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+Then run:
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```sh
+npm run start
+```
+
+This command will execute the migrations and start the Node.js server.
