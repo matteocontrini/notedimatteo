@@ -43,7 +43,7 @@ export const GET = (async () => {
 				},
 				pubDate: publishedAt.toUTCString(),
 				category: categories,
-				description: { __cdata: content },
+				description: post.body.slice(0, 200) + (post.body.length > 200 ? '…' : ''),
 				'content:encoded': { __cdata: content }
 			};
 		})
