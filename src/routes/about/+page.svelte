@@ -5,13 +5,10 @@
 	</p>
 
 	<p>
-		Non è una newsletter e nemmeno un blog tradizionale.
-	</p>
-
-	<p>
-		È una specie di archivio, forse un diario,
-		nello spirito del Web 1.0 (remember LiveJournal?): non ci sono notifiche, non ci sono commenti,
-		non ci sono reazioni, non ci sono pubblicità. Il design è brutto. Alcune note non hanno nemmeno un titolo.
+		Non è una newsletter e nemmeno un blog tradizionale. È una specie di archivio, forse un diario,
+		nello spirito del Web 1.0: non ci sono notifiche, non ci sono commenti,
+		non ci sono reazioni, non ci sono pubblicità. Il design è brutto. Alcune note non hanno nemmeno un titolo. È tutto
+		voluto.
 	</p>
 
 	<p>
