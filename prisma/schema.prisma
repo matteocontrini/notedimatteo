@@ -33,9 +33,18 @@ model Tag {
 model PostsToTags {
   postId  Int
   tagName String
-  post    Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag     Tag  @relation(fields: [tagName], references: [name], onDelete: Cascade, onUpdate: Cascade)
+  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagName], references: [name], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([postId, tagName])
   @@map("posts_tags")
+}
+
+model Session {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  lastActivityAt DateTime @updatedAt @db.Timestamptz
+  token          String   @db.Text
+
+  @@map("sessions")
 }

@@ -1,2 +1,3 @@
 - Use Svelte 5 syntax.
 - Do not commit unless explicitly asked.
+- If the user makes changes to the code, do not revert them to your previous generation.
