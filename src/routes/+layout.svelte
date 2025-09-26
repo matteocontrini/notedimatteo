@@ -23,6 +23,21 @@
 	<div class="container max-w-6xl h-full flex items-center justify-end gap-4">
 		<a
 			class="text-white/80 text-xs uppercase hover:text-white"
+			href="https://matteosonoio.it"
+		>
+			blog
+			<span class="font-[system-ui]">↗︎</span>
+		</a>
+
+		<a
+			class="text-white/80 text-xs uppercase hover:text-white"
+			href={resolve('/about')}
+		>
+			about
+		</a>
+
+		<a
+			class="text-white/80 text-xs uppercase hover:text-white"
 			href={resolve('/unpublished')}
 		>
 			unpublished
@@ -38,21 +53,11 @@
 </div>
 
 <div class="container max-w-6xl mt-6">
-	<div class="flex justify-between items-center">
-		<h1 class="text-4xl font-bold">
-			<a class="hover:underline" href={resolve('/')}>
-				Note di Matteo
-			</a>
-		</h1>
-
-		<ul>
-			<li>
-				<a class="link" href={resolve('/about')}>
-					Cos'è?
-				</a>
-			</li>
-		</ul>
-	</div>
+	<h1 class="text-4xl font-bold">
+		<a class="hover:underline" href={resolve('/')}>
+			Note di Matteo
+		</a>
+	</h1>
 
 	<div class="mt-4 grid gap-x-20 gap-y-4 lg:grid-cols-12 items-center">
 		<div class="lg:col-span-7 flex gap-3 flex-wrap">
@@ -89,12 +94,6 @@
 <hr class="mt-16">
 
 <footer class="container max-w-6xl py-12 flex flex-col sm:flex-row gap-4">
-	<p>
-		<a href="https://matteosonoio.it" class="link">
-			Matteo Contrini
-		</a>
-	</p>
-
 	<select class="pl-3 pr-10 py-0 h-9 sm:ml-auto"
 					bind:value={userPrefersMode.current}>
 		<option value="system">Automatico</option>
