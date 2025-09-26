@@ -53,15 +53,15 @@
 		</ul>
 	</div>
 
-	<div class="mt-4 grid gap-20 md:grid-cols-12 items-center">
-		<div class="md:col-span-7 flex gap-3 flex-wrap">
+	<div class="mt-4 grid gap-x-20 gap-y-4 lg:grid-cols-12 items-center">
+		<div class="lg:col-span-7 flex gap-3 flex-wrap">
 			{#each data.categories as category (category.slug)}
 				<Category slug={category.slug} label={category.label} count={category.count} />
 			{/each}
 		</div>
 
 		<form
-			class="md:col-span-5"
+			class="lg:col-span-5"
 			method="GET"
 			action={resolve('/cerca')}
 			role="search"
