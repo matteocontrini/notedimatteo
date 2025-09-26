@@ -45,12 +45,19 @@
 				unpublished
 			</a>
 
-			<a
-				class="text-white/80 text-xs uppercase hover:text-white"
-				href={resolve('/unpublished/new')}
-			>
-				new
-			</a>
+				<a
+					class="text-white/80 text-xs uppercase hover:text-white"
+					href={resolve('/unpublished/new')}
+				>
+					new
+				</a>
+
+				<a
+					class="text-white/80 text-xs uppercase hover:text-white"
+					href={resolve('/logout')}
+				>
+					logout
+				</a>
 		{:else}
 			<a
 				class="text-white/80 text-xs uppercase hover:text-white"

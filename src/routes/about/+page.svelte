@@ -1,4 +1,4 @@
-<article class="space-y-4 md:w-7/12">
+<article class="space-y-4 lg:w-7/12">
 	<p>
 		Ciao! Sono <a href="https://matteosonoio.it">Matteo Contrini</a> e questo è il mio spazio personale
 		dove condivido appunti, idee e segnalazioni sulle cose che mi capita di leggere o di vedere.
