@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '@fontsource-variable/inter';
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import { ModeWatcher, userPrefersMode } from 'mode-watcher';
 	import Category from './Category.svelte';
 	import { resolve } from '$app/paths';
