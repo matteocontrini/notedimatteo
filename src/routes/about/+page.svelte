@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+</script>
+
 <article class="space-y-4 lg:w-7/12">
 	<p>
 		Ciao! Sono <a href="https://matteosonoio.it">Matteo Contrini</a> e questo è il mio spazio personale
@@ -16,7 +20,7 @@
 	</p>
 
 	<p>
-		Segui questo spazio con il <a href="/feed.xml">feed RSS</a>.
+		Segui questo spazio con il <a href={resolve('/feed.xml')}>feed RSS</a>.
 	</p>
 
 	<p>

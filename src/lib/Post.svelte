@@ -44,18 +44,18 @@
 			})}
 		</div>
 
-		<span class="text-slate-500">/</span>
+		{#if post.tags.length}
+			<span class="text-slate-500">/</span>
 
-		{#each post.tags as tag(tag)}
-			<a href={resolve('/archivio/[tag]', { tag })}>
-				#{tag}
-			</a>
-		{/each}
+			{#each post.tags as tag(tag)}
+				<a href={resolve('/archivio/[tag]', { tag })}>
+					#{tag}
+				</a>
+			{/each}
+		{/if}
 
 		{#if canEdit}
-			{#if post.tags.length}
-				<span class="text-slate-500">/</span>
-			{/if}
+			<span class="text-slate-500">/</span>
 
 			<a
 				href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
