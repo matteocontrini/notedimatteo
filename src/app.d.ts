@@ -5,7 +5,9 @@ declare global {
 		interface Locals {
 			session: string | null;
 		}
-		// interface PageData {}
+		interface PageData {
+			isLoggedIn: boolean;
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

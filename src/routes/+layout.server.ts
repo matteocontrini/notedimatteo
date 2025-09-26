@@ -2,7 +2,7 @@ import { getCategoryLabel } from '$lib/categories';
 import { db } from '$lib/server/db';
 import type { CalendarItem } from '$lib/types';
 
-export async function load() {
+export async function load({ locals }) {
 	const categoriesResults = await db.post.groupBy({
 		by: ['category'],
 		_count: { _all: true },
@@ -51,6 +51,7 @@ export async function load() {
 	}));
 
 	return {
+		isLoggedIn: !!locals.session,
 		categories,
 		archive,
 		tags

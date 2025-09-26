@@ -3,7 +3,11 @@ import { redirect } from '@sveltejs/kit';
 
 const DEFAULT_CATEGORY = 'note';
 
-export async function GET() {
+export async function GET({ locals }) {
+	if (!locals.session) {
+		return redirect(303, '/login');
+	}
+
 	const lastPost = await db.post.findFirst({
 		select: { number: true },
 		orderBy: { number: 'desc' }

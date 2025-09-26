@@ -2,7 +2,13 @@
 	import type { Post } from '$lib/types';
 	import { resolve } from '$app/paths';
 
-	let { post }: { post: Post } = $props();
+	let {
+		post,
+		canEdit = false
+	}: {
+		post: Post;
+		canEdit?: boolean;
+	} = $props();
 </script>
 
 <article class="mt-4">
@@ -46,15 +52,17 @@
 			</a>
 		{/each}
 
-		{#if post.tags.length}
-			<span class="text-slate-500">/</span>
-		{/if}
+		{#if canEdit}
+			{#if post.tags.length}
+				<span class="text-slate-500">/</span>
+			{/if}
 
-		<a
-			href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
-			class="text-slate-500 hover:underline"
-		>
-			modifica
-		</a>
+			<a
+				href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
+				class="text-slate-500 hover:underline"
+			>
+				modifica
+			</a>
+		{/if}
 	</div>
 </article>

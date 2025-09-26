@@ -9,6 +9,7 @@
 
 	let { children, data } = $props();
 	const searchQuery = $derived(page.url.searchParams.get('q') ?? '');
+	const isLoggedIn = $derived(data.isLoggedIn);
 </script>
 
 <svelte:head>
@@ -36,19 +37,28 @@
 			about
 		</a>
 
-		<a
-			class="text-white/80 text-xs uppercase hover:text-white"
-			href={resolve('/unpublished')}
-		>
-			unpublished
-		</a>
+		{#if isLoggedIn}
+			<a
+				class="text-white/80 text-xs uppercase hover:text-white"
+				href={resolve('/unpublished')}
+			>
+				unpublished
+			</a>
 
-		<a
-			class="text-white/80 text-xs uppercase hover:text-white"
-			href={resolve('/unpublished/new')}
-		>
-			new
-		</a>
+			<a
+				class="text-white/80 text-xs uppercase hover:text-white"
+				href={resolve('/unpublished/new')}
+			>
+				new
+			</a>
+		{:else}
+			<a
+				class="text-white/80 text-xs uppercase hover:text-white"
+				href={resolve('/login')}
+			>
+				login
+			</a>
+		{/if}
 	</div>
 </div>
 

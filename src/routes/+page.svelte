@@ -3,6 +3,7 @@
 	import Sidebar from '$lib/Sidebar.svelte';
 
 	let { data } = $props();
+	const canEdit = $derived(data.isLoggedIn);
 </script>
 
 <div class="grid gap-20 md:grid-cols-12">
@@ -10,7 +11,7 @@
 		<h2 class="text-2xl font-semibold mb-8">18 settembre 2025</h2>
 
 		{#each data.posts as post(post.id)}
-			<Post {post} />
+			<Post {post} canEdit={canEdit} />
 			<hr class="my-6" />
 		{/each}
 	</div>

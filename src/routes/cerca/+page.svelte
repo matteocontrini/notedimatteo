@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
+	const canEdit = $derived(data.isLoggedIn);
 	const hasQuery = $derived(data.query.length > 0);
 	const hasResults = $derived(data.posts.length > 0);
 </script>
@@ -25,7 +26,7 @@
 			<hr class="my-6" />
 
 			{#each data.posts as post (post.id)}
-				<Post {post} />
+				<Post {post} canEdit={canEdit} />
 				<hr class="my-6" />
 			{/each}
 		{/if}

@@ -1,10 +1,14 @@
 import type { Post } from '$lib/types';
 import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 
-export async function load() {
+export async function load({ locals }) {
+	if (!locals.session) {
+		return redirect(303, '/login');
+	}
+
 	const postsWithTags = await db.post.findMany({
 		orderBy: { createdAt: 'desc' },
 		where: {
@@ -34,6 +38,10 @@ export async function load() {
 
 export const actions = {
 	delete: async (event) => {
+		if (!event.locals.session) {
+			return redirect(303, '/login');
+		}
+
 		const formData = await event.request.formData();
 		const postIdValue = formData.get('postId');
 		const postId = Number(postIdValue);

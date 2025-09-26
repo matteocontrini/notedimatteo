@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import type { PostForEdit } from '$lib/types';
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -10,7 +10,11 @@ import { postFormSchema, type PostFormValues } from './schema';
 
 const validationSchema = postFormSchema as unknown as ZodValidationSchema;
 
-export const load = (async ({ params }) => {
+export const load = (async ({ params, locals }) => {
+	if (!locals.session) {
+		return redirect(303, '/login');
+	}
+
 	const number = Number(params.number);
 
 	if (!Number.isInteger(number)) {
@@ -146,6 +150,10 @@ const mutatePost = async ({
 
 export const actions = {
 	save: async (event) => {
+		if (!event.locals.session) {
+			return redirect(303, '/login');
+		}
+
 		const rawFormData = await event.request.formData();
 		const intentValue = rawFormData.get('intent');
 		const form = await superValidate(rawFormData, zod4(validationSchema));

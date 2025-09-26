@@ -4,6 +4,7 @@
 	import { formatMonthName } from '$lib/date';
 
 	let { data } = $props();
+	const canEdit = $derived(data.isLoggedIn);
 	const monthLabel = $derived(`${formatMonthName(data.year, data.month, true)} ${data.year}`);
 </script>
 
@@ -15,7 +16,7 @@
 			<p class="mt-4 text-slate-500">Nessun post pubblicato in questo mese.</p>
 		{:else}
 			{#each data.posts as post (post.id)}
-				<Post {post} />
+				<Post {post} canEdit={canEdit} />
 				<hr class="my-6" />
 			{/each}
 		{/if}
