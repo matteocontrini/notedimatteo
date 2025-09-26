@@ -49,6 +49,7 @@
     "mode-watcher": "^1.1.0",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
+    "remark-preview": "^1.0.3",
     "remark-rehype": "^11.1.2",
     "sveltekit-superforms": "^2.27.1",
     "timeago.js": "^4.0.2",
