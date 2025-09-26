@@ -13,6 +13,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="alternate" type="application/rss+xml" title="Note di Matteo" href={resolve('/feed.xml')} />
 	<title>Note di Matteo</title>
 </svelte:head>
 

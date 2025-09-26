@@ -45,6 +45,7 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
     "@prisma/client": "^6.16.2",
+    "fast-xml-parser": "^5.2.5",
     "mode-watcher": "^1.1.0",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
