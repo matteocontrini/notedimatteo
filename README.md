@@ -30,7 +30,6 @@ npm run build
 Then run:
 
 ```sh
+npm run migrate
 npm run start
 ```
-
-This command will execute the migrations and start the Node.js server.

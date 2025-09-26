@@ -9,14 +9,15 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "prisma migrate deploy && node build",
+    "start": "node build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
-    "db:migrations:generate": "prisma migrate dev --create-only"
+    "generate-migration": "prisma migrate dev --create-only",
+    "migrate": "prisma migrate deploy"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
