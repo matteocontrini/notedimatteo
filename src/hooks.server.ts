@@ -1,9 +1,12 @@
 import type { Handle, ServerInit } from '@sveltejs/kit';
+import { building } from '$app/environment';
 import { db } from '$lib/server/db';
 
 const SESSION_COOKIE = 'notedimatteo_session';
 
 export const init: ServerInit = async () => {
+	if (building) return;
+
 	await db.$connect();
 };
 
