@@ -12,7 +12,20 @@
 </script>
 
 <article class="mt-4">
-	<div>
+	{#if post.title && !post.hideTitle}
+		<div>
+			<h3 class="inline font-semibold">
+				{post.title}
+			</h3>
+		</div>
+	{/if}
+
+	<div class="mt-4 post-content">
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+		{@html post.body}
+	</div>
+
+	<div class="mt-4 flex gap-2 flex-wrap text-sm">
 		<a
 			href={resolve('/[number=integer]/[[slug]]', {
 				number: post.number.toString(),
@@ -21,22 +34,7 @@
 		>
 			#{post.number}
 		</a>
-
-		{#if post.title && !post.hideTitle}
-			/
-			<h3 class="inline font-semibold">
-				{post.title}
-			</h3>
-		{/if}
-	</div>
-
-
-	<div class="mt-4 post-content">
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		{@html post.body}
-	</div>
-
-	<div class="mt-4 flex gap-2 flex-wrap">
+		/
 		<div class="text-slate-500">
 			{new Date(post.publishedAt ?? post.createdAt).toLocaleTimeString('it-IT', {
 				hour: '2-digit',
