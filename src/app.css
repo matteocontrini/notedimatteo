@@ -14,26 +14,42 @@
 }
 
 @layer base {
-  article a,
-  a.link {
-    text-decoration: underline;
-    color: var(--color-sky-700);
-
-    .dark & {
-      color: var(--color-sky-500);
-    }
-  }
-
   hr {
-    border-color: var(--color-slate-300);
+    @apply border-t border-slate-300;
 
     .dark & {
-      border-color: var(--color-slate-700);
+      @apply border-slate-700;
     }
   }
 }
 
 @layer components {
+  article a,
+  a.link,
+  button.link {
+    @apply underline text-sky-700;
+
+    .dark & {
+      @apply text-sky-500;
+    }
+  }
+
+  button.link {
+    @apply h-fit p-0 border-0 bg-transparent;
+
+    &:hover {
+      @apply bg-transparent;
+
+      .dark & {
+        @apply bg-transparent;
+      }
+    }
+
+    .dark & {
+      @apply bg-transparent;
+    }
+  }
+
   input:not([type='checkbox']):not([type='radio']),
   select,
   textarea {

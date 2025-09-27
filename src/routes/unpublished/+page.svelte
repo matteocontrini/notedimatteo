@@ -69,7 +69,7 @@
 							<input type="hidden" name="postId" value={post.id} />
 							<button
 								type="submit"
-								class="text-sm text-red-600 underline h-fit p-0 border-0 bg-transparent cursor-pointer"
+								class="link text-red-600"
 								data-post-number={post.number.toString()}
 								onclick={confirmDeletion}
 							>

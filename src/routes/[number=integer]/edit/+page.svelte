@@ -38,6 +38,48 @@
 
 	let formElement: HTMLFormElement;
 
+	let showPreview = $state(false);
+	let previewLoading = $state(false);
+	let previewHtml = $state('');
+	let previewError = $state<string | null>(null);
+
+	const loadPreview = async () => {
+		previewLoading = true;
+		previewError = null;
+		showPreview = true;
+
+		const previewEndpoint = resolve('/[number=integer]/edit/preview', {
+			number: data.post.number.toString()
+		});
+
+		try {
+			const response = await fetch(previewEndpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ body: $formData.body })
+			});
+
+			if (!response.ok) {
+				throw new Error('Unable to render preview');
+			}
+
+			const result = (await response.json()) as { html: string };
+			previewHtml = result.html;
+		} catch (error) {
+			previewHtml = '';
+			previewError = error instanceof Error ? error.message : 'Unexpected error while rendering preview';
+		} finally {
+			previewLoading = false;
+		}
+	};
+
+	const closePreview = () => {
+		showPreview = false;
+		previewError = null;
+	};
+
 	const handleKeydown = (event: KeyboardEvent) => {
 		if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
 			event.preventDefault();
@@ -93,15 +135,44 @@
 		</label>
 
 		<label class="block mt-6">
-			<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Body</span>
+			<span class="flex items-center text-sm text-slate-700 dark:text-slate-300 mb-2">
+				<span class="font-medium">Body</span>
+				{#if showPreview}
+					<button type="button" class="link ml-auto" onclick={closePreview}>
+						Back to editing
+					</button>
+				{:else}
+					<button type="button" class="link ml-auto" onclick={loadPreview}>
+						Preview
+					</button>
+				{/if}
+			</span>
+
 			<textarea
 				class="w-full resize-none overflow-hidden"
+				class:hidden={showPreview}
 				use:autoResize={$formData.body}
 				name="body"
 				rows="16"
 				bind:value={$formData.body}
 				autofocus
 			></textarea>
+
+			{#if showPreview}
+				<div
+					class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
+					{#if previewLoading}
+						<p>Rendering preview…</p>
+					{:else if previewError}
+						<p class="text-red-600">{previewError}</p>
+					{:else}
+						<div class="post-content">
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html previewHtml}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</label>
 
 		{#if $errors.body}
