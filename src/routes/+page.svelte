@@ -11,7 +11,7 @@
 		<h2 class="text-2xl font-semibold mb-8">18 settembre 2025</h2>
 
 		{#each data.posts as post(post.id)}
-			<Post {post} canEdit={canEdit} />
+			<Post {post} canEdit={canEdit} showDate={false} />
 			<hr class="my-6" />
 		{/each}
 	</div>

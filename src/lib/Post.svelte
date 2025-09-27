@@ -4,11 +4,28 @@
 
 	let {
 		post,
-		canEdit = false
+		canEdit = false,
+		showDate = true
 	}: {
 		post: Post;
 		canEdit?: boolean;
+		showDate?: boolean;
 	} = $props();
+
+	const publishedOn = $derived(new Date(post.publishedAt ?? post.createdAt));
+	const displayDate = $derived(
+		publishedOn.toLocaleDateString('it-IT', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		})
+	);
+	const displayTime = $derived(
+		publishedOn.toLocaleTimeString('it-IT', {
+			hour: '2-digit',
+			minute: '2-digit'
+		})
+	);
 </script>
 
 <article class="mt-4">
@@ -35,12 +52,13 @@
 			#{post.number}
 		</a>
 		/
-		<div class="text-slate-500">
-			{new Date(post.publishedAt ?? post.createdAt).toLocaleTimeString('it-IT', {
-				hour: '2-digit',
-				minute: '2-digit'
-			})}
-		</div>
+		{#if showDate}
+			<div class="text-slate-500">
+				{displayDate}
+			</div>
+			<span class="text-slate-500">/</span>
+		{/if}
+		<div class="text-slate-500">{displayTime}</div>
 
 		{#if post.tags.length}
 			<span class="text-slate-500">/</span>
