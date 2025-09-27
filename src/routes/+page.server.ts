@@ -32,7 +32,46 @@ export async function load() {
 		}))
 	);
 
+	const headingFormatter = new Intl.DateTimeFormat('it-IT', {
+		timeZone: 'Europe/Rome',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
+
+	const keyFormatter = new Intl.DateTimeFormat('en-CA', {
+		timeZone: 'Europe/Rome',
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit'
+	});
+
+	const postGroups = posts.reduce<
+		{
+			dateKey: string;
+			heading: string;
+			posts: Post[];
+		}[]
+	>((groups, post) => {
+		const publishedAt = post.publishedAt ?? post.createdAt;
+		const date = new Date(publishedAt);
+		const dateKey = keyFormatter.format(date);
+		let group = groups.length ? groups[groups.length - 1] : null;
+
+		if (!group || group.dateKey !== dateKey) {
+			group = {
+				dateKey,
+				heading: headingFormatter.format(date),
+				posts: []
+			};
+			groups.push(group);
+		}
+
+		group.posts.push(post);
+		return groups;
+	}, []);
+
 	return {
-		posts
+		postGroups
 	};
 }

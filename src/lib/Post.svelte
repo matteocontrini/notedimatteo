@@ -15,6 +15,7 @@
 	const publishedOn = $derived(new Date(post.publishedAt ?? post.createdAt));
 	const displayDate = $derived(
 		publishedOn.toLocaleDateString('it-IT', {
+			timeZone: 'Europe/Rome',
 			day: 'numeric',
 			month: 'long',
 			year: 'numeric'
@@ -22,6 +23,7 @@
 	);
 	const displayTime = $derived(
 		publishedOn.toLocaleTimeString('it-IT', {
+			timeZone: 'Europe/Rome',
 			hour: '2-digit',
 			minute: '2-digit'
 		})
