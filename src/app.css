@@ -34,7 +34,7 @@
 }
 
 @layer components {
-  input,
+  input:not([type='checkbox']):not([type='radio']),
   select,
   textarea {
     @apply border border-slate-300 bg-white text-slate-900;
@@ -66,6 +66,10 @@
         @apply text-slate-400 bg-slate-800;
       }
     }
+  }
+
+  input[type='checkbox'] {
+    @apply focus:outline-none focus:ring-0 focus:ring-offset-0;
   }
 
   button {
