@@ -147,32 +147,32 @@
 					</button>
 				{/if}
 			</span>
-
-			<textarea
-				class="w-full resize-none overflow-hidden"
-				class:hidden={showPreview}
-				use:autoResize={$formData.body}
-				name="body"
-				rows="16"
-				bind:value={$formData.body}
-				autofocus
-			></textarea>
-
-			{#if showPreview}
-				<div class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
-					{#if previewLoading}
-						<p>Rendering preview…</p>
-					{:else if previewError}
-						<p class="text-red-600">{previewError}</p>
-					{:else}
-						<article class="post-content">
-							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-							{@html previewHtml}
-						</article>
-					{/if}
-				</div>
-			{/if}
 		</label>
+
+		<textarea
+			class="w-full resize-none overflow-hidden"
+			class:hidden={showPreview}
+			use:autoResize={$formData.body}
+			name="body"
+			rows="16"
+			bind:value={$formData.body}
+			autofocus
+		></textarea>
+
+		{#if showPreview}
+			<div class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
+				{#if previewLoading}
+					<p>Rendering preview…</p>
+				{:else if previewError}
+					<p class="text-red-600">{previewError}</p>
+				{:else}
+					<article class="post-content">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html previewHtml}
+					</article>
+				{/if}
+			</div>
+		{/if}
 
 		{#if $errors.body}
 			<p class="mt-1 text-sm text-red-600">{$errors.body[0]}</p>
