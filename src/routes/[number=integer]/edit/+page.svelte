@@ -159,17 +159,16 @@
 			></textarea>
 
 			{#if showPreview}
-				<div
-					class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
+				<div class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
 					{#if previewLoading}
 						<p>Rendering preview…</p>
 					{:else if previewError}
 						<p class="text-red-600">{previewError}</p>
 					{:else}
-						<div class="post-content">
+						<article class="post-content">
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html previewHtml}
-						</div>
+						</article>
 					{/if}
 				</div>
 			{/if}
