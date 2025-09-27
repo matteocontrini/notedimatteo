@@ -27,7 +27,7 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="text-3xl font-semibold mb-8">Unpublished</h2>
+		<h2 class="text-2xl font-semibold mb-8">Unpublished</h2>
 
 		{#if form?.error}
 			<p class="text-red-600 font-medium">{form.error}</p>

@@ -96,5 +96,13 @@
     p {
       @apply mb-2.5 last:mb-0;
     }
+
+    blockquote {
+      @apply border-l-4 border-slate-300 pl-4 text-slate-600 my-4;
+
+      .dark & {
+        @apply border-slate-600 text-slate-400;
+      }
+    }
   }
 }
