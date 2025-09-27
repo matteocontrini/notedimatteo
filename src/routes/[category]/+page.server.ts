@@ -45,11 +45,16 @@ export async function load({ params }) {
 		}))
 	);
 
+	const label = getCategoryLabel(category);
+
 	return {
 		posts,
 		category: {
 			slug: category,
-			label: getCategoryLabel(category)
+			label
+		},
+		seo: {
+			title: `${label} in Note di Matteo`
 		}
 	};
 }

@@ -2,6 +2,7 @@ import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error, redirect } from '@sveltejs/kit';
+import { formatMonthName } from '$lib/date';
 
 export async function load({ params, url }) {
 	const yearParam = params.year;
@@ -60,6 +61,9 @@ export async function load({ params, url }) {
 	return {
 		posts,
 		year,
-		month
+		month,
+		seo: {
+			title: `Archivio ${formatMonthName(year, month, false)} ${year}`
+		}
 	};
 }

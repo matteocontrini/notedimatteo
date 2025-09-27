@@ -63,7 +63,13 @@ export const load = (async ({ params, locals }) => {
 		zod4(validationSchema)
 	);
 
-	return { post, form: form as SuperValidated<PostFormValues> };
+	return {
+		post,
+		form: form as SuperValidated<PostFormValues>,
+		seo: {
+			title: `Modifica #${post.number}`
+		}
+	};
 }) satisfies PageServerLoad;
 
 const parseTags = (value: string) =>

@@ -10,7 +10,10 @@ export async function load({ url }: { url: URL }) {
 	if (!query) {
 		return {
 			query: '',
-			posts: [] satisfies Post[]
+			posts: [] satisfies Post[],
+			seo: {
+				title: 'Cerca in Note di Matteo'
+			}
 		};
 	}
 
@@ -52,6 +55,9 @@ export async function load({ url }: { url: URL }) {
 
 	return {
 		query,
-		posts
+		posts,
+		seo: {
+			title: `Risultati per "${query}"`
+		}
 	};
 }

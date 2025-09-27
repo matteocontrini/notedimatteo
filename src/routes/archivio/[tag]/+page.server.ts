@@ -45,6 +45,9 @@ export async function load({ params }) {
 
 	return {
 		posts,
-		tag
+		tag,
+		seo: {
+			title: `#${tag}`
+		}
 	};
 }
