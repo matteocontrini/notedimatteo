@@ -6,6 +6,7 @@
 	import Category from './Category.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import MetaTags from './MetaTags.svelte';
 
 	let { children, data } = $props();
 	const searchQuery = $derived(page.url.searchParams.get('q') ?? '');
@@ -13,9 +14,9 @@
 </script>
 
 <svelte:head>
+	<MetaTags />
 	<link rel="icon" href={favicon} />
 	<link rel="alternate" type="application/rss+xml" title="Note di Matteo" href={resolve('/feed.xml')} />
-	<title>Note di Matteo</title>
 </svelte:head>
 
 <ModeWatcher />

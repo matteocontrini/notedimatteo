@@ -15,10 +15,6 @@
 	const pageTitle = $derived(data.post.title?.trim() || fallbackTitle);
 </script>
 
-<svelte:head>
-	<title>{pageTitle}</title>
-</svelte:head>
-
 <div class="lg:w-7/12">
 	<Post post={data.post} canEdit={canEdit} />
 </div>

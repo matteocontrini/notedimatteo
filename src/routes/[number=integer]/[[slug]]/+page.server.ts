@@ -51,5 +51,30 @@ export async function load({ params }) {
 		redirect(307, targetBase);
 	}
 
-	return { post };
+	return {
+		post,
+		seo: {
+			title: postTitle(post),
+			description: body.slice(0, 160) + '...',
+			ogType: 'article',
+			jsonLd: {
+				'@context': 'https://schema.org',
+				'@type': 'NewsArticle',
+				headline: postTitle(post),
+				datePublished: post.publishedAt!.toISOString(),
+				dateModified: post.updatedAt?.toISOString()
+			}
+		}
+	};
+}
+
+function postTitle(post: Post): string {
+	if (post.title) {
+		return post.title;
+	} else {
+		const date = new Date(post.publishedAt!).toLocaleDateString('it-IT', {
+			timeZone: 'Europe/Rome'
+		});
+		return `Nota #${post.number} del ${date}`;
+	}
 }
