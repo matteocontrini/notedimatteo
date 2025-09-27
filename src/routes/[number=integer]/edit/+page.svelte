@@ -5,6 +5,7 @@
 	import type { PostFormValues } from './schema';
 	import { categorySlugs, getCategoryLabel } from '$lib/categories';
 	import { autoResize } from '$lib/actions/auto-resize';
+	import { resolve } from '$app/paths';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -93,9 +94,9 @@
 
 		<label class="block mt-6">
 			<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Body</span>
-				<textarea
-					class="w-full resize-none overflow-hidden"
-					use:autoResize={$formData.body}
+			<textarea
+				class="w-full resize-none overflow-hidden"
+				use:autoResize={$formData.body}
 				name="body"
 				rows="16"
 				bind:value={$formData.body}
@@ -121,7 +122,16 @@
 			</label>
 
 			<label class="block md:col-start-2">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Number</span>
+				<span class="flex text-sm text-slate-700 dark:text-slate-300 mb-2">
+					<span class="font-medium">
+						Number
+					</span>
+					<a
+						href={resolve('/[number=integer]/[[slug]]', {number: data.post.number.toString(), slug: data.post.slug ?? undefined})}
+						class="link ml-auto">
+						open post
+					</a>
+				</span>
 				<input class="w-full h-9" type="number" name="number" bind:value={$formData.number} />
 
 				{#if $errors.number}
