@@ -37,10 +37,7 @@ export const GET = (async () => {
 			return {
 				title,
 				link: permalink,
-				guid: {
-					'@_isPermaLink': 'true',
-					'#text': permalink
-				},
+				guid: permalink,
 				pubDate: publishedAt.toUTCString(),
 				category: categories,
 				description: post.body.slice(0, 200) + (post.body.length > 200 ? '…' : ''),

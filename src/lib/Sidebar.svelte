@@ -47,4 +47,12 @@
 			</li>
 		{/each}
 	</ul>
+
+	<h2 class="mt-8 text-2xl font-medium">Segui</h2>
+
+	<ul class="mt-4 space-y-1">
+		<li>
+			<a class="link" href={resolve('/feed.xml')}>Feed RSS</a>
+		</li>
+	</ul>
 </div>
