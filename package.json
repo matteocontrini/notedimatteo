@@ -6,6 +6,9 @@
   "engines": {
     "node": "22.x"
   },
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
