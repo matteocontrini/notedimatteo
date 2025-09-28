@@ -87,8 +87,16 @@
 		}
 	};
 
-	const formatDatetimeLocal = (value: Date | null) =>
-		value ? new Date(value).toISOString().slice(0, 16) : '';
+	const formatDatetimeLocal = (value: Date | null) => {
+		if (!value) {
+			return '';
+		}
+
+		// 2000-01-01T00:00:00
+		const date = value.toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+		const time = value.toLocaleTimeString('sv-SE', { hour12: false, timeZone: 'Europe/Rome' });
+		return `${date}T${time}`;
+	};
 
 </script>
 
