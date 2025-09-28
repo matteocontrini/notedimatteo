@@ -10,8 +10,11 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		{#each postGroups as group (group.dateKey)}
-			<h2 class="text-2xl font-semibold mb-8">{group.heading}</h2>
+		{#each postGroups as group, index (group.dateKey)}
+			<h2 class="text-2xl font-semibold mb-8"
+					class:mt-10={index !== 0}>
+				{group.heading}
+			</h2>
 
 			{#each group.posts as post (post.id)}
 				<Post {post} canEdit={canEdit} showDate={false} />
