@@ -124,5 +124,13 @@
         @apply border-slate-600 text-slate-400;
       }
     }
+
+    ul {
+      @apply mb-2.5 last:mb-0 list-disc list-inside;
+
+      li {
+        @apply mb-0.5 last:mb-0;
+      }
+    }
   }
 }
