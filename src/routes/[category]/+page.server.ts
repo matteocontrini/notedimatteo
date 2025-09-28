@@ -4,7 +4,7 @@ import { renderMarkdown } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error } from '@sveltejs/kit';
 
-export async function load({ params }) {
+export async function load({ params, url }) {
 	const { category } = params;
 
 	if (!category) {
@@ -16,7 +16,20 @@ export async function load({ params }) {
 	}
 
 	const limit = 20;
-	const offset = 0;
+	const page = parseInt(url.searchParams.get('page') || '1', 10);
+	const offset = (page - 1) * limit;
+
+	// Get total count for pagination
+	const totalPosts = await db.post.count({
+		where: {
+			category,
+			publishedAt: {
+				not: null
+			}
+		}
+	});
+
+	const totalPages = Math.ceil(totalPosts / limit);
 
 	const postsWithTags = await db.post.findMany({
 		take: limit,
@@ -52,6 +65,13 @@ export async function load({ params }) {
 		category: {
 			slug: category,
 			label
+		},
+		pagination: {
+			currentPage: page,
+			totalPages,
+			hasNextPage: page < totalPages,
+			hasPreviousPage: page > 1,
+			totalPosts
 		},
 		seo: {
 			title: `${label} in Note di Matteo`
