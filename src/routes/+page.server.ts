@@ -2,9 +2,21 @@ import type { Post } from '$lib/types';
 import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
 
-export async function load() {
+export async function load({ url }) {
 	const limit = 20;
-	const offset = 0;
+	const page = parseInt(url.searchParams.get('page') || '1', 10);
+	const offset = (page - 1) * limit;
+
+	// Get total count for pagination
+	const totalPosts = await db.post.count({
+		where: {
+			publishedAt: {
+				not: null
+			}
+		}
+	});
+
+	const totalPages = Math.ceil(totalPosts / limit);
 
 	const postsWithTags = await db.post.findMany({
 		take: limit,
@@ -72,6 +84,13 @@ export async function load() {
 	}, []);
 
 	return {
-		postGroups
+		postGroups,
+		pagination: {
+			currentPage: page,
+			totalPages,
+			hasNextPage: page < totalPages,
+			hasPreviousPage: page > 1,
+			totalPosts
+		}
 	};
 }
