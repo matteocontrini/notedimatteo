@@ -1,9 +1,11 @@
 <script lang="ts">
 	import Post from '$lib/Post.svelte';
 	import Sidebar from '$lib/Sidebar.svelte';
+	import Pagination from '$lib/Pagination.svelte';
 
 	let { data } = $props();
 	const canEdit = $derived(data.isLoggedIn);
+	const pagination = $derived(data.pagination);
 </script>
 
 <div class="grid gap-20 md:grid-cols-12">
@@ -18,6 +20,8 @@
 				<hr class="my-6" />
 			{/each}
 		{/if}
+
+		<Pagination {pagination} />
 	</div>
 
 	<Sidebar archive={data.archive} tags={data.tags} />
