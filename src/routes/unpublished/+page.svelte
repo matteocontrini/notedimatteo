@@ -84,7 +84,7 @@
 					{@html post.body}
 				</div>
 
-				<div class="mt-4">
+				<div class="mt-4 flex gap-2 flex-wrap">
 					{#each post.tags as tag(tag)}
 						<a href={resolve('/archivio/[tag]', { tag })}>
 							#{tag}

@@ -63,7 +63,7 @@
 		<div class="text-slate-500">{displayTime}</div>
 
 		{#if post.tags.length}
-			<span class="text-slate-500">/</span>
+			/
 
 			{#each post.tags as tag(tag)}
 				<a href={resolve('/archivio/[tag]', { tag })}>
@@ -73,7 +73,7 @@
 		{/if}
 
 		{#if canEdit}
-			<span class="text-slate-500">/</span>
+			/
 
 			<a
 				href={resolve('/[number=integer]/edit', { number: post.number.toString() })}
