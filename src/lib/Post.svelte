@@ -58,7 +58,8 @@
 			<div class="text-slate-500">
 				{displayDate}
 			</div>
-			<span class="text-slate-500">/</span>
+
+			/
 		{/if}
 		<div class="text-slate-500">{displayTime}</div>
 
