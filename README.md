@@ -4,6 +4,9 @@ This repository contains the source code for the website [notedimatteo.it](https
 
 The project is built with SvelteKit (full stack with SSR) and uses a PostgreSQL database.
 
+> [!CAUTION]
+> This project is largely vibe-coded, read at your own risk and don't judge :)
+
 ## Configuration
 
 Refer to `.env.example` for the required environment variables. Create a `.env` file in the root directory and set the variables accordingly.

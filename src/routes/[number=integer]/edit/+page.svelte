@@ -6,6 +6,7 @@
 	import { categorySlugs, getCategoryLabel } from '$lib/categories';
 	import { autoResize } from '$lib/actions/auto-resize';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -42,6 +43,56 @@
 	let previewLoading = $state(false);
 	let previewHtml = $state('');
 	let previewError = $state<string | null>(null);
+
+	let fileInput: HTMLInputElement;
+	let uploadLoading = $state(false);
+
+	const upload = async () => {
+		if (!fileInput.files || fileInput.files.length === 0) {
+			alert('Please select a file to upload');
+			return;
+		}
+
+		const file = fileInput.files[0];
+		const formData = new FormData();
+		formData.append('file', file);
+
+		uploadLoading = true;
+
+		try {
+			const response = await fetch(`${page.url.pathname}/upload`, {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				throw new Error('Upload failed');
+			}
+
+			const result = await response.json() as {
+				main: string;
+				preview: string;
+				width: number;
+				height: number;
+			};
+
+			// Add image markdown to the bottom of the text body with dimensions
+			const imageMarkdown = `[img width=${result.width} height=${result.height}]${result.main}[/img]`;
+
+			// Use the update method to modify the store value
+			postForm.form.update(form => ({
+				...form,
+				body: form.body + '\n\n' + imageMarkdown
+			}));
+
+			fileInput.value = ''; // Clear the input
+		} catch (error) {
+			console.error('Upload error:', error);
+			alert('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+		} finally {
+			uploadLoading = false;
+		}
+	};
 
 	const loadPreview = async () => {
 		previewLoading = true;
@@ -185,6 +236,32 @@
 		{#if $errors.body}
 			<p class="mt-1 text-sm text-red-600">{$errors.body[0]}</p>
 		{/if}
+
+		<!-- Uploader -->
+		<div class="mt-4">
+			<label class="block">
+				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Upload</span>
+				<input
+					class="w-full px-2 py-1"
+					type="file"
+					accept="image/*"
+					bind:this={fileInput}
+				/>
+			</label>
+
+			<button
+				type="button"
+				class="mt-2"
+				onclick={() => upload()}
+				disabled={uploadLoading}
+			>
+				{#if uploadLoading}
+					Uploading...
+				{:else}
+					Upload file
+				{/if}
+			</button>
+		</div>
 	</div>
 
 	<aside class="md:col-span-5 space-y-6">
