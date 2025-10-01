@@ -19,9 +19,9 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 			if (!parent || index === undefined) return;
 
 			const value = node.value;
-			// Enhanced regex to capture optional alt, width, and height attributes (without quotes for numbers)
+
 			const imgRegex =
-				/\[img(?:\s+alt="([^"]*)")?(?:\s+width=(\d+))?(?:\s+height=(\d+))?](.+?)\[\/img]/g;
+				/\[img(?:\s+alt="([^"]*)")?(?:\s+width=(\d+))?(?:\s+height=(\d+))?(?:\s+link="([^"]*)")?](.+?)\[\/img]/g;
 
 			// Check if this text node contains img tags
 			if (!imgRegex.test(value)) return;
@@ -34,7 +34,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 			let match;
 
 			while ((match = imgRegex.exec(value)) !== null) {
-				const [fullMatch, altText, width, height, imagePath] = match;
+				const [fullMatch, altText, width, height, linkUrl, imagePath] = match;
 				const matchStart = match.index;
 				const matchEnd = match.index + fullMatch.length;
 
@@ -66,6 +66,9 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 				if (width) imgProperties.width = parseInt(width, 10);
 				if (height) imgProperties.height = parseInt(height, 10);
 
+				// Use custom link URL if provided, otherwise use original image URL
+				const linkHref = linkUrl || originalUrl;
+
 				// Create a figure wrapper with link and image
 				newNodes.push({
 					type: 'element',
@@ -76,7 +79,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 							type: 'element',
 							tagName: 'a',
 							properties: {
-								href: originalUrl
+								href: linkHref
 							},
 							children: [
 								{
