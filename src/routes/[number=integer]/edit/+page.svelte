@@ -47,13 +47,7 @@
 	let fileInput: HTMLInputElement;
 	let uploadLoading = $state(false);
 
-	const upload = async () => {
-		if (!fileInput.files || fileInput.files.length === 0) {
-			alert('Please select a file to upload');
-			return;
-		}
-
-		const file = fileInput.files[0];
+	const uploadFile = async (file: File) => {
 		const formData = new FormData();
 		formData.append('file', file);
 
@@ -85,12 +79,46 @@
 				body: form.body + '\n\n' + imageMarkdown
 			}));
 
-			fileInput.value = ''; // Clear the input
+			return true;
 		} catch (error) {
 			console.error('Upload error:', error);
 			alert('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+			return false;
 		} finally {
 			uploadLoading = false;
+		}
+	};
+
+	const upload = async () => {
+		if (!fileInput.files || fileInput.files.length === 0) {
+			alert('Please select a file to upload');
+			return;
+		}
+
+		const file = fileInput.files[0];
+		const success = await uploadFile(file);
+
+		if (success) {
+			fileInput.value = ''; // Clear the input
+		}
+	};
+
+	const handlePaste = async (event: ClipboardEvent) => {
+		const items = event.clipboardData?.items;
+		if (!items) return;
+
+		// Look for image files in the clipboard
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			if (item.type.startsWith('image/')) {
+				event.preventDefault(); // Prevent default paste behavior for images
+
+				const file = item.getAsFile();
+				if (file) {
+					await uploadFile(file);
+				}
+				break; // Only handle the first image found
+			}
 		}
 	};
 
@@ -215,6 +243,7 @@
 			name="body"
 			rows="16"
 			bind:value={$formData.body}
+			onpaste={handlePaste}
 			autofocus
 		></textarea>
 
