@@ -20,8 +20,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 
 			const value = node.value;
 
-			const imgRegex =
-				/\[img(?:\s+alt="([^"]*)")?(?:\s+width=(\d+))?(?:\s+height=(\d+))?(?:\s+link="([^"]*)")?](.+?)\[\/img]/g;
+			const imgRegex = /\[img([^\]]*)](.+?)\[\/img]/g;
 
 			// Check if this text node contains img tags
 			if (!imgRegex.test(value)) return;
@@ -34,9 +33,12 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 			let match;
 
 			while ((match = imgRegex.exec(value)) !== null) {
-				const [fullMatch, altText, width, height, linkUrl, imagePath] = match;
+				const [fullMatch, attributesString, imagePath] = match;
 				const matchStart = match.index;
 				const matchEnd = match.index + fullMatch.length;
+
+				// Parse attributes from the captured string
+				const attributes = parseAttributes(attributesString);
 
 				// Add text before the match (if any)
 				if (matchStart > lastIndex) {
@@ -58,16 +60,16 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 				// Build img properties with dimensions if available
 				const imgProperties: Record<string, string | number> = {
 					src: previewUrl,
-					alt: altText || '',
+					alt: attributes.alt || '',
 					loading: 'lazy'
 				};
 
 				// Add dimensions if provided (prevents layout shift)
-				if (width) imgProperties.width = parseInt(width, 10);
-				if (height) imgProperties.height = parseInt(height, 10);
+				if (attributes.width) imgProperties.width = parseInt(attributes.width, 10);
+				if (attributes.height) imgProperties.height = parseInt(attributes.height, 10);
 
 				// Use custom link URL if provided, otherwise use original image URL
-				const linkHref = linkUrl || originalUrl;
+				const linkHref = attributes.link || originalUrl;
 
 				// Create a figure wrapper with link and image
 				newNodes.push({
@@ -114,3 +116,28 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 		});
 	};
 };
+
+/**
+ * Parse attributes from the attributes string, allowing any order
+ */
+function parseAttributes(attributesString: string): Record<string, string> {
+	const attributes: Record<string, string> = {};
+
+	// Remove leading/trailing whitespace
+	const trimmed = attributesString.trim();
+
+	if (!trimmed) {
+		return attributes;
+	}
+
+	// Match attribute patterns: name="value" or name=value
+	const attrRegex = /(\w+)=(?:"([^"]*)"|(\S+))/g;
+	let attrMatch;
+
+	while ((attrMatch = attrRegex.exec(trimmed)) !== null) {
+		const [, name, quotedValue, unquotedValue] = attrMatch;
+		attributes[name] = quotedValue || unquotedValue || '';
+	}
+
+	return attributes;
+}
