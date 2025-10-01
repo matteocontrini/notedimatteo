@@ -71,26 +71,19 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 				// Use custom link URL if provided, otherwise use original image URL
 				const linkHref = attributes.link || originalUrl;
 
-				// Create a figure wrapper with link and image
+				// Create the img element
 				newNodes.push({
 					type: 'element',
-					tagName: 'figure',
-					properties: {},
+					tagName: 'a',
+					properties: {
+						href: linkHref
+					},
 					children: [
 						{
 							type: 'element',
-							tagName: 'a',
-							properties: {
-								href: linkHref
-							},
-							children: [
-								{
-									type: 'element',
-									tagName: 'img',
-									properties: imgProperties,
-									children: []
-								}
-							]
+							tagName: 'img',
+							properties: imgProperties,
+							children: []
 						}
 					]
 				});
