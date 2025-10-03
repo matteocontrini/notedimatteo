@@ -177,6 +177,26 @@
 		return `${date}T${time}`;
 	};
 
+	const normalizeSlug = (value: string) => {
+		return value
+			.toLowerCase()
+			.normalize('NFD') // Decompose combined characters
+			.replace(/[\u0300-\u036f]/g, '') // Remove diacritics (accents)
+			.replace(/\s+/g, '-') // Replace spaces with hyphens
+			.replace(/[^\w-]+/g, '') // Remove non-word chars except hyphens
+			.replace(/--+/g, '-'); // Replace multiple hyphens with single hyphen
+	};
+
+	const handleSlugInput = (event: Event) => {
+		const input = event.target as HTMLInputElement;
+		const oldValue = input.value;
+		const normalized = normalizeSlug(oldValue);
+
+		if (normalized !== oldValue) {
+			$formData.slug = normalized;
+		}
+	};
+
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -338,7 +358,7 @@
 
 			<label class="block md:col-span-2">
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Slug</span>
-				<input class="w-full h-9" name="slug" bind:value={$formData.slug} />
+				<input class="w-full h-9" name="slug" bind:value={$formData.slug} oninput={handleSlugInput} />
 			</label>
 
 			<label class="block md:col-span-2">
