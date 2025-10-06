@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const imageBuffer = Buffer.from(await file.arrayBuffer());
 
 	// Compress the main image (mozjpeg 85)
-	const compressedImage = await sharp(imageBuffer)
+	const compressedImage = await sharp(imageBuffer, { autoOrient: true })
 		.jpeg({
 			quality: 85,
 			mozjpeg: true
@@ -44,7 +44,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		.toBuffer();
 
 	// Create preview version (mozjpeg 80, max width 1200, no upscaling)
-	const previewImage = await sharp(imageBuffer)
+	const previewImage = await sharp(imageBuffer, { autoOrient: true })
 		.resize(1200, null, {
 			withoutEnlargement: true
 		})
