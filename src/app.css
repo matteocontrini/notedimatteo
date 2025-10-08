@@ -130,6 +130,19 @@
       li {
         @apply mb-0.5 last:mb-0;
       }
+
+      & ul,
+      & ol {
+        @apply mt-1 mb-1 last:mb-0 pl-4;
+      }
+
+      & ul {
+        @apply list-[circle];
+      }
+
+      & ul ul {
+        @apply list-[square];
+      }
     }
 
     ol {
@@ -137,6 +150,27 @@
 
       li {
         @apply mb-0.5 last:mb-0;
+      }
+
+      & ul,
+      & ol {
+        @apply mt-1 mb-1 last:mb-0 pl-4;
+      }
+
+      & ul {
+        list-style-type: circle;
+      }
+
+      & ul ul {
+        list-style-type: square;
+      }
+
+      & ol {
+        list-style-type: lower-alpha;
+      }
+
+      & ol ol {
+        list-style-type: lower-roman;
       }
     }
 
