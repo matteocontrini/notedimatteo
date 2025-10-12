@@ -8,8 +8,10 @@ export function autoResize(node: HTMLTextAreaElement, value?: string) {
 	let frame = 0;
 
 	const resize = () => {
+		const scrollY = window.scrollY;
 		node.style.height = 'auto';
 		node.style.height = `${node.scrollHeight + TEXTAREA_BUFFER_PX}px`;
+		window.scrollTo({ top: scrollY, behavior: 'instant' });
 	};
 
 	const scheduleResize = () => {
