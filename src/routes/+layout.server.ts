@@ -41,14 +41,15 @@ export async function load({ locals }) {
 					not: null
 				}
 			}
-		},
-		orderBy: { tagName: 'asc' }
+		}
 	});
 
-	const tags = tagsResults.map((tag) => ({
-		name: tag.tagName,
-		count: tag._count._all
-	}));
+	const tags = tagsResults
+		.map((tag) => ({
+			name: tag.tagName,
+			count: tag._count._all
+		}))
+		.sort((a, b) => b.count - a.count);
 
 	return {
 		isLoggedIn: !!locals.session,
