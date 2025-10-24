@@ -55,7 +55,7 @@ export async function load({ params }) {
 		post,
 		seo: {
 			title: postTitle(post),
-			description: body.slice(0, 160) + '...',
+			description: post.body.slice(0, 160) + (post.body.length > 160 ? '…' : ''),
 			ogType: 'article',
 			jsonLd: {
 				'@context': 'https://schema.org',
