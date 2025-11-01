@@ -101,6 +101,46 @@
 		updateTagSuggestions(input);
 	};
 
+	// Handle Tab key for autocomplete
+	const handleTagsKeydown = (event: KeyboardEvent) => {
+		// Check if Tab was pressed and we have suggestions
+		if (event.key === 'Tab' && tagSuggestions.length > 0) {
+			event.preventDefault(); // Prevent default Tab behavior
+
+			const input = event.target as HTMLInputElement;
+			const cursorPos = input.selectionStart ?? 0;
+			const value = input.value;
+
+			// Get info about current tag
+			const beforeCursor = value.substring(0, cursorPos);
+			const afterCursor = value.substring(cursorPos);
+
+			const lastComma = beforeCursor.lastIndexOf(',');
+			const tagStart = lastComma === -1 ? 0 : lastComma + 1;
+
+			const nextComma = afterCursor.indexOf(',');
+			const tagEnd = nextComma === -1 ? value.length : cursorPos + nextComma;
+
+			// Replace current tag with first suggestion
+			const before = value.substring(0, tagStart);
+			const after = value.substring(tagEnd);
+			const firstSuggestion = tagSuggestions[0];
+
+			// Build new value
+			let newValue = before + firstSuggestion + after;
+
+			// Update form data
+			$formData.tags = newValue;
+
+			// Position cursor after the completed tag
+			const newCursorPos = tagStart + firstSuggestion.length;
+			setTimeout(() => {
+				input.setSelectionRange(newCursorPos, newCursorPos);
+				updateTagSuggestions(input);
+			}, 0);
+		}
+	};
+
 	let showPreview = $state(false);
 	let previewLoading = $state(false);
 	let previewHtml = $state('');
@@ -655,6 +695,7 @@
 					oninput={handleTagsInput}
 					onclick={handleTagsCursorMove}
 					onkeyup={handleTagsCursorMove}
+					onkeydown={handleTagsKeydown}
 					autocomplete="off"
 				/>
 				{#if tagSuggestions.length > 0}
