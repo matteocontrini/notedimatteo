@@ -47,7 +47,7 @@
 	let fileInput: HTMLInputElement;
 	let uploadLoading = $state(false);
 
-	const uploadFile = async (file: File) => {
+	const uploadFile = async (file: File, cursorPos?: number, textarea?: HTMLTextAreaElement) => {
 		const formData = new FormData();
 		formData.append('file', file);
 
@@ -74,10 +74,59 @@
 			const imageMarkdown = `[img width=${result.width} height=${result.height}]${result.main}[/img]`;
 
 			// Use the update method to modify the store value
-			postForm.form.update(form => ({
-				...form,
-				body: form.body + '\n\n' + imageMarkdown
-			}));
+			postForm.form.update(form => {
+				// If cursor position is provided, insert at cursor with smart spacing
+				if (cursorPos !== undefined) {
+					const before = form.body.substring(0, cursorPos);
+					const after = form.body.substring(cursorPos);
+
+					// Smart spacing: only add newlines if needed
+					let spacingBefore = '';
+					let spacingAfter = '';
+
+					// Check if we need spacing before the image
+					if (before.length > 0 && !before.endsWith('\n\n')) {
+						if (before.endsWith('\n')) {
+							spacingBefore = '\n';
+						} else {
+							spacingBefore = '\n\n';
+						}
+					}
+
+					// Check if we need spacing after the image
+					if (after.length > 0 && !after.startsWith('\n\n')) {
+						if (after.startsWith('\n')) {
+							spacingAfter = '\n';
+						} else {
+							spacingAfter = '\n\n';
+						}
+					}
+
+					const newBody = before + spacingBefore + imageMarkdown + spacingAfter + after;
+
+					// Calculate new cursor position (after the inserted image)
+					const newCursorPos = before.length + spacingBefore.length + imageMarkdown.length + spacingAfter.length;
+
+					// Restore cursor position after state update
+					if (textarea) {
+						setTimeout(() => {
+							textarea.setSelectionRange(newCursorPos, newCursorPos);
+							textarea.focus();
+						}, 0);
+					}
+
+					return {
+						...form,
+						body: newBody
+					};
+				} else {
+					// Fallback: append to end (for file input upload)
+					return {
+						...form,
+						body: form.body + '\n\n' + imageMarkdown
+					};
+				}
+			});
 
 			return true;
 		} catch (error) {
@@ -115,7 +164,10 @@
 
 				const file = item.getAsFile();
 				if (file) {
-					await uploadFile(file);
+					// Capture cursor position before upload
+					const textarea = event.target as HTMLTextAreaElement;
+					const cursorPos = textarea.selectionStart;
+					await uploadFile(file, cursorPos, textarea);
 				}
 				break; // Only handle the first image found
 			}
