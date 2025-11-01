@@ -8,6 +8,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Kbd from '$lib/Kbd.svelte';
+	import Fuse from 'fuse.js';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -41,6 +42,64 @@
 	let formElement: HTMLFormElement;
 	let publishButton: HTMLButtonElement;
 	let bodyTextarea: HTMLTextAreaElement;
+
+	// Tags autocomplete state
+	let tagSuggestions = $state<string[]>([]);
+
+	// Get all available tags from page data (loaded in layout)
+	const allTags = $derived(page.data.tags?.map((tag: { name: string; count: number }) => tag.name) ?? []);
+
+	// Initialize Fuse for fuzzy matching
+	const tagsFuse = $derived(
+		new Fuse(allTags, {
+			threshold: 0.3
+		})
+	);
+
+	// Get the current tag being typed at cursor position
+	const getCurrentTag = (value: string, cursorPos: number): string => {
+		const beforeCursor = value.substring(0, cursorPos);
+		const afterCursor = value.substring(cursorPos);
+
+		// Find where current tag starts (after last comma, or start)
+		const lastComma = beforeCursor.lastIndexOf(',');
+		const tagStart = lastComma === -1 ? 0 : lastComma + 1;
+
+		// Find where current tag ends (before next comma, or end)
+		const nextComma = afterCursor.indexOf(',');
+		const tagEnd = nextComma === -1 ? value.length : cursorPos + nextComma;
+
+		return value.substring(tagStart, tagEnd).trim();
+	};
+
+	// Update tag suggestions based on cursor position
+	const updateTagSuggestions = (input: HTMLInputElement) => {
+		const cursorPos = input.selectionStart ?? 0;
+		const currentTag = getCurrentTag(input.value, cursorPos);
+
+		if (currentTag.length === 0) {
+			tagSuggestions = [];
+			return;
+		}
+
+		// Fuzzy search and show top 10 matches
+		const results = tagsFuse.search(currentTag);
+		tagSuggestions = results
+			.map(result => result.item as string)
+			.slice(0, 10);
+	};
+
+	// Handle tag input - update suggestions as user types
+	const handleTagsInput = (event: Event) => {
+		const input = event.target as HTMLInputElement;
+		updateTagSuggestions(input);
+	};
+
+	// Handle cursor movement - update suggestions when cursor moves
+	const handleTagsCursorMove = (event: Event) => {
+		const input = event.target as HTMLInputElement;
+		updateTagSuggestions(input);
+	};
 
 	let showPreview = $state(false);
 	let previewLoading = $state(false);
@@ -589,7 +648,20 @@
 
 			<label class="block md:col-span-2">
 				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags (comma separated)</span>
-				<input class="w-full h-9" name="tags" bind:value={$formData.tags} />
+				<input
+					class="w-full h-9"
+					name="tags"
+					bind:value={$formData.tags}
+					oninput={handleTagsInput}
+					onclick={handleTagsCursorMove}
+					onkeyup={handleTagsCursorMove}
+					autocomplete="off"
+				/>
+				{#if tagSuggestions.length > 0}
+					<div class="mt-2 text-xs text-slate-600 dark:text-slate-400">
+						{tagSuggestions.join(', ')}
+					</div>
+				{/if}
 			</label>
 		</section>
 
