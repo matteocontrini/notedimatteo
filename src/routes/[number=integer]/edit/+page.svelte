@@ -174,6 +174,49 @@
 		}
 	};
 
+	const insertMarkdownLink = (textarea: HTMLTextAreaElement) => {
+		const selectionStart = textarea.selectionStart;
+		const selectionEnd = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(selectionStart, selectionEnd);
+
+		let newBody: string;
+		let newCursorPos: number;
+
+		if (selectedText.length === 0) {
+			// Case 1: No selection - insert []() with cursor at link text position
+			const before = textarea.value.substring(0, selectionStart);
+			const after = textarea.value.substring(selectionEnd);
+			newBody = before + '[]()' + after;
+			newCursorPos = selectionStart + 1; // Position cursor inside brackets: [|]()
+		} else if (selectedText.startsWith('http://') || selectedText.startsWith('https://')) {
+			// Case 2: Selected text is URL - create [](url) with cursor at link text position
+			const before = textarea.value.substring(0, selectionStart);
+			const after = textarea.value.substring(selectionEnd);
+			newBody = before + '[](' + selectedText + ')' + after;
+			newCursorPos = selectionStart + 1; // Position cursor inside brackets: [|](url)
+		} else {
+			// Case 3: Selected text is regular text - create [text]() with cursor at URL position
+			const before = textarea.value.substring(0, selectionStart);
+			const after = textarea.value.substring(selectionEnd);
+			newBody = before + '[' + selectedText + ']()' + after;
+			newCursorPos = selectionStart + selectedText.length + 3; // Position cursor inside parentheses: [text](|)
+		}
+
+		// Update form data
+		postForm.form.update(form => {
+			return {
+				...form,
+				body: newBody
+			};
+		});
+
+		// Restore cursor position after state update
+		setTimeout(() => {
+			textarea.setSelectionRange(newCursorPos, newCursorPos);
+			textarea.focus();
+		}, 0);
+	};
+
 	const loadPreview = async () => {
 		previewLoading = true;
 		previewError = null;
@@ -215,6 +258,15 @@
 		if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
 			event.preventDefault();
 			formElement?.requestSubmit();
+		}
+
+		// Cmd+K: Insert markdown link
+		if ((event.metaKey || event.ctrlKey) && (event.key === 'k' || event.key === 'K')) {
+			event.preventDefault();
+			const textarea = event.target as HTMLTextAreaElement;
+			if (textarea && textarea.tagName === 'TEXTAREA') {
+				insertMarkdownLink(textarea);
+			}
 		}
 	};
 
