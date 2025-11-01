@@ -38,6 +38,7 @@
 	const categoryOptions = categorySlugs.map(slug => ({ slug, label: getCategoryLabel(slug) }));
 
 	let formElement: HTMLFormElement;
+	let publishButton: HTMLButtonElement;
 
 	let showPreview = $state(false);
 	let previewLoading = $state(false);
@@ -255,6 +256,14 @@
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
+		// Cmd+Shift+S: Save and publish
+		if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 's' || event.key === 'S')) {
+			event.preventDefault();
+			publishButton?.click();
+			return;
+		}
+
+		// Cmd+S: Save
 		if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
 			event.preventDefault();
 			formElement?.requestSubmit();
@@ -501,11 +510,11 @@
 			</button>
 
 			{#if data.post.publishedAt === null}
-				<button type="submit" class="w-full" name="intent" value="publish">
+				<button type="submit" class="w-full" name="intent" value="publish" bind:this={publishButton}>
 					Publish
 				</button>
 			{:else}
-				<button type="submit" class="w-full" name="intent" value="unpublish">
+				<button type="submit" class="w-full" name="intent" value="unpublish" bind:this={publishButton}>
 					Unpublish
 				</button>
 			{/if}
