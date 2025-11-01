@@ -39,6 +39,7 @@
 
 	let formElement: HTMLFormElement;
 	let publishButton: HTMLButtonElement;
+	let bodyTextarea: HTMLTextAreaElement;
 
 	let showPreview = $state(false);
 	let previewLoading = $state(false);
@@ -253,6 +254,10 @@
 	const closePreview = () => {
 		showPreview = false;
 		previewError = null;
+		// Focus the textarea when returning to edit mode
+		setTimeout(() => {
+			bodyTextarea?.focus();
+		}, 0);
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
@@ -267,6 +272,16 @@
 		if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
 			event.preventDefault();
 			formElement?.requestSubmit();
+		}
+
+		// Cmd+P: Toggle preview
+		if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'P')) {
+			event.preventDefault();
+			if (showPreview) {
+				closePreview();
+			} else {
+				loadPreview();
+			}
 		}
 
 		// Cmd+K: Insert markdown link
@@ -376,6 +391,7 @@
 			name="body"
 			rows="16"
 			bind:value={$formData.body}
+			bind:this={bodyTextarea}
 			onpaste={handlePaste}
 			autofocus
 		></textarea>
