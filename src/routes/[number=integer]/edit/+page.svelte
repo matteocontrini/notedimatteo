@@ -535,5 +535,13 @@
 				</button>
 			{/if}
 		</section>
+
+		<section class="text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
+			<div class="font-medium text-slate-700 dark:text-slate-300 mb-2">Keyboard shortcuts</div>
+			<div><Kbd>⌘K</Kbd> Insert link</div>
+			<div><Kbd>⌘P</Kbd> Toggle preview</div>
+			<div><Kbd>⌘S</Kbd> Save</div>
+			<div><Kbd>⌘⇧S</Kbd> Publish</div>
+		</section>
 	</aside>
 </form>
