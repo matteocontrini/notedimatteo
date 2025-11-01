@@ -7,6 +7,7 @@
 	import { autoResize } from '$lib/actions/auto-resize';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Kbd from '$lib/Kbd.svelte';
 
 	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
 
@@ -219,6 +220,84 @@
 		}, 0);
 	};
 
+	const toggleMarkdownBold = (textarea: HTMLTextAreaElement) => {
+		const selectionStart = textarea.selectionStart;
+		const selectionEnd = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(selectionStart, selectionEnd);
+
+		let newBody: string;
+		let newSelectionStart: number;
+		let newSelectionEnd: number;
+
+		const before = textarea.value.substring(0, selectionStart);
+		const after = textarea.value.substring(selectionEnd);
+
+		if (selectedText.length === 0) {
+			// No selection - insert **|** with cursor in the middle
+			newBody = before + '****' + after;
+			newSelectionStart = selectionStart + 2;
+			newSelectionEnd = selectionStart + 2;
+		} else {
+			// Wrap selected text in **
+			newBody = before + '**' + selectedText + '**' + after;
+			newSelectionStart = selectionStart + 2;
+			newSelectionEnd = selectionEnd + 2;
+		}
+
+		// Update form data
+		postForm.form.update(form => {
+			return {
+				...form,
+				body: newBody
+			};
+		});
+
+		// Restore selection after state update
+		setTimeout(() => {
+			textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+			textarea.focus();
+		}, 0);
+	};
+
+	const toggleMarkdownItalic = (textarea: HTMLTextAreaElement) => {
+		const selectionStart = textarea.selectionStart;
+		const selectionEnd = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(selectionStart, selectionEnd);
+
+		let newBody: string;
+		let newSelectionStart: number;
+		let newSelectionEnd: number;
+
+		const before = textarea.value.substring(0, selectionStart);
+		const after = textarea.value.substring(selectionEnd);
+
+		if (selectedText.length === 0) {
+			// No selection - insert *|* with cursor in the middle
+			newBody = before + '**' + after;
+			newSelectionStart = selectionStart + 1;
+			newSelectionEnd = selectionStart + 1;
+		} else {
+			// Wrap selected text in *
+			newBody = before + '*' + selectedText + '*' + after;
+			newSelectionStart = selectionStart + 1;
+			newSelectionEnd = selectionEnd + 1;
+		}
+
+		// Update form data
+		postForm.form.update(form => {
+			return {
+				...form,
+				body: newBody
+			};
+		});
+
+		// Restore selection after state update
+		setTimeout(() => {
+			textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+			textarea.focus();
+		}, 0);
+	};
+
 	const loadPreview = async () => {
 		previewLoading = true;
 		previewError = null;
@@ -290,6 +369,24 @@
 			const textarea = event.target as HTMLTextAreaElement;
 			if (textarea && textarea.tagName === 'TEXTAREA') {
 				insertMarkdownLink(textarea);
+			}
+		}
+
+		// Cmd+B: Toggle bold
+		if ((event.metaKey || event.ctrlKey) && (event.key === 'b' || event.key === 'B')) {
+			event.preventDefault();
+			const textarea = event.target as HTMLTextAreaElement;
+			if (textarea && textarea.tagName === 'TEXTAREA') {
+				toggleMarkdownBold(textarea);
+			}
+		}
+
+		// Cmd+I: Toggle italic
+		if ((event.metaKey || event.ctrlKey) && (event.key === 'i' || event.key === 'I')) {
+			event.preventDefault();
+			const textarea = event.target as HTMLTextAreaElement;
+			if (textarea && textarea.tagName === 'TEXTAREA') {
+				toggleMarkdownItalic(textarea);
 			}
 		}
 	};
@@ -538,6 +635,8 @@
 
 		<section class="text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
 			<div class="font-medium text-slate-700 dark:text-slate-300 mb-2">Keyboard shortcuts</div>
+			<div><Kbd>⌘B</Kbd> Bold</div>
+			<div><Kbd>⌘I</Kbd> Italic</div>
 			<div><Kbd>⌘K</Kbd> Insert link</div>
 			<div><Kbd>⌘P</Kbd> Toggle preview</div>
 			<div><Kbd>⌘S</Kbd> Save</div>
