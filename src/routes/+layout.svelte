@@ -11,6 +11,7 @@
 
 	let { children, data } = $props();
 	const isLoggedIn = $derived(data.isLoggedIn);
+	const unpublishedCount = $derived(data.unpublishedCount ?? 0);
 </script>
 
 <svelte:head>
@@ -21,7 +22,7 @@
 
 <ModeWatcher />
 
-<TopBar {isLoggedIn} />
+<TopBar {isLoggedIn} {unpublishedCount} />
 
 <Header categories={data.categories} />
 

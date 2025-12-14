@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
-	let { isLoggedIn } = $props();
+	let { isLoggedIn, unpublishedCount = 0 } = $props();
 </script>
 
 <div class="bg-[#0067B9] h-[18px]">
@@ -11,7 +11,7 @@
 				class="text-white/80 text-xs uppercase hover:text-white"
 				href={resolve('/unpublished')}
 			>
-				unpublished
+				unpublished ({unpublishedCount})
 			</a>
 
 			<a

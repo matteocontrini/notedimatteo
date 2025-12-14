@@ -3,6 +3,8 @@ import { db } from '$lib/server/db';
 import type { CalendarItem } from '$lib/types';
 
 export async function load({ locals }) {
+	const isLoggedIn = !!locals.session;
+
 	const categoriesResults = await db.post.groupBy({
 		by: ['category'],
 		_count: { _all: true },
@@ -51,10 +53,17 @@ export async function load({ locals }) {
 		}))
 		.sort((a, b) => b.count - a.count);
 
+	const unpublishedCount = isLoggedIn
+		? await db.post.count({
+				where: { publishedAt: null }
+			})
+		: 0;
+
 	return {
-		isLoggedIn: !!locals.session,
+		isLoggedIn,
 		categories,
 		archive,
-		tags
+		tags,
+		unpublishedCount
 	};
 }
