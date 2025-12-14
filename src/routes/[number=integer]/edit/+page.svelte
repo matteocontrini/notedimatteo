@@ -397,6 +397,67 @@
 		}, 0);
 	};
 
+	const toggleMarkdownQuote = (textarea: HTMLTextAreaElement) => {
+		const selectionStart = textarea.selectionStart;
+		const selectionEnd = textarea.selectionEnd;
+		const fullText = textarea.value;
+
+		let newBody: string;
+		let newSelectionStart: number;
+		let newSelectionEnd: number;
+
+		if (selectionStart === selectionEnd) {
+			// No selection: insert "> " at cursor position
+			const before = fullText.substring(0, selectionStart);
+			const after = fullText.substring(selectionStart);
+
+			newBody = before + '> ' + after;
+			newSelectionStart = selectionStart + 2; // Position after "> "
+			newSelectionEnd = selectionStart + 2;
+		} else {
+			// Has selection: quote each line in the selection
+			// Find the line boundaries
+			const lineStartPos = fullText.lastIndexOf('\n', selectionStart - 1) + 1;
+			let lineEndPos = fullText.indexOf('\n', selectionEnd);
+			if (lineEndPos === -1) lineEndPos = fullText.length;
+
+			const before = fullText.substring(0, lineStartPos);
+			const textToQuote = fullText.substring(lineStartPos, lineEndPos);
+			const after = fullText.substring(lineEndPos);
+
+			// Add "> " to each line, including blank lines to maintain quote block
+			const lines = textToQuote.split('\n');
+			const quotedText = lines
+				.map(line => line.length > 0 ? '> ' + line : '>')
+				.join('\n');
+
+			newBody = before + quotedText + after;
+
+			// Calculate new cursor positions
+			const totalAdded = lines.reduce((sum, line) => {
+				return sum + (line.length > 0 ? 2 : 1); // "> " = 2 chars, ">" = 1 char
+			}, 0);
+			const firstLineAdded = lines[0].length > 0 ? 2 : 1;
+
+			newSelectionStart = selectionStart + firstLineAdded;
+			newSelectionEnd = selectionEnd + totalAdded;
+		}
+
+		// Update form data
+		postForm.form.update(form => {
+			return {
+				...form,
+				body: newBody
+			};
+		});
+
+		// Restore selection after state update
+		setTimeout(() => {
+			textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+			textarea.focus();
+		}, 0);
+	};
+
 	const loadPreview = async () => {
 		previewLoading = true;
 		previewError = null;
@@ -486,6 +547,15 @@
 			const textarea = event.target as HTMLTextAreaElement;
 			if (textarea && textarea.tagName === 'TEXTAREA') {
 				toggleMarkdownItalic(textarea);
+			}
+		}
+
+		// Cmd+Shift+': Toggle quote
+		if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === "'") {
+			event.preventDefault();
+			const textarea = event.target as HTMLTextAreaElement;
+			if (textarea && textarea.tagName === 'TEXTAREA') {
+				toggleMarkdownQuote(textarea);
 			}
 		}
 	};
@@ -750,6 +820,7 @@
 			<div class="font-medium text-slate-700 dark:text-slate-300 mb-2">Keyboard shortcuts</div>
 			<div><Kbd>⌘B</Kbd> Bold</div>
 			<div><Kbd>⌘I</Kbd> Italic</div>
+			<div><Kbd>⌘⇧'</Kbd> Quote</div>
 			<div><Kbd>⌘K</Kbd> Insert link</div>
 			<div><Kbd>⌘P</Kbd> Toggle preview</div>
 			<div><Kbd>⌘S</Kbd> Save</div>
