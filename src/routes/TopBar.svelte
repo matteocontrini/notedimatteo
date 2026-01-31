@@ -4,7 +4,7 @@
 	let { isLoggedIn, unpublishedCount = 0 } = $props();
 </script>
 
-<div class="bg-[#0067B9] h-[18px]">
+<div class="bg-[#0067B9] h-4.5">
 	<div class="container max-w-6xl h-full flex items-center justify-end gap-4">
 		{#if isLoggedIn}
 			<a
