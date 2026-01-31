@@ -30,7 +30,7 @@
 	);
 </script>
 
-<article class="mt-4">
+<article class="mt-4" data-category={post.category}>
 	{#if post.title && !post.hideTitle}
 		<div>
 			<h3 class="inline font-semibold">
