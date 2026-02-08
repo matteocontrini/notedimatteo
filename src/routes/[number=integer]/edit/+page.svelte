@@ -597,12 +597,21 @@
 
 {#if $delayed || showSaved}
 	<div
-		class="fixed left-0 top-0 h-9 bg-white dark:bg-slate-900 w-full flex items-center border-b border-slate-200 dark:border-slate-700">
-		<div class="container max-w-6xl dark:text-white">
-			{#if $delayed}
+		class="fixed bottom-0 left-0 flex h-9 w-full items-center"
+		class:bg-white={!showSaved}
+		class:dark:bg-slate-900={!showSaved}
+		class:dark:text-white={!showSaved}
+		class:border-t={!showSaved}
+		class:border-slate-200={!showSaved}
+		class:dark:border-slate-700={!showSaved}
+		class:bg-green-500={showSaved}
+		class:text-white={showSaved}
+	>
+		<div class="container max-w-6xl">
+			{#if !showSaved}
 				Saving...
 			{:else}
-				<span class="text-green-500 font-medium">Saved!</span>
+				<span class="font-medium">Saved!</span>
 			{/if}
 		</div>
 	</div>
