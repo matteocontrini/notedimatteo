@@ -4,10 +4,12 @@ import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import { rehypeImgPlugin } from './rehype-img-plugin';
 import { STORAGE_PUBLIC_BASE_URL } from '$env/static/private';
+import remarkStrikethroughOnly from '$lib/server/markdown-strikethrough';
 
 // prettier-ignore
 const processor = unified()
 	.use(remarkParse)
+	.use(remarkStrikethroughOnly)
 	.use(remarkRehype)
 	.use(rehypeImgPlugin, { storageBaseUrl: STORAGE_PUBLIC_BASE_URL })
 	.use(rehypeStringify);

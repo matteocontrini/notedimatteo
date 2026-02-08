@@ -51,6 +51,8 @@
     "@prisma/client": "^6.16.2",
     "fast-xml-parser": "^5.3.3",
     "fuse.js": "^7.1.0",
+    "mdast-util-gfm-strikethrough": "^2.0.0",
+    "micromark-extension-gfm-strikethrough": "^2.1.0",
     "mode-watcher": "^1.1.0",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
