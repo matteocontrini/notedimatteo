@@ -10,7 +10,7 @@
 	const pagination = $derived(data.pagination);
 </script>
 
-<div class="grid gap-20 md:grid-cols-12">
+<div class="grid grid-cols-1 gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
 		{#each postGroups as group, index (group.dateKey)}
 			<h2 class="text-2xl font-semibold mb-8"
