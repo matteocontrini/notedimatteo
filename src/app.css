@@ -122,6 +122,12 @@
       .dark & {
         @apply border-sky-800;
       }
+
+      & ul,
+      & ol {
+        @apply pl-4;
+        list-style-position: outside;
+      }
     }
 
     ul {
