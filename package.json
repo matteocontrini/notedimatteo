@@ -18,7 +18,7 @@
 		"lint": "prettier --check . && eslint .",
 		"generate-migration": "prisma migrate dev --create-only",
 		"migrate": "prisma migrate deploy",
-		"check-updates": "npx npm-check -u"
+		"check-updates": "npx npm-check-updates -i --format group,repo --cooldown 1d"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
