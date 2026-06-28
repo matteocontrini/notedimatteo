@@ -4,6 +4,8 @@ import { randomBytes } from 'crypto';
 import { env } from '$env/dynamic/private';
 import sharp from 'sharp';
 
+sharp.cache(false);
+
 const s3 = new S3Client({
 	region: env.STORAGE_S3_REGION,
 	endpoint: env.STORAGE_S3_ENDPOINT,
