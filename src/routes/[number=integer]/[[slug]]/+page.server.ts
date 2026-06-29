@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { renderMarkdown } from '$lib/server/markdown';
+import { renderPostBody } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error, redirect } from '@sveltejs/kit';
 
@@ -13,6 +13,7 @@ export async function load({ params }) {
 	const postRecord = await db.post.findUnique({
 		where: { number },
 		include: {
+			htmlCache: true,
 			postsToTags: {
 				select: {
 					tag: { select: { name: true } }
@@ -25,7 +26,7 @@ export async function load({ params }) {
 		error(404);
 	}
 
-	const body = await renderMarkdown(postRecord.body);
+	const body = await renderPostBody(postRecord);
 
 	const post: Post = {
 		id: postRecord.id,

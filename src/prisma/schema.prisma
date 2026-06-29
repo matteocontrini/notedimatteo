@@ -8,19 +8,32 @@ datasource db {
 }
 
 model Post {
-  id          Int           @id @default(autoincrement())
-  number      Int           @unique
-  category    String
-  createdAt   DateTime      @default(now()) @db.Timestamptz()
-  updatedAt   DateTime?     @default(now()) @db.Timestamptz()
-  publishedAt DateTime?     @default(now()) @db.Timestamptz()
-  title       String?
-  slug        String?
-  hideTitle   Boolean
-  body        String
-  postsToTags PostsToTags[]
+  id           Int            @id @default(autoincrement())
+  number       Int            @unique
+  category     String
+  createdAt    DateTime       @default(now()) @db.Timestamptz()
+  updatedAt    DateTime?      @default(now()) @db.Timestamptz()
+  publishedAt  DateTime?      @default(now()) @db.Timestamptz()
+  title        String?
+  slug         String?
+  hideTitle    Boolean
+  body         String
+  bodyRevision Int            @default(1)
+  postsToTags  PostsToTags[]
+  htmlCache    PostHtmlCache?
 
   @@map("posts")
+}
+
+model PostHtmlCache {
+  postId          Int      @id
+  rendererVersion Int
+  bodyRevision    Int
+  html            String
+  renderedAt      DateTime @default(now()) @db.Timestamptz()
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_html_cache")
 }
 
 model Tag {

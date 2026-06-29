@@ -7,6 +7,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { ZodValidationSchema } from 'sveltekit-superforms/adapters';
 import { postFormSchema, type PostFormValues } from './schema';
+import { MARKDOWN_RENDERER_VERSION, renderMarkdown } from '$lib/server/markdown';
 
 const validationSchema = postFormSchema as unknown as ZodValidationSchema;
 
@@ -100,7 +101,7 @@ const mutatePost = async ({
 
 	const postRecord = await db.post.findUnique({
 		where: { number: currentNumber },
-		select: { id: true, publishedAt: true }
+		select: { id: true, publishedAt: true, body: true, bodyRevision: true }
 	});
 
 	if (!postRecord) {
@@ -112,6 +113,8 @@ const mutatePost = async ({
 	const normalisedSlug = slug === '' ? null : slug;
 	const parsedTags = parseTags(tags);
 	const now = new Date();
+	const bodyRevision = postRecord.bodyRevision + (body === postRecord.body ? 0 : 1);
+	const html = await renderMarkdown(body);
 
 	await db.$transaction(async (tx) => {
 		await tx.post.update({
@@ -123,9 +126,26 @@ const mutatePost = async ({
 				slug: normalisedSlug,
 				hideTitle,
 				body,
+				bodyRevision,
 				updatedAt: now,
 				publishedAt:
 					intent === 'publish' ? now : intent === 'unpublish' ? null : postRecord.publishedAt
+			}
+		});
+
+		await tx.postHtmlCache.upsert({
+			where: { postId: postRecord.id },
+			create: {
+				postId: postRecord.id,
+				rendererVersion: MARKDOWN_RENDERER_VERSION,
+				bodyRevision,
+				html
+			},
+			update: {
+				rendererVersion: MARKDOWN_RENDERER_VERSION,
+				bodyRevision,
+				html,
+				renderedAt: now
 			}
 		});
 

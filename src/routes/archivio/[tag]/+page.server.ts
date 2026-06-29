@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { renderMarkdown } from '$lib/server/markdown';
+import { renderPostBody } from '$lib/server/markdown';
 import type { Post } from '$lib/types';
 import { error } from '@sveltejs/kit';
 
@@ -49,6 +49,7 @@ export async function load({ params, url }) {
 			}
 		},
 		include: {
+			htmlCache: true,
 			postsToTags: {
 				select: {
 					tag: { select: { name: true } }
@@ -58,9 +59,9 @@ export async function load({ params, url }) {
 	});
 
 	const posts: Post[] = await Promise.all(
-		postsWithTags.map(async ({ postsToTags, body, ...post }) => ({
+		postsWithTags.map(async ({ postsToTags, htmlCache, bodyRevision, ...post }) => ({
 			...post,
-			body: await renderMarkdown(body),
+			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
 			tags: postsToTags.map((entry) => entry.tag.name)
 		}))
 	);

@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { renderMarkdown } from '$lib/server/markdown';
+import { renderPostBody } from '$lib/server/markdown';
 import { XMLBuilder } from 'fast-xml-parser';
 import type { RequestHandler } from './$types';
 
@@ -17,6 +17,7 @@ export const GET = (async () => {
 		orderBy: { publishedAt: 'desc' },
 		take: 50,
 		include: {
+			htmlCache: true,
 			postsToTags: {
 				select: {
 					tag: { select: { name: true } }
@@ -31,7 +32,7 @@ export const GET = (async () => {
 			const urlPath = `/${post.number}${post.slug ? `/${post.slug}` : ''}`;
 			const permalink = `${SITE_URL}${urlPath}`;
 			const title = post.title ? `#${post.number} / ${post.title}` : `#${post.number}`;
-			const content = await renderMarkdown(post.body);
+			const content = await renderPostBody(post);
 			const categories = [post.category, ...post.postsToTags.map((entry) => entry.tag.name)];
 
 			return {
