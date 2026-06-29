@@ -46,13 +46,15 @@ export async function load({ url }: { url: URL }) {
 		}
 	});
 
-	const posts: Post[] = await Promise.all(
-		postsWithTags.map(async ({ postsToTags, htmlCache, bodyRevision, ...post }) => ({
+	const posts: Post[] = [];
+
+	for (const { postsToTags, htmlCache, bodyRevision, ...post } of postsWithTags) {
+		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
 			tags: postsToTags.map((entry) => entry.tag.name)
-		}))
-	);
+		});
+	}
 
 	return {
 		query,

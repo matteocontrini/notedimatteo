@@ -26,26 +26,26 @@ export const GET = (async () => {
 		}
 	});
 
-	const items = await Promise.all(
-		posts.map(async (post) => {
-			const publishedAt = post.publishedAt!;
-			const urlPath = `/${post.number}${post.slug ? `/${post.slug}` : ''}`;
-			const permalink = `${SITE_URL}${urlPath}`;
-			const title = post.title ? `#${post.number} / ${post.title}` : `#${post.number}`;
-			const content = await renderPostBody(post);
-			const categories = [post.category, ...post.postsToTags.map((entry) => entry.tag.name)];
+	const items = [];
 
-			return {
-				title,
-				link: permalink,
-				guid: permalink,
-				pubDate: publishedAt.toUTCString(),
-				category: categories,
-				description: post.body.slice(0, 200) + (post.body.length > 200 ? '…' : ''),
-				'content:encoded': { __cdata: content }
-			};
-		})
-	);
+	for (const post of posts) {
+		const publishedAt = post.publishedAt!;
+		const urlPath = `/${post.number}${post.slug ? `/${post.slug}` : ''}`;
+		const permalink = `${SITE_URL}${urlPath}`;
+		const title = post.title ? `#${post.number} / ${post.title}` : `#${post.number}`;
+		const content = await renderPostBody(post);
+		const categories = [post.category, ...post.postsToTags.map((entry) => entry.tag.name)];
+
+		items.push({
+			title,
+			link: permalink,
+			guid: permalink,
+			pubDate: publishedAt.toUTCString(),
+			category: categories,
+			description: post.body.slice(0, 200) + (post.body.length > 200 ? '…' : ''),
+			'content:encoded': { __cdata: content }
+		});
+	}
 
 	const feed = {
 		'?xml': {
