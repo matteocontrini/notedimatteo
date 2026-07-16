@@ -22,6 +22,8 @@ jobs:
         run: npm install
       - name: Generate Prisma client
         run: npx prisma generate
+      - name: Set up environment
+        run: cp .env.example .env
       - name: Lint
         run: npm run lint
       - name: Run Svelte checks
