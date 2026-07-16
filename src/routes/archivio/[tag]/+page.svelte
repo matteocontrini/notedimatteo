@@ -10,13 +10,13 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="text-2xl font-semibold mb-8">#{data.tag}</h2>
+		<h2 class="mb-8 text-2xl font-semibold">#{data.tag}</h2>
 
 		{#if data.posts.length === 0}
 			<p class="mt-4 text-slate-500">Nessun post con questo tag.</p>
 		{:else}
 			{#each data.posts as post (post.id)}
-				<Post {post} canEdit={canEdit} />
+				<Post {post} {canEdit} />
 				<hr class="my-6" />
 			{/each}
 		{/if}

@@ -6,5 +6,5 @@
 </script>
 
 <div class="lg:w-7/12">
-	<Post post={data.post} canEdit={canEdit} />
+	<Post post={data.post} {canEdit} />
 </div>

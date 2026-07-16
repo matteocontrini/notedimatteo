@@ -18,14 +18,14 @@ export async function load({ params, url }) {
 	const totalPosts = await db.post.count({
 		where: {
 			publishedAt: {
-				not: null
+				not: null,
 			},
 			postsToTags: {
 				some: {
-					tagName: tag
-				}
-			}
-		}
+					tagName: tag,
+				},
+			},
+		},
 	});
 
 	if (totalPosts === 0) {
@@ -40,22 +40,22 @@ export async function load({ params, url }) {
 		orderBy: { publishedAt: 'desc' },
 		where: {
 			publishedAt: {
-				not: null
+				not: null,
 			},
 			postsToTags: {
 				some: {
-					tagName: tag
-				}
-			}
+					tagName: tag,
+				},
+			},
 		},
 		include: {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	const posts: Post[] = [];
@@ -64,7 +64,7 @@ export async function load({ params, url }) {
 		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
-			tags: postsToTags.map((entry) => entry.tag.name)
+			tags: postsToTags.map((entry) => entry.tag.name),
 		});
 	}
 
@@ -76,10 +76,10 @@ export async function load({ params, url }) {
 			totalPages,
 			hasNextPage: page < totalPages,
 			hasPreviousPage: page > 1,
-			totalPosts
+			totalPosts,
 		},
 		seo: {
-			title: `#${tag}`
-		}
+			title: `#${tag}`,
+		},
 	};
 }

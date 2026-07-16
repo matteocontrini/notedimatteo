@@ -47,14 +47,14 @@ export async function renderPostBody(post: {
 			postId: post.id,
 			rendererVersion: MARKDOWN_RENDERER_VERSION,
 			bodyRevision: post.bodyRevision,
-			html
+			html,
 		},
 		update: {
 			rendererVersion: MARKDOWN_RENDERER_VERSION,
 			bodyRevision: post.bodyRevision,
 			html,
-			renderedAt: new Date()
-		}
+			renderedAt: new Date(),
+		},
 	});
 
 	return html;

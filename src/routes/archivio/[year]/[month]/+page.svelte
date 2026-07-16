@@ -10,13 +10,13 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="text-2xl font-semibold mb-8">{monthLabel}</h2>
+		<h2 class="mb-8 text-2xl font-semibold">{monthLabel}</h2>
 
 		{#if data.posts.length === 0}
 			<p class="mt-4 text-slate-500">Nessun post pubblicato in questo mese.</p>
 		{:else}
 			{#each data.posts as post (post.id)}
-				<Post {post} canEdit={canEdit} />
+				<Post {post} {canEdit} />
 				<hr class="my-6" />
 			{/each}
 		{/if}

@@ -12,8 +12,8 @@ export async function load({ url }: { url: URL }) {
 			query: '',
 			posts: [] satisfies Post[],
 			seo: {
-				title: 'Cerca in Note di Matteo'
-			}
+				title: 'Cerca in Note di Matteo',
+			},
 		};
 	}
 
@@ -24,13 +24,13 @@ export async function load({ url }: { url: URL }) {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
+					tag: { select: { name: true } },
+				},
+			},
 		},
 		where: {
 			publishedAt: {
-				not: null
+				not: null,
 			},
 			OR: [
 				{ title: { contains: query, mode: 'insensitive' } },
@@ -38,12 +38,12 @@ export async function load({ url }: { url: URL }) {
 				{
 					postsToTags: {
 						some: {
-							tag: { name: { contains: query, mode: 'insensitive' } }
-						}
-					}
-				}
-			]
-		}
+							tag: { name: { contains: query, mode: 'insensitive' } },
+						},
+					},
+				},
+			],
+		},
 	});
 
 	const posts: Post[] = [];
@@ -52,7 +52,7 @@ export async function load({ url }: { url: URL }) {
 		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
-			tags: postsToTags.map((entry) => entry.tag.name)
+			tags: postsToTags.map((entry) => entry.tag.name),
 		});
 	}
 
@@ -60,7 +60,7 @@ export async function load({ url }: { url: URL }) {
 		query,
 		posts,
 		seo: {
-			title: `Risultati per "${query}"`
-		}
+			title: `Risultati per "${query}"`,
+		},
 	};
 }

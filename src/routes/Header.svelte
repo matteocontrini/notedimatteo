@@ -8,15 +8,13 @@
 	const searchQuery = $derived(page.url.searchParams.get('q') ?? '');
 </script>
 
-<div class="container max-w-6xl mt-6">
+<div class="container mt-6 max-w-6xl">
 	<h1 class="text-4xl font-bold">
-		<a class="hover:underline" href={resolve('/')}>
-			Note di Matteo
-		</a>
+		<a class="hover:underline" href={resolve('/')}> Note di Matteo </a>
 	</h1>
 
-	<div class="mt-4 grid gap-x-20 gap-y-4 lg:grid-cols-12 items-center">
-		<div class="lg:col-span-7 flex gap-3 flex-wrap">
+	<div class="mt-4 grid items-center gap-x-20 gap-y-4 lg:grid-cols-12">
+		<div class="flex flex-wrap gap-3 lg:col-span-7">
 			{#each categories as category (category.slug)}
 				<Category slug={category.slug} label={category.label} count={category.count} />
 			{/each}
@@ -35,7 +33,7 @@
 				value={searchQuery}
 				placeholder="Cerca..."
 				aria-label="Cerca nel sito"
-				class="w-full h-9"
+				class="h-9 w-full"
 			/>
 		</form>
 	</div>

@@ -17,7 +17,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (token) {
 		const session = await db.session.findFirst({
-			where: { token }
+			where: { token },
 		});
 
 		if (session) {
@@ -27,7 +27,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			if (Date.now() - session.lastActivityAt.getTime() > 60 * 1000) {
 				await db.session.update({
 					where: { id: session.id },
-					data: { lastActivityAt: new Date() }
+					data: { lastActivityAt: new Date() },
 				});
 			}
 		} else {

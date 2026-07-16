@@ -10,7 +10,7 @@
 
 	let {
 		archive,
-		tags
+		tags,
 	}: {
 		archive: CalendarItem[];
 		tags: TagSummary[];
@@ -19,9 +19,7 @@
 	let alphabeticalSort = $state(false);
 
 	const sortedTags = $derived(
-		alphabeticalSort
-			? [...tags].sort((a, b) => a.name.localeCompare(b.name))
-			: tags
+		alphabeticalSort ? [...tags].sort((a, b) => a.name.localeCompare(b.name)) : tags,
 	);
 </script>
 
@@ -34,10 +32,13 @@
 				<li class="mt-2 font-semibold">{month.year}</li>
 			{/if}
 			<li class="mt-1">
-				<a class="link" href={resolve('/archivio/[year]/[month]', {
-					year: month.year.toString(),
-					month: formatMonthParam(month.month)
-				})}>
+				<a
+					class="link"
+					href={resolve('/archivio/[year]/[month]', {
+						year: month.year.toString(),
+						month: formatMonthParam(month.month),
+					})}
+				>
 					{formatMonthName(month.year, month.month)}
 				</a>
 				({month.postsCount})
@@ -49,8 +50,8 @@
 		<h2 class="text-2xl font-medium">Tag</h2>
 
 		<button
-			onclick={() => alphabeticalSort = !alphabeticalSort}
-			class="transition-colors cursor-pointer border-0 bg-transparent p-0 mt-1.5 h-fit"
+			onclick={() => (alphabeticalSort = !alphabeticalSort)}
+			class="mt-1.5 h-fit cursor-pointer border-0 bg-transparent p-0 transition-colors"
 			class:text-gray-400={!alphabeticalSort}
 			class:text-sky-700={alphabeticalSort}
 			class:dark:text-gray-500={!alphabeticalSort}
@@ -58,18 +59,36 @@
 			aria-label="Ordina alfabeticamente"
 			title="Ordina alfabeticamente"
 		>
-			<svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-				<text x="0" y="13" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="currentColor">
+			<svg
+				width="32"
+				height="20"
+				viewBox="0 0 32 20"
+				fill="none"
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<text
+					x="0"
+					y="13"
+					font-family="system-ui, sans-serif"
+					font-size="11"
+					font-weight="600"
+					fill="currentColor"
+				>
 					A-Z
 				</text>
-				<path d="M28 6v8m0 0l-2-2m2 2l2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-							stroke-linejoin="round" />
+				<path
+					d="M28 6v8m0 0l-2-2m2 2l2-2"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			</svg>
 		</button>
 	</div>
 
 	<ul class="mt-4 space-y-1">
-		{#each sortedTags as tag(tag.name)}
+		{#each sortedTags as tag (tag.name)}
 			<li>
 				<a class="link" href={resolve('/archivio/[tag]', { tag: tag.name })}>#{tag.name}</a>
 				({tag.count})

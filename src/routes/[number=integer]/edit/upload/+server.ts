@@ -11,8 +11,8 @@ const s3 = new S3Client({
 	endpoint: env.STORAGE_S3_ENDPOINT,
 	credentials: {
 		accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID,
-		secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY
-	}
+		secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY,
+	},
 });
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -41,18 +41,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const compressedImage = await sharp(imageBuffer, { autoOrient: true })
 		.jpeg({
 			quality: 85,
-			mozjpeg: true
+			mozjpeg: true,
 		})
 		.toBuffer();
 
 	// Create preview version (mozjpeg 80, max width 1200, no upscaling)
 	const previewImage = await sharp(imageBuffer, { autoOrient: true })
 		.resize(1200, null, {
-			withoutEnlargement: true
+			withoutEnlargement: true,
 		})
 		.jpeg({
 			quality: 80,
-			mozjpeg: true
+			mozjpeg: true,
 		})
 		.toBuffer();
 
@@ -70,9 +70,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			Body: compressedImage,
 			ContentType: 'image/jpeg',
 			Metadata: {
-				original: file.name
-			}
-		})
+				original: file.name,
+			},
+		}),
 	);
 
 	// Upload preview image
@@ -81,14 +81,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			Bucket: env.STORAGE_S3_BUCKET,
 			Key: previewImageKey,
 			Body: previewImage,
-			ContentType: 'image/jpeg'
-		})
+			ContentType: 'image/jpeg',
+		}),
 	);
 
 	return json({
 		main: mainImageKey,
 		preview: previewImageKey,
 		width: previewMetadata.width,
-		height: previewMetadata.height
+		height: previewMetadata.height,
 	});
 };

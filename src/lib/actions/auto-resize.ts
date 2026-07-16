@@ -39,6 +39,6 @@ export function autoResize(node: HTMLTextAreaElement, value?: string) {
 				value = newValue;
 				scheduleResize();
 			}
-		}
+		},
 	};
 }

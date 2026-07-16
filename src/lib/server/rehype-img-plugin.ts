@@ -46,7 +46,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 					if (textBefore) {
 						newNodes.push({
 							type: 'text',
-							value: textBefore
+							value: textBefore,
 						});
 					}
 				}
@@ -61,7 +61,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 				const imgProperties: Record<string, string | number> = {
 					src: previewUrl,
 					alt: attributes.alt || '',
-					loading: 'lazy'
+					loading: 'lazy',
 				};
 
 				// Add dimensions if provided (prevents layout shift)
@@ -76,16 +76,16 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 					type: 'element',
 					tagName: 'a',
 					properties: {
-						href: linkHref
+						href: linkHref,
 					},
 					children: [
 						{
 							type: 'element',
 							tagName: 'img',
 							properties: imgProperties,
-							children: []
-						}
-					]
+							children: [],
+						},
+					],
 				});
 
 				lastIndex = matchEnd;
@@ -97,7 +97,7 @@ export const rehypeImgPlugin: Plugin<[Options?], Root> = (options) => {
 				if (textAfter) {
 					newNodes.push({
 						type: 'text',
-						value: textAfter
+						value: textAfter,
 					});
 				}
 			}

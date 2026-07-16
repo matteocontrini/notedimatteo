@@ -4,7 +4,7 @@ import { z } from 'zod/v4';
 import type { RequestHandler } from './$types';
 
 const payloadSchema = z.object({
-	body: z.string()
+	body: z.string(),
 });
 
 export const POST: RequestHandler = async ({ locals, request }) => {

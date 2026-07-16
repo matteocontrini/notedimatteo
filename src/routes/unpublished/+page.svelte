@@ -11,7 +11,7 @@
 			month: '2-digit',
 			year: 'numeric',
 			hour: '2-digit',
-			minute: '2-digit'
+			minute: '2-digit',
 		});
 
 	const confirmDeletion = (event: MouseEvent) => {
@@ -27,22 +27,23 @@
 
 <div class="grid gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		<h2 class="text-2xl font-semibold mb-8">Unpublished</h2>
+		<h2 class="mb-8 text-2xl font-semibold">Unpublished</h2>
 
 		{#if form?.error}
-			<p class="text-red-600 font-medium">{form.error}</p>
+			<p class="font-medium text-red-600">{form.error}</p>
 
 			<hr class="my-6" />
 		{/if}
 
-		{#each data.posts as post(post.id)}
+		{#each data.posts as post (post.id)}
 			<article class="mt-4">
 				<header class="space-y-1">
 					<div class="text-sm text-slate-500">
 						#{post.number}
 						/
 						{post.title}
-						{#if post.hideTitle} (hidden){/if}
+						{#if post.hideTitle}
+							(hidden){/if}
 					</div>
 
 					<div class="text-sm text-slate-500">
@@ -84,8 +85,8 @@
 					{@html post.body}
 				</div>
 
-				<div class="mt-4 flex gap-2 flex-wrap">
-					{#each post.tags as tag(tag)}
+				<div class="mt-4 flex flex-wrap gap-2">
+					{#each post.tags as tag (tag)}
 						<a href={resolve('/archivio/[tag]', { tag })}>
 							#{tag}
 						</a>

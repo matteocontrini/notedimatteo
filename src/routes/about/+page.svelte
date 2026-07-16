@@ -10,8 +10,8 @@
 
 	<p>
 		Non è una newsletter e nemmeno un blog tradizionale. È una specie di archivio, forse un diario,
-		nello spirito del Web 1.0: non ci sono notifiche, non ci sono commenti,
-		non ci sono reazioni, non ci sono pubblicità. Il design è brutto. Alcune note non hanno nemmeno un titolo. È tutto
+		nello spirito del Web 1.0: non ci sono notifiche, non ci sono commenti, non ci sono reazioni,
+		non ci sono pubblicità. Il design è brutto. Alcune note non hanno nemmeno un titolo. È tutto
 		voluto.
 	</p>
 
@@ -24,7 +24,8 @@
 	</p>
 
 	<p>
-		Il codice sorgente di questo sito è su <a
-		href="https://github.com/matteocontrini/notedimatteo">GitHub</a>.
+		Il codice sorgente di questo sito è su <a href="https://github.com/matteocontrini/notedimatteo"
+			>GitHub</a
+		>.
 	</p>
 </article>

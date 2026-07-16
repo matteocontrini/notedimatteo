@@ -14,11 +14,9 @@
 		{#if !hasResults || !hasQuery}
 			<h2 class="text-2xl font-semibold">Nessun risultato per "{data.query}"</h2>
 
-			<a class="link block mt-4" href={resolve('/')}>
-				Torna alla home
-			</a>
+			<a class="link mt-4 block" href={resolve('/')}> Torna alla home </a>
 		{:else}
-			<h2 class="text-2xl font-semibold mb-2">
+			<h2 class="mb-2 text-2xl font-semibold">
 				{data.posts.length === 1 ? '1 risultato' : `${data.posts.length} risultati`}
 				per "{data.query}"
 			</h2>
@@ -26,7 +24,7 @@
 			<hr class="my-6" />
 
 			{#each data.posts as post (post.id)}
-				<Post {post} canEdit={canEdit} />
+				<Post {post} {canEdit} />
 				<hr class="my-6" />
 			{/each}
 		{/if}

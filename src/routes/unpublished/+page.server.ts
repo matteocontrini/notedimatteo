@@ -12,16 +12,16 @@ export async function load({ locals }) {
 	const postsWithTags = await db.post.findMany({
 		orderBy: { createdAt: 'desc' },
 		where: {
-			publishedAt: null
+			publishedAt: null,
 		},
 		include: {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	const posts: Post[] = [];
@@ -30,12 +30,12 @@ export async function load({ locals }) {
 		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
-			tags: postsToTags.map((entry) => entry.tag.name)
+			tags: postsToTags.map((entry) => entry.tag.name),
 		});
 	}
 
 	return {
-		posts
+		posts,
 	};
 }
 
@@ -61,5 +61,5 @@ export const actions = {
 		}
 
 		return { success: true };
-	}
+	},
 } satisfies Actions;

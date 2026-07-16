@@ -5,7 +5,7 @@
 </script>
 
 <div class="lg:w-7/12">
-	<h1 class="text-2xl font-semibold mb-6">Accedi</h1>
+	<h1 class="mb-6 text-2xl font-semibold">Accedi</h1>
 
 	<form method="POST" class="space-y-4">
 		<div class="flex flex-col gap-2">
@@ -38,8 +38,6 @@
 			<p class="text-sm text-red-600">{message}</p>
 		{/if}
 
-		<button type="submit" class="w-full h-9">
-			Accedi
-		</button>
+		<button type="submit" class="h-9 w-full"> Accedi </button>
 	</form>
 </div>

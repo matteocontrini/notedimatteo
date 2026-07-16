@@ -34,17 +34,17 @@ export async function load({ params, url }) {
 			publishedAt: {
 				not: null,
 				gte: monthStart,
-				lt: monthEnd
-			}
+				lt: monthEnd,
+			},
 		},
 		include: {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	if (postsWithTags.length === 0) {
@@ -57,7 +57,7 @@ export async function load({ params, url }) {
 		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
-			tags: postsToTags.map((entry) => entry.tag.name)
+			tags: postsToTags.map((entry) => entry.tag.name),
 		});
 	}
 
@@ -66,7 +66,7 @@ export async function load({ params, url }) {
 		year,
 		month,
 		seo: {
-			title: `Archivio ${formatMonthName(year, month, false)} ${year}`
-		}
+			title: `Archivio ${formatMonthName(year, month, false)} ${year}`,
+		},
 	};
 }

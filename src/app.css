@@ -3,216 +3,216 @@
 @plugin '@tailwindcss/forms';
 
 @theme {
-  --font-sans: 'Inter Variable', sans-serif;
+	--font-sans: 'Inter Variable', sans-serif;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @utility container {
-  @apply mx-auto px-4 sm:px-8;
+	@apply mx-auto px-4 sm:px-8;
 }
 
 @layer base {
-  hr {
-    @apply border-t border-slate-300;
+	hr {
+		@apply border-t border-slate-300;
 
-    .dark & {
-      @apply border-slate-700;
-    }
-  }
+		.dark & {
+			@apply border-slate-700;
+		}
+	}
 }
 
 @layer components {
-  article a,
-  a.link,
-  button.link {
-    @apply underline text-sky-700;
+	article a,
+	a.link,
+	button.link {
+		@apply text-sky-700 underline;
 
-    .dark & {
-      @apply text-sky-500;
-    }
-  }
+		.dark & {
+			@apply text-sky-500;
+		}
+	}
 
-  button.link {
-    @apply h-fit p-0 border-0 bg-transparent;
+	button.link {
+		@apply h-fit border-0 bg-transparent p-0;
 
-    &:hover {
-      @apply bg-transparent;
+		&:hover {
+			@apply bg-transparent;
 
-      .dark & {
-        @apply bg-transparent;
-      }
-    }
+			.dark & {
+				@apply bg-transparent;
+			}
+		}
 
-    .dark & {
-      @apply bg-transparent;
-    }
-  }
+		.dark & {
+			@apply bg-transparent;
+		}
+	}
 
-  input:not([type='checkbox']):not([type='radio']),
-  select,
-  textarea {
-    @apply border border-slate-300 bg-white text-slate-900;
+	input:not([type='checkbox']):not([type='radio']),
+	select,
+	textarea {
+		@apply border border-slate-300 bg-white text-slate-900;
 
-    &::placeholder {
-      @apply text-slate-500;
-    }
+		&::placeholder {
+			@apply text-slate-500;
+		}
 
-    &:focus {
-      @apply outline-none shadow-none ring-0 border-slate-700;
-    }
+		&:focus {
+			@apply border-slate-700 shadow-none ring-0 outline-none;
+		}
 
-    &[readonly] {
-      @apply text-slate-500 bg-slate-100 cursor-not-allowed;
-    }
+		&[readonly] {
+			@apply cursor-not-allowed bg-slate-100 text-slate-500;
+		}
 
-    .dark & {
-      @apply border-slate-500 bg-slate-700 text-white;
+		.dark & {
+			@apply border-slate-500 bg-slate-700 text-white;
 
-      &::placeholder {
-        @apply text-slate-400;
-      }
+			&::placeholder {
+				@apply text-slate-400;
+			}
 
-      &:focus {
-        @apply border-slate-300;
-      }
+			&:focus {
+				@apply border-slate-300;
+			}
 
-      &[readonly] {
-        @apply text-slate-400 bg-slate-800;
-      }
-    }
-  }
+			&[readonly] {
+				@apply bg-slate-800 text-slate-400;
+			}
+		}
+	}
 
-  input[type='checkbox'] {
-    @apply focus:outline-none focus:ring-0 focus:ring-offset-0;
-  }
+	input[type='checkbox'] {
+		@apply focus:ring-0 focus:ring-offset-0 focus:outline-none;
+	}
 
-  button {
-    @apply h-9 px-4 border border-slate-300 bg-white text-slate-900 text-sm cursor-pointer;
+	button {
+		@apply h-9 cursor-pointer border border-slate-300 bg-white px-4 text-sm text-slate-900;
 
-    &:hover {
-      @apply bg-slate-100;
-    }
+		&:hover {
+			@apply bg-slate-100;
+		}
 
-    &:disabled {
-      @apply cursor-not-allowed opacity-50;
-    }
+		&:disabled {
+			@apply cursor-not-allowed opacity-50;
+		}
 
-    .dark & {
-      @apply border-slate-500 bg-slate-700 text-white;
+		.dark & {
+			@apply border-slate-500 bg-slate-700 text-white;
 
-      &:hover {
-        @apply bg-slate-600;
-      }
+			&:hover {
+				@apply bg-slate-600;
+			}
 
-      &:disabled {
-        @apply cursor-not-allowed opacity-50;
-      }
-    }
-  }
+			&:disabled {
+				@apply cursor-not-allowed opacity-50;
+			}
+		}
+	}
 
-  .post-content {
-    p {
-      @apply mb-2.5 last:mb-0;
-    }
+	.post-content {
+		p {
+			@apply mb-2.5 last:mb-0;
+		}
 
-    blockquote {
-      @apply mt-0 mb-2.5 last:mb-0 border-l-6 border-[#d4ebfc] pl-4 my-4 py-1;
+		blockquote {
+			@apply my-4 mt-0 mb-2.5 border-l-6 border-[#d4ebfc] py-1 pl-4 last:mb-0;
 
-      .dark & {
-        @apply border-sky-800;
-      }
+			.dark & {
+				@apply border-sky-800;
+			}
 
-      & ul,
-      & ol {
-        @apply pl-4;
-        list-style-position: outside;
-      }
-    }
+			& ul,
+			& ol {
+				@apply pl-4;
+				list-style-position: outside;
+			}
+		}
 
-    ul {
-      @apply mb-2.5 last:mb-0 list-disc list-inside;
+		ul {
+			@apply mb-2.5 list-inside list-disc last:mb-0;
 
-      li {
-        @apply mb-0.5 last:mb-0;
-      }
+			li {
+				@apply mb-0.5 last:mb-0;
+			}
 
-      & ul,
-      & ol {
-        @apply mt-1 mb-1 last:mb-0 pl-4;
-      }
+			& ul,
+			& ol {
+				@apply mt-1 mb-1 pl-4 last:mb-0;
+			}
 
-      & ul {
-        @apply list-[circle];
-      }
+			& ul {
+				@apply list-[circle];
+			}
 
-      & ul ul {
-        @apply list-[square];
-      }
-    }
+			& ul ul {
+				@apply list-[square];
+			}
+		}
 
-    ol {
-      @apply mb-2.5 last:mb-0 list-decimal list-inside;
+		ol {
+			@apply mb-2.5 list-inside list-decimal last:mb-0;
 
-      li {
-        @apply mb-0.5 last:mb-0;
-      }
+			li {
+				@apply mb-0.5 last:mb-0;
+			}
 
-      & ul,
-      & ol {
-        @apply mt-1 mb-1 last:mb-0 pl-4;
-      }
+			& ul,
+			& ol {
+				@apply mt-1 mb-1 pl-4 last:mb-0;
+			}
 
-      & ul {
-        list-style-type: circle;
-      }
+			& ul {
+				list-style-type: circle;
+			}
 
-      & ul ul {
-        list-style-type: square;
-      }
+			& ul ul {
+				list-style-type: square;
+			}
 
-      & ol {
-        list-style-type: lower-alpha;
-      }
+			& ol {
+				list-style-type: lower-alpha;
+			}
 
-      & ol ol {
-        list-style-type: lower-roman;
-      }
-    }
+			& ol ol {
+				list-style-type: lower-roman;
+			}
+		}
 
-    pre {
-      @apply block mb-2.5 last:mb-0 bg-slate-100 px-3 py-2 rounded text-sm text-wrap break-words;
+		pre {
+			@apply mb-2.5 block rounded bg-slate-100 px-3 py-2 text-sm text-wrap break-words last:mb-0;
 
-      .dark & {
-        @apply bg-slate-800;
-      }
-    }
+			.dark & {
+				@apply bg-slate-800;
+			}
+		}
 
-    article[data-category='cit'] & {
-      blockquote {
-        @apply border-0 my-4 py-2;
-        clear: both;
-        margin-top: 0.5em;
-        margin-bottom: 0.2em;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
-        background-size: 23px 23px;
-        background-repeat: no-repeat;
-        background-position: 14px 4px;
-      }
+		article[data-category='cit'] & {
+			blockquote {
+				@apply my-4 border-0 py-2;
+				clear: both;
+				margin-top: 0.5em;
+				margin-bottom: 0.2em;
+				background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
+				background-size: 23px 23px;
+				background-repeat: no-repeat;
+				background-position: 14px 4px;
+			}
 
-      blockquote:has(p:only-child),
-      blockquote p:first-child {
-        text-indent: 28px;
-      }
+			blockquote:has(p:only-child),
+			blockquote p:first-child {
+				text-indent: 28px;
+			}
 
-      blockquote p:last-child {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
-        background-size: 23px 23px;
-        background-repeat: no-repeat;
-        background-position: bottom 2px right;
-        padding-right: 25px;
-        display: inline;
-      }
-    }
-  }
+			blockquote p:last-child {
+				background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
+				background-size: 23px 23px;
+				background-repeat: no-repeat;
+				background-position: bottom 2px right;
+				padding-right: 25px;
+				display: inline;
+			}
+		}
+	}
 }

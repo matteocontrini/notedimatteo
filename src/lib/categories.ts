@@ -4,7 +4,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 	cit: 'Cit.',
 	segnalibri: 'Segnalibri',
 	video: 'Video',
-	progetti: 'Progetti'
+	progetti: 'Progetti',
 };
 
 export function getCategoryLabel(slug: string): string {

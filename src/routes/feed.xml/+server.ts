@@ -8,7 +8,7 @@ const SITE_URL = 'https://notedimatteo.it';
 const xmlBuilder = new XMLBuilder({
 	ignoreAttributes: false,
 	format: true,
-	cdataPropName: '__cdata'
+	cdataPropName: '__cdata',
 });
 
 export const GET = (async () => {
@@ -20,10 +20,10 @@ export const GET = (async () => {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	const items = [];
@@ -43,14 +43,14 @@ export const GET = (async () => {
 			pubDate: publishedAt.toUTCString(),
 			category: categories,
 			description: post.body.slice(0, 200) + (post.body.length > 200 ? '…' : ''),
-			'content:encoded': { __cdata: content }
+			'content:encoded': { __cdata: content },
 		});
 	}
 
 	const feed = {
 		'?xml': {
 			'@_version': '1.0',
-			'@_encoding': 'UTF-8'
+			'@_encoding': 'UTF-8',
 		},
 		rss: {
 			'@_version': '2.0',
@@ -64,11 +64,11 @@ export const GET = (async () => {
 				'atom:link': {
 					'@_href': SITE_URL + '/feed.xml',
 					'@_rel': 'self',
-					'@_type': 'application/rss+xml'
+					'@_type': 'application/rss+xml',
 				},
-				item: items
-			}
-		}
+				item: items,
+			},
+		},
 	};
 
 	const rss = xmlBuilder.build(feed);
@@ -76,7 +76,7 @@ export const GET = (async () => {
 	return new Response(rss, {
 		headers: {
 			'Content-Type': 'application/xml; charset=utf-8',
-			'Cache-Control': 'public, max-age=60'
-		}
+			'Cache-Control': 'public, max-age=60',
+		},
 	});
 }) satisfies RequestHandler;

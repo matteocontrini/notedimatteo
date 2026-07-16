@@ -9,7 +9,7 @@ export const postFormSchema = z.object({
 	slug: trimmedString(),
 	hideTitle: z.coerce.boolean(),
 	body: z.string().min(1, 'Body is required'),
-	tags: trimmedString()
+	tags: trimmedString(),
 });
 
 export type PostFormSchema = typeof postFormSchema;

@@ -24,9 +24,9 @@ export async function load({ params, url }) {
 		where: {
 			category,
 			publishedAt: {
-				not: null
-			}
-		}
+				not: null,
+			},
+		},
 	});
 
 	const totalPages = Math.ceil(totalPosts / limit);
@@ -39,16 +39,16 @@ export async function load({ params, url }) {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
+					tag: { select: { name: true } },
+				},
+			},
 		},
 		where: {
 			category,
 			publishedAt: {
-				not: null
-			}
-		}
+				not: null,
+			},
+		},
 	});
 
 	const posts: Post[] = [];
@@ -57,7 +57,7 @@ export async function load({ params, url }) {
 		posts.push({
 			...post,
 			body: await renderPostBody({ ...post, bodyRevision, htmlCache }),
-			tags: postsToTags.map((entry) => entry.tag.name)
+			tags: postsToTags.map((entry) => entry.tag.name),
 		});
 	}
 
@@ -67,17 +67,17 @@ export async function load({ params, url }) {
 		posts,
 		category: {
 			slug: category,
-			label
+			label,
 		},
 		pagination: {
 			currentPage: page,
 			totalPages,
 			hasNextPage: page < totalPages,
 			hasPreviousPage: page > 1,
-			totalPosts
+			totalPosts,
 		},
 		seo: {
-			title: `${label} in Note di Matteo`
-		}
+			title: `${label} in Note di Matteo`,
+		},
 	};
 }

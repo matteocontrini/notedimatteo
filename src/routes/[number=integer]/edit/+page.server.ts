@@ -27,10 +27,10 @@ export const load = (async ({ params, locals }) => {
 		include: {
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	if (!postRecord) {
@@ -48,7 +48,7 @@ export const load = (async ({ params, locals }) => {
 		slug: postRecord.slug,
 		hideTitle: postRecord.hideTitle,
 		body: postRecord.body,
-		tags: postRecord.postsToTags.map((entry) => entry.tag.name)
+		tags: postRecord.postsToTags.map((entry) => entry.tag.name),
 	};
 
 	const form = await superValidate(
@@ -59,17 +59,17 @@ export const load = (async ({ params, locals }) => {
 			slug: post.slug ?? '',
 			hideTitle: post.hideTitle,
 			body: post.body,
-			tags: post.tags.join(', ')
+			tags: post.tags.join(', '),
 		},
-		zod4(validationSchema)
+		zod4(validationSchema),
 	);
 
 	return {
 		post,
 		form: form as SuperValidated<PostFormValues>,
 		seo: {
-			title: `Modifica #${post.number}`
-		}
+			title: `Modifica #${post.number}`,
+		},
 	};
 }) satisfies PageServerLoad;
 
@@ -79,8 +79,8 @@ const parseTags = (value: string) =>
 			value
 				.split(',')
 				.map((tag) => tag.trim())
-				.filter((tag) => tag.length > 0)
-		)
+				.filter((tag) => tag.length > 0),
+		),
 	);
 
 type PostMutationIntent = 'save' | 'publish' | 'unpublish';
@@ -88,7 +88,7 @@ type PostMutationIntent = 'save' | 'publish' | 'unpublish';
 const mutatePost = async ({
 	params,
 	form,
-	intent
+	intent,
 }: {
 	params: { number: string };
 	form: SuperValidated<PostFormValues>;
@@ -101,7 +101,7 @@ const mutatePost = async ({
 
 	const postRecord = await db.post.findUnique({
 		where: { number: currentNumber },
-		select: { id: true, publishedAt: true, body: true, bodyRevision: true }
+		select: { id: true, publishedAt: true, body: true, bodyRevision: true },
 	});
 
 	if (!postRecord) {
@@ -129,8 +129,8 @@ const mutatePost = async ({
 				bodyRevision,
 				updatedAt: now,
 				publishedAt:
-					intent === 'publish' ? now : intent === 'unpublish' ? null : postRecord.publishedAt
-			}
+					intent === 'publish' ? now : intent === 'unpublish' ? null : postRecord.publishedAt,
+			},
 		});
 
 		await tx.postHtmlCache.upsert({
@@ -139,14 +139,14 @@ const mutatePost = async ({
 				postId: postRecord.id,
 				rendererVersion: MARKDOWN_RENDERER_VERSION,
 				bodyRevision,
-				html
+				html,
 			},
 			update: {
 				rendererVersion: MARKDOWN_RENDERER_VERSION,
 				bodyRevision,
 				html,
-				renderedAt: now
-			}
+				renderedAt: now,
+			},
 		});
 
 		await tx.postsToTags.deleteMany({ where: { postId: postRecord.id } });
@@ -157,16 +157,16 @@ const mutatePost = async ({
 					tx.tag.upsert({
 						where: { name },
 						update: {},
-						create: { name }
-					})
-				)
+						create: { name },
+					}),
+				),
 			);
 
 			await tx.postsToTags.createMany({
 				data: parsedTags.map((name) => ({
 					postId: postRecord.id,
-					tagName: name
-				}))
+					tagName: name,
+				})),
 			});
 		}
 	});
@@ -192,9 +192,9 @@ export const actions = {
 		await mutatePost({
 			params: event.params,
 			form: form as SuperValidated<PostFormValues>,
-			intent
+			intent,
 		});
 
 		return { form };
-	}
+	},
 } satisfies Actions;

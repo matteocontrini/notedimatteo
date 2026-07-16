@@ -13,13 +13,12 @@
 <div class="grid grid-cols-1 gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
 		{#each postGroups as group, index (group.dateKey)}
-			<h2 class="text-2xl font-semibold mb-8"
-					class:mt-10={index !== 0}>
+			<h2 class="mb-8 text-2xl font-semibold" class:mt-10={index !== 0}>
 				{group.heading}
 			</h2>
 
 			{#each group.posts as post (post.id)}
-				<Post {post} canEdit={canEdit} showDate={false} />
+				<Post {post} {canEdit} showDate={false} />
 				<hr class="my-6" />
 			{/each}
 		{:else}

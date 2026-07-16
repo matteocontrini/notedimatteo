@@ -16,10 +16,10 @@ export async function load({ params }) {
 			htmlCache: true,
 			postsToTags: {
 				select: {
-					tag: { select: { name: true } }
-				}
-			}
-		}
+					tag: { select: { name: true } },
+				},
+			},
+		},
 	});
 
 	if (!postRecord || !postRecord.publishedAt) {
@@ -39,7 +39,7 @@ export async function load({ params }) {
 		slug: postRecord.slug,
 		hideTitle: postRecord.hideTitle,
 		body,
-		tags: postRecord.postsToTags.map((entry) => entry.tag.name)
+		tags: postRecord.postsToTags.map((entry) => entry.tag.name),
 	};
 
 	const targetBase = `/${post.number}`;
@@ -56,21 +56,18 @@ export async function load({ params }) {
 		post,
 		seo: {
 			title: postTitle(post),
-			description: postRecord.body
-					.slice(0, 160)
-					.replace(/\n/g, ' ')
-					.replace(/\s+/g, ' ')
-					.trim()
-				+ (postRecord.body.length > 160 ? '…' : ''),
+			description:
+				postRecord.body.slice(0, 160).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim() +
+				(postRecord.body.length > 160 ? '…' : ''),
 			ogType: 'article',
 			jsonLd: {
 				'@context': 'https://schema.org',
 				'@type': 'NewsArticle',
 				headline: postTitle(post),
 				datePublished: post.publishedAt!.toISOString(),
-				dateModified: post.updatedAt?.toISOString()
-			}
-		}
+				dateModified: post.updatedAt?.toISOString(),
+			},
+		},
 	};
 }
 
@@ -79,7 +76,7 @@ function postTitle(post: Post): string {
 		return post.title;
 	} else {
 		const date = new Date(post.publishedAt!).toLocaleDateString('it-IT', {
-			timeZone: 'Europe/Rome'
+			timeZone: 'Europe/Rome',
 		});
 		return `Nota #${post.number} del ${date}`;
 	}

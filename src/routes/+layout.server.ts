@@ -11,16 +11,16 @@ export async function load({ locals }) {
 		orderBy: { category: 'asc' },
 		where: {
 			publishedAt: {
-				not: null
-			}
-		}
+				not: null,
+			},
+		},
 	});
 
 	const categories = categoriesResults
 		.map((category) => ({
 			slug: category.category,
 			label: getCategoryLabel(category.category),
-			count: category._count._all
+			count: category._count._all,
 		}))
 		.sort((x, y) => y.count - x.count);
 
@@ -40,22 +40,22 @@ export async function load({ locals }) {
 		where: {
 			post: {
 				publishedAt: {
-					not: null
-				}
-			}
-		}
+					not: null,
+				},
+			},
+		},
 	});
 
 	const tags = tagsResults
 		.map((tag) => ({
 			name: tag.tagName,
-			count: tag._count._all
+			count: tag._count._all,
 		}))
 		.sort((a, b) => b.count - a.count);
 
 	const unpublishedCount = isLoggedIn
 		? await db.post.count({
-				where: { publishedAt: null }
+				where: { publishedAt: null },
 			})
 		: 0;
 
@@ -64,6 +64,6 @@ export async function load({ locals }) {
 		categories,
 		archive,
 		tags,
-		unpublishedCount
+		unpublishedCount,
 	};
 }

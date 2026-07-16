@@ -10,7 +10,7 @@ export async function GET({ locals }) {
 
 	const lastPost = await db.post.findFirst({
 		select: { number: true },
-		orderBy: { number: 'desc' }
+		orderBy: { number: 'desc' },
 	});
 
 	const nextNumber = (lastPost?.number ?? 0) + 1;
@@ -24,8 +24,8 @@ export async function GET({ locals }) {
 			hideTitle: false,
 			body: '',
 			publishedAt: null,
-			updatedAt: null
-		}
+			updatedAt: null,
+		},
 	});
 
 	redirect(303, `/${nextNumber}/edit`);

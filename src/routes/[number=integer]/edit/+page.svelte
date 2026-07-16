@@ -32,12 +32,12 @@
 			} else {
 				alert('Unknown error');
 			}
-		}
+		},
 	});
 
 	const { form: formData, errors: errors, enhance, delayed, tainted, isTainted } = postForm;
 
-	const categoryOptions = categorySlugs.map(slug => ({ slug, label: getCategoryLabel(slug) }));
+	const categoryOptions = categorySlugs.map((slug) => ({ slug, label: getCategoryLabel(slug) }));
 
 	let formElement: HTMLFormElement;
 	let publishButton: HTMLButtonElement;
@@ -47,13 +47,15 @@
 	let tagSuggestions = $state<string[]>([]);
 
 	// Get all available tags from page data (loaded in layout)
-	const allTags = $derived(page.data.tags?.map((tag: { name: string; count: number }) => tag.name) ?? []);
+	const allTags = $derived(
+		page.data.tags?.map((tag: { name: string; count: number }) => tag.name) ?? [],
+	);
 
 	// Initialize Fuse for fuzzy matching
 	const tagsFuse = $derived(
 		new Fuse(allTags, {
-			threshold: 0.3
-		})
+			threshold: 0.3,
+		}),
 	);
 
 	// Get the current tag being typed at cursor position
@@ -84,9 +86,7 @@
 
 		// Fuzzy search and show top 10 matches
 		const results = tagsFuse.search(currentTag);
-		tagSuggestions = results
-			.map(result => result.item as string)
-			.slice(0, 10);
+		tagSuggestions = results.map((result) => result.item as string).slice(0, 10);
 	};
 
 	// Handle tag input - update suggestions as user types
@@ -158,14 +158,14 @@
 		try {
 			const response = await fetch(`${page.url.pathname}/upload`, {
 				method: 'POST',
-				body: formData
+				body: formData,
 			});
 
 			if (!response.ok) {
 				throw new Error('Upload failed');
 			}
 
-			const result = await response.json() as {
+			const result = (await response.json()) as {
 				main: string;
 				preview: string;
 				width: number;
@@ -176,7 +176,7 @@
 			const imageMarkdown = `[img width=${result.width} height=${result.height}]${result.main}[/img]`;
 
 			// Use the update method to modify the store value
-			postForm.form.update(form => {
+			postForm.form.update((form) => {
 				// If cursor position is provided, insert at cursor with smart spacing
 				if (cursorPos !== undefined) {
 					const before = form.body.substring(0, cursorPos);
@@ -207,7 +207,8 @@
 					const newBody = before + spacingBefore + imageMarkdown + spacingAfter + after;
 
 					// Calculate new cursor position (after the inserted image)
-					const newCursorPos = before.length + spacingBefore.length + imageMarkdown.length + spacingAfter.length;
+					const newCursorPos =
+						before.length + spacingBefore.length + imageMarkdown.length + spacingAfter.length;
 
 					// Restore cursor position after state update
 					if (textarea) {
@@ -219,13 +220,13 @@
 
 					return {
 						...form,
-						body: newBody
+						body: newBody,
 					};
 				} else {
 					// Fallback: append to end (for file input upload)
 					return {
 						...form,
-						body: form.body + '\n\n' + imageMarkdown
+						body: form.body + '\n\n' + imageMarkdown,
 					};
 				}
 			});
@@ -305,10 +306,10 @@
 		}
 
 		// Update form data
-		postForm.form.update(form => {
+		postForm.form.update((form) => {
 			return {
 				...form,
-				body: newBody
+				body: newBody,
 			};
 		});
 
@@ -344,10 +345,10 @@
 		}
 
 		// Update form data
-		postForm.form.update(form => {
+		postForm.form.update((form) => {
 			return {
 				...form,
-				body: newBody
+				body: newBody,
 			};
 		});
 
@@ -383,10 +384,10 @@
 		}
 
 		// Update form data
-		postForm.form.update(form => {
+		postForm.form.update((form) => {
 			return {
 				...form,
-				body: newBody
+				body: newBody,
 			};
 		});
 
@@ -427,9 +428,7 @@
 
 			// Add "> " to each line, including blank lines to maintain quote block
 			const lines = textToQuote.split('\n');
-			const quotedText = lines
-				.map(line => line.length > 0 ? '> ' + line : '>')
-				.join('\n');
+			const quotedText = lines.map((line) => (line.length > 0 ? '> ' + line : '>')).join('\n');
 
 			newBody = before + quotedText + after;
 
@@ -444,10 +443,10 @@
 		}
 
 		// Update form data
-		postForm.form.update(form => {
+		postForm.form.update((form) => {
 			return {
 				...form,
-				body: newBody
+				body: newBody,
 			};
 		});
 
@@ -464,16 +463,16 @@
 		showPreview = true;
 
 		const previewEndpoint = resolve('/[number=integer]/edit/preview', {
-			number: data.post.number.toString()
+			number: data.post.number.toString(),
 		});
 
 		try {
 			const response = await fetch(previewEndpoint, {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ body: $formData.body })
+				body: JSON.stringify({ body: $formData.body }),
 			});
 
 			if (!response.ok) {
@@ -484,7 +483,8 @@
 			previewHtml = result.html;
 		} catch (error) {
 			previewHtml = '';
-			previewError = error instanceof Error ? error.message : 'Unexpected error while rendering preview';
+			previewError =
+				error instanceof Error ? error.message : 'Unexpected error while rendering preview';
 		} finally {
 			previewLoading = false;
 		}
@@ -501,7 +501,11 @@
 
 	const handleKeydown = (event: KeyboardEvent) => {
 		// Cmd+Shift+S: Save and publish
-		if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 's' || event.key === 'S')) {
+		if (
+			(event.metaKey || event.ctrlKey) &&
+			event.shiftKey &&
+			(event.key === 's' || event.key === 'S')
+		) {
 			event.preventDefault();
 			publishButton?.click();
 			return;
@@ -590,7 +594,6 @@
 			$formData.slug = normalized;
 		}
 	};
-
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -626,8 +629,8 @@
 >
 	<div class="md:col-span-7">
 		<label class="block">
-			<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Title</span>
-			<input class="w-full h-9" name="title" bind:value={$formData.title} />
+			<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Title</span>
+			<input class="h-9 w-full" name="title" bind:value={$formData.title} />
 		</label>
 
 		{#if $errors.title}
@@ -644,17 +647,15 @@
 			<span class="text-sm text-slate-700 dark:text-slate-300">Hide title</span>
 		</label>
 
-		<label class="block mt-6">
-			<span class="flex items-center text-sm text-slate-700 dark:text-slate-300 mb-2">
+		<label class="mt-6 block">
+			<span class="mb-2 flex items-center text-sm text-slate-700 dark:text-slate-300">
 				<span class="font-medium">Body</span>
 				{#if showPreview}
 					<button type="button" class="link ml-auto" onclick={closePreview}>
 						Back to editing
 					</button>
 				{:else}
-					<button type="button" class="link ml-auto" onclick={loadPreview}>
-						Preview
-					</button>
+					<button type="button" class="link ml-auto" onclick={loadPreview}> Preview </button>
 				{/if}
 			</span>
 		</label>
@@ -668,11 +669,10 @@
 			bind:value={$formData.body}
 			bind:this={bodyTextarea}
 			onpaste={handlePaste}
-			autofocus
-		></textarea>
+			autofocus></textarea>
 
 		{#if showPreview}
-			<div class="w-full border border-slate-300 dark:border-slate-500 px-3 py-2">
+			<div class="w-full border border-slate-300 px-3 py-2 dark:border-slate-500">
 				{#if previewLoading}
 					<p>Rendering preview…</p>
 				{:else if previewError}
@@ -693,21 +693,12 @@
 		<!-- Uploader -->
 		<div class="mt-4">
 			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Upload</span>
-				<input
-					class="w-full px-2 py-1"
-					type="file"
-					accept="image/*"
-					bind:this={fileInput}
-				/>
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload</span
+				>
+				<input class="w-full px-2 py-1" type="file" accept="image/*" bind:this={fileInput} />
 			</label>
 
-			<button
-				type="button"
-				class="mt-2"
-				onclick={() => upload()}
-				disabled={uploadLoading}
-			>
+			<button type="button" class="mt-2" onclick={() => upload()} disabled={uploadLoading}>
 				{#if uploadLoading}
 					Uploading...
 				{:else}
@@ -717,30 +708,27 @@
 		</div>
 	</div>
 
-	<aside class="md:col-span-5 space-y-6">
+	<aside class="space-y-6 md:col-span-5">
 		<section class="grid gap-4 md:grid-cols-2">
 			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ID</span>
-				<input
-					class="w-full h-9"
-					name="id"
-					value={data.post.id.toString()}
-					readonly
-				/>
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">ID</span>
+				<input class="h-9 w-full" name="id" value={data.post.id.toString()} readonly />
 			</label>
 
 			<label class="block md:col-start-2">
-				<span class="flex text-sm text-slate-700 dark:text-slate-300 mb-2">
-					<span class="font-medium">
-						Number
-					</span>
+				<span class="mb-2 flex text-sm text-slate-700 dark:text-slate-300">
+					<span class="font-medium"> Number </span>
 					<a
-						href={resolve('/[number=integer]/[[slug]]', {number: data.post.number.toString(), slug: data.post.slug ?? undefined})}
-						class="link ml-auto">
+						href={resolve('/[number=integer]/[[slug]]', {
+							number: data.post.number.toString(),
+							slug: data.post.slug ?? undefined,
+						})}
+						class="link ml-auto"
+					>
 						open post
 					</a>
 				</span>
-				<input class="w-full h-9" type="number" name="number" bind:value={$formData.number} />
+				<input class="h-9 w-full" type="number" name="number" bind:value={$formData.number} />
 
 				{#if $errors.number}
 					<p class="mt-1 text-sm text-red-600">{$errors.number[0]}</p>
@@ -748,8 +736,10 @@
 			</label>
 
 			<label class="block md:col-span-2">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Category</span>
-				<select class="w-full h-9 py-0" name="category" bind:value={$formData.category}>
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+					>Category</span
+				>
+				<select class="h-9 w-full py-0" name="category" bind:value={$formData.category}>
 					{#each categoryOptions as option (option.slug)}
 						<option value={option.slug}>{option.label}</option>
 					{/each}
@@ -761,14 +751,21 @@
 			</label>
 
 			<label class="block md:col-span-2">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Slug</span>
-				<input class="w-full h-9" name="slug" bind:value={$formData.slug} oninput={handleSlugInput} />
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Slug</span>
+				<input
+					class="h-9 w-full"
+					name="slug"
+					bind:value={$formData.slug}
+					oninput={handleSlugInput}
+				/>
 			</label>
 
 			<label class="block md:col-span-2">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags (comma separated)</span>
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+					>Tags (comma separated)</span
+				>
 				<input
-					class="w-full h-9"
+					class="h-9 w-full"
 					name="tags"
 					bind:value={$formData.tags}
 					oninput={handleTagsInput}
@@ -787,46 +784,85 @@
 
 		<section class="grid gap-4">
 			<label class="block">
-				<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Created at</span>
-				<input class="w-full h-9" type="datetime-local" name="createdAt" readonly
-							 value={formatDatetimeLocal(data.post.createdAt)} />
+				<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+					>Created at</span
+				>
+				<input
+					class="h-9 w-full"
+					type="datetime-local"
+					name="createdAt"
+					readonly
+					value={formatDatetimeLocal(data.post.createdAt)}
+				/>
 			</label>
 
 			{#if data.post.updatedAt != null}
 				<label class="block">
-					<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Updated at</span>
-					<input class="w-full h-9" type="datetime-local" name="updatedAt" readonly
-								 value={formatDatetimeLocal(data.post.updatedAt)} />
+					<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+						>Updated at</span
+					>
+					<input
+						class="h-9 w-full"
+						type="datetime-local"
+						name="updatedAt"
+						readonly
+						value={formatDatetimeLocal(data.post.updatedAt)}
+					/>
 				</label>
 			{/if}
 
 			{#if data.post.publishedAt !== null}
 				<label class="block">
-					<span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Published at</span>
-					<input class="w-full h-9" type="datetime-local" name="publishedAt" readonly
-								 value={formatDatetimeLocal(data.post.publishedAt)} />
+					<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+						>Published at</span
+					>
+					<input
+						class="h-9 w-full"
+						type="datetime-local"
+						name="publishedAt"
+						readonly
+						value={formatDatetimeLocal(data.post.publishedAt)}
+					/>
 				</label>
 			{/if}
 		</section>
 
 		<section class="space-y-4">
-			<button type="submit" class="w-full" name="intent" value="save" disabled={!isTainted($tainted)}>
+			<button
+				type="submit"
+				class="w-full"
+				name="intent"
+				value="save"
+				disabled={!isTainted($tainted)}
+			>
 				Save
 			</button>
 
 			{#if data.post.publishedAt === null}
-				<button type="submit" class="w-full" name="intent" value="publish" bind:this={publishButton}>
+				<button
+					type="submit"
+					class="w-full"
+					name="intent"
+					value="publish"
+					bind:this={publishButton}
+				>
 					Publish
 				</button>
 			{:else}
-				<button type="submit" class="w-full" name="intent" value="unpublish" bind:this={publishButton}>
+				<button
+					type="submit"
+					class="w-full"
+					name="intent"
+					value="unpublish"
+					bind:this={publishButton}
+				>
 					Unpublish
 				</button>
 			{/if}
 		</section>
 
-		<section class="text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
-			<div class="font-medium text-slate-700 dark:text-slate-300 mb-2">Keyboard shortcuts</div>
+		<section class="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+			<div class="mb-2 font-medium text-slate-700 dark:text-slate-300">Keyboard shortcuts</div>
 			<div><Kbd>⌘B</Kbd> Bold</div>
 			<div><Kbd>⌘I</Kbd> Italic</div>
 			<div><Kbd>⌘⇧'</Kbd> Quote</div>

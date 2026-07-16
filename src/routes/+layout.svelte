@@ -17,7 +17,12 @@
 <svelte:head>
 	<MetaTags />
 	<link rel="icon" href={favicon} />
-	<link rel="alternate" type="application/rss+xml" title="Note di Matteo" href={resolve('/feed.xml')} />
+	<link
+		rel="alternate"
+		type="application/rss+xml"
+		title="Note di Matteo"
+		href={resolve('/feed.xml')}
+	/>
 </svelte:head>
 
 <ModeWatcher />
@@ -28,10 +33,10 @@
 
 <hr class="mt-6" />
 
-<div class="container max-w-6xl mt-10">
+<div class="container mt-10 max-w-6xl">
 	{@render children?.()}
 </div>
 
-<hr class="mt-16">
+<hr class="mt-16" />
 
 <Footer />

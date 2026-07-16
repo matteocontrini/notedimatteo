@@ -5,7 +5,7 @@
 	let {
 		post,
 		canEdit = false,
-		showDate = true
+		showDate = true,
 	}: {
 		post: Post;
 		canEdit?: boolean;
@@ -18,15 +18,15 @@
 			timeZone: 'Europe/Rome',
 			day: 'numeric',
 			month: 'long',
-			year: 'numeric'
-		})
+			year: 'numeric',
+		}),
 	);
 	const displayTime = $derived(
 		publishedOn.toLocaleTimeString('it-IT', {
 			timeZone: 'Europe/Rome',
 			hour: '2-digit',
-			minute: '2-digit'
-		})
+			minute: '2-digit',
+		}),
 	);
 </script>
 
@@ -39,16 +39,16 @@
 		</div>
 	{/if}
 
-	<div class="mt-4 post-content">
+	<div class="post-content mt-4">
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html post.body}
 	</div>
 
-	<div class="mt-4 flex gap-2 flex-wrap text-sm">
+	<div class="mt-4 flex flex-wrap gap-2 text-sm">
 		<a
 			href={resolve('/[number=integer]/[[slug]]', {
 				number: post.number.toString(),
-				slug: post.slug ?? undefined
+				slug: post.slug ?? undefined,
 			})}
 		>
 			#{post.number}
@@ -66,7 +66,7 @@
 		{#if post.tags.length}
 			/
 
-			{#each post.tags as tag(tag)}
+			{#each post.tags as tag (tag)}
 				<a href={resolve('/archivio/[tag]', { tag })}>
 					#{tag}
 				</a>
