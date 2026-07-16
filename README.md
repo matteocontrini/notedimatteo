@@ -22,6 +22,28 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Formatting and linting
+
+Code formatting is handled by [Prettier](https://prettier.io/). To format the whole repository:
+
+```sh
+npm run format
+```
+
+To check formatting and run [ESLint](https://eslint.org/) together:
+
+```sh
+npm run lint
+```
+
+TypeScript, accessibility, and Svelte compiler errors are caught by [`svelte-check`](https://www.npmjs.com/package/svelte-check):
+
+```sh
+npm run check
+```
+
+Editor configuration is committed for both VS Code (`.vscode/`) and WebStorm (`.idea/`), so Prettier and ESLint run without manual setup. Both need a custom file pattern because the IDE defaults omit `.svelte`.
+
 ## Production build
 
 To build the production version:
