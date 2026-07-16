@@ -10,8 +10,8 @@ const s3 = new S3Client({
 	region: env.STORAGE_S3_REGION,
 	endpoint: env.STORAGE_S3_ENDPOINT,
 	credentials: {
-		accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID,
-		secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY,
+		accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID!,
+		secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY!,
 	},
 });
 
