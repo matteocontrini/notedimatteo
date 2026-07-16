@@ -4,7 +4,7 @@
 	const fallback = {
 		title: 'Note di Matteo',
 		description: 'Note di Matteo',
-		ogType: 'website'
+		ogType: 'website',
 		// ogImage: ''
 	};
 
@@ -15,6 +15,17 @@
 	let ogTitle = $derived(seo.ogTitle || seo.title || fallback.title);
 	let ogType = $derived(seo.ogType || fallback.ogType);
 	// let ogImage = seo.ogImage;
+
+	// Built here rather than inline in the template: an inline JSON-LD script tag
+	// inside an {@html `…`} mustache trips up the ESLint Svelte parser. The closing
+	// tag is written as <\/script> so neither the Svelte compiler nor an HTML
+	// parser ends the surrounding block early.
+	let jsonLdScript = $derived(
+		seo.jsonLd
+			? // eslint-disable-next-line no-useless-escape
+				`<script type="application/ld+json">${JSON.stringify(seo.jsonLd)}<\/script>`
+			: null,
+	);
 </script>
 
 <title>{title}</title>
@@ -27,8 +38,9 @@
 <!--<meta name="twitter:card" content="summary_large_image" />-->
 <!--<meta name="twitter:image" content={ogImage} />-->
 
-{#if seo.jsonLd}
-	{@html `<script type="application/ld+json">${JSON.stringify(seo.jsonLd)}</script>`}
+{#if jsonLdScript}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html jsonLdScript}
 {/if}
 
 <link rel="canonical" href="https://notedimatteo.it{page.url.pathname}" />
