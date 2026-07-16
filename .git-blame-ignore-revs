@@ -1,0 +1,9 @@
+# Revisions listed here are skipped by `git blame`.
+# Add only commits that are pure formatting / no behavioral change.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub applies this file automatically.
+
+# Format codebase with Prettier (first repo-wide run)
+30422c18574ccd6314937a90638c9e29cfd7968f
