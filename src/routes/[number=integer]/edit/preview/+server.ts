@@ -1,4 +1,5 @@
 import { renderMarkdown } from '$lib/server/markdown';
+import * as logger from '$lib/server/logger';
 import { json, redirect } from '@sveltejs/kit';
 import { z } from 'zod/v4';
 import type { RequestHandler } from './$types';
@@ -17,7 +18,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	try {
 		parsedBody = await request.json();
 	} catch (error) {
-		console.error('Error parsing JSON body:', error);
+		logger.error('Error parsing JSON body:', error);
 		return json({ error: 'Invalid JSON body' }, { status: 400 });
 	}
 

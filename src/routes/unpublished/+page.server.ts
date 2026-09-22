@@ -1,5 +1,6 @@
 import type { Post } from '$lib/types';
 import { db } from '$lib/server/db';
+import * as logger from '$lib/server/logger';
 import { renderPostBody } from '$lib/server/markdown';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
@@ -56,7 +57,7 @@ export const actions = {
 		try {
 			await db.post.delete({ where: { id: postId } });
 		} catch (error) {
-			console.error('Error deleting post:', error);
+			logger.error('Error deleting post:', error);
 			return fail(500, { error: 'Unable to delete post' });
 		}
 
