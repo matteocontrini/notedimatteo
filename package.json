@@ -53,6 +53,7 @@
 		"@opentelemetry/auto-instrumentations-node": "^0.80.0",
 		"@opentelemetry/sdk-node": "^0.222.0",
 		"@prisma/client": "^6.16.2",
+		"@prisma/instrumentation": "^6.16.2",
 		"fast-xml-parser": "^5.8.0",
 		"fuse.js": "^7.3.0",
 		"import-in-the-middle": "^3.5.1",
