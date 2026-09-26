@@ -1,4 +1,4 @@
-import type { Handle, ServerInit } from '@sveltejs/kit';
+import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { db } from '$lib/server/db';
 import * as logger from '$lib/server/logger';
@@ -11,10 +11,24 @@ export const init: ServerInit = async () => {
 	await db.$connect();
 };
 
+export const handleError: HandleServerError = ({ error, event, status }) => {
+	const message = `[${status}] ${event.request.method} ${event.url.pathname}`;
+	if (status === 404) {
+		console.error(message);
+	} else {
+		console.error(message, error);
+	}
+};
+
 export const handle: Handle = async ({ event, resolve }) => {
-	const ip =
-		event.request.headers.get('x-forwarded-for')?.split(',')[0] || event.getClientAddress();
-	logger.info(`${ip} - ${event.request.method} ${event.url.pathname + event.url.search}`);
+	let ip = event.request.headers.get('x-forwarded-for')?.split(',')[0];
+	if (!ip) {
+		try {
+			ip = event.getClientAddress();
+		} catch {
+			ip = 'unknown';
+		}
+	}
 
 	const token = event.cookies.get(SESSION_COOKIE);
 
@@ -40,5 +54,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	return resolve(event);
+	const response = await resolve(event);
+	logger.info(
+		`${ip} - [${response.status}] ${event.request.method} ${event.url.pathname + event.url.search}`,
+	);
+	return response;
 };
