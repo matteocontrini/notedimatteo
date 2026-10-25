@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from './generated/client';
 import { DATABASE_URL } from '$app/env/private';
 import { building } from '$app/env';
 
@@ -8,7 +9,9 @@ const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
 };
 
-export const db = globalForPrisma.prisma ?? new PrismaClient();
+export const db =
+	globalForPrisma.prisma ??
+	new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) });
 
 if (!globalForPrisma.prisma) {
 	globalForPrisma.prisma = db;

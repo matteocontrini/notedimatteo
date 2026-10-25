@@ -20,8 +20,6 @@ jobs:
           cache: 'npm'
       - name: Install npm dependencies
         run: npm install
-      - name: Generate Prisma client
-        run: npx prisma generate
       - name: Set up environment
         run: cp .env.example .env
       - name: Lint
