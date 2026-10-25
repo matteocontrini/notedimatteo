@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import { renderPostBody } from '$lib/server/markdown';
+import { db } from '#lib/server/db/index.ts';
+import { renderPostBody } from '#lib/server/markdown.ts';
 import { XMLBuilder } from 'fast-xml-parser';
 import type { RequestHandler } from './$types';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Post from '$lib/Post.svelte';
-	import Sidebar from '$lib/Sidebar.svelte';
-	import { formatMonthName } from '$lib/date';
+	import Post from '#lib/Post.svelte';
+	import Sidebar from '#lib/Sidebar.svelte';
+	import { formatMonthName } from '#lib/date.ts';
 
 	let { data } = $props();
 	const canEdit = $derived(data.isLoggedIn);

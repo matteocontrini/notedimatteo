@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Post from '$lib/Post.svelte';
+	import Post from '#lib/Post.svelte';
 
 	let { data } = $props();
 	const canEdit = $derived(data.isLoggedIn);

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { autoResize } from '$lib/actions/auto-resize';
-	import type { PostForEdit } from '$lib/types';
+	import { autoResize } from '#lib/actions/auto-resize.ts';
+	import type { PostForEdit } from '#lib/types.ts';
 	import { tick } from 'svelte';
 	import type { SuperForm } from 'sveltekit-superforms';
 	import {

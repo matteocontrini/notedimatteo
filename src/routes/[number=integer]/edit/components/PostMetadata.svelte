@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { categorySlugs, getCategoryLabel } from '$lib/categories';
-	import type { PostForEdit } from '$lib/types';
+	import { categorySlugs, getCategoryLabel } from '#lib/categories.ts';
+	import type { PostForEdit } from '#lib/types.ts';
 	import Fuse from 'fuse.js';
 	import type { SuperForm } from 'sveltekit-superforms';
 	import type { PostFormValues } from '../schema';

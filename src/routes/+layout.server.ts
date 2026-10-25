@@ -1,6 +1,6 @@
-import { getCategoryLabel } from '$lib/categories';
-import { db } from '$lib/server/db';
-import type { CalendarItem } from '$lib/types';
+import { getCategoryLabel } from '#lib/categories.ts';
+import { db } from '#lib/server/db/index.ts';
+import type { CalendarItem } from '#lib/types.ts';
 
 export async function load({ locals }) {
 	const isLoggedIn = !!locals.session;

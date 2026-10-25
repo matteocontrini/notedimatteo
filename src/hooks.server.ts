@@ -1,7 +1,7 @@
-import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
-import { building } from '$app/environment';
-import { db } from '$lib/server/db';
-import * as logger from '$lib/server/logger';
+import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
+import { building } from '$app/env';
+import { db } from '#lib/server/db/index.ts';
+import * as logger from '#lib/server/logger.ts';
 
 const SESSION_COOKIE = 'notedimatteo_session';
 
@@ -11,7 +11,8 @@ export const init: ServerInit = async () => {
 	await db.$connect();
 };
 
-export const handleError: HandleServerError = ({ error, event, status }) => {
+export const handleError: HandleServerError = ({ error, event, kind }) => {
+	const status = kind === 'unknown' ? 500 : error.status;
 	const message = `[${status}] ${event.request.method} ${event.url.pathname}`;
 	if (status === 404) {
 		console.error(message);

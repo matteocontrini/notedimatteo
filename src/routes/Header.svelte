@@ -25,7 +25,7 @@
 			method="GET"
 			action={resolve('/cerca')}
 			role="search"
-			data-sveltekit-keepfocus
+			data-sveltekit-reset="false"
 		>
 			<input
 				type="search"

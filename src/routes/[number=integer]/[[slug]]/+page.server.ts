@@ -1,6 +1,6 @@
-import { db } from '$lib/server/db';
-import { renderPostBody } from '$lib/server/markdown';
-import type { Post } from '$lib/types';
+import { db } from '#lib/server/db/index.ts';
+import { renderPostBody } from '#lib/server/markdown.ts';
+import type { Post } from '#lib/types.ts';
 import { error, redirect } from '@sveltejs/kit';
 
 export async function load({ params }) {

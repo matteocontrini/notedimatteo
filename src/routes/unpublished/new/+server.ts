@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.ts';
 import { redirect } from '@sveltejs/kit';
 
 const DEFAULT_CATEGORY = 'note';

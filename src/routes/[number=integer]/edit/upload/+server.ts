@@ -1,17 +1,23 @@
-import { error, json, type RequestHandler } from '@sveltejs/kit';
+import { error, type RequestHandler } from '@sveltejs/kit';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomBytes } from 'crypto';
-import { env } from '$env/dynamic/private';
+import {
+	STORAGE_S3_REGION,
+	STORAGE_S3_ENDPOINT,
+	STORAGE_S3_ACCESS_KEY_ID,
+	STORAGE_S3_SECRET_ACCESS_KEY,
+	STORAGE_S3_BUCKET,
+} from '$app/env/private';
 import sharp from 'sharp';
 
 sharp.cache(false);
 
 const s3 = new S3Client({
-	region: env.STORAGE_S3_REGION,
-	endpoint: env.STORAGE_S3_ENDPOINT,
+	region: STORAGE_S3_REGION,
+	endpoint: STORAGE_S3_ENDPOINT,
 	credentials: {
-		accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID!,
-		secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY!,
+		accessKeyId: STORAGE_S3_ACCESS_KEY_ID!,
+		secretAccessKey: STORAGE_S3_SECRET_ACCESS_KEY!,
 	},
 });
 
@@ -65,7 +71,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Upload compressed main image
 	await s3.send(
 		new PutObjectCommand({
-			Bucket: env.STORAGE_S3_BUCKET,
+			Bucket: STORAGE_S3_BUCKET,
 			Key: mainImageKey,
 			Body: compressedImage,
 			ContentType: 'image/jpeg',
@@ -78,14 +84,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Upload preview image
 	await s3.send(
 		new PutObjectCommand({
-			Bucket: env.STORAGE_S3_BUCKET,
+			Bucket: STORAGE_S3_BUCKET,
 			Key: previewImageKey,
 			Body: previewImage,
 			ContentType: 'image/jpeg',
 		}),
 	);
 
-	return json({
+	return Response.json({
 		main: mainImageKey,
 		preview: previewImageKey,
 		width: previewMetadata.width,

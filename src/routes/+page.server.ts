@@ -1,6 +1,6 @@
-import type { Post } from '$lib/types';
-import { db } from '$lib/server/db';
-import { renderPostBody } from '$lib/server/markdown';
+import type { Post } from '#lib/types.ts';
+import { db } from '#lib/server/db/index.ts';
+import { renderPostBody } from '#lib/server/markdown.ts';
 
 export async function load({ url }) {
 	const limit = 20;

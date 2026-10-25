@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PostForEdit } from '$lib/types';
+	import type { PostForEdit } from '#lib/types.ts';
 
 	let {
 		post,

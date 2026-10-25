@@ -1,7 +1,7 @@
 <script lang="ts">
-	import '@fontsource-variable/inter';
+	import '@fontsource-variable/inter/index.css';
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.png';
+	import favicon from '#lib/assets/favicon.png';
 	import { ModeWatcher } from 'mode-watcher';
 	import { resolve } from '$app/paths';
 	import MetaTags from './MetaTags.svelte';

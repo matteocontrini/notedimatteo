@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { randomBytes } from 'node:crypto';
-import { env } from '$env/dynamic/private';
-import { dev } from '$app/environment';
-import { db } from '$lib/server/db';
+import { ADMIN_USERNAME, ADMIN_PASSWORD } from '$app/env/private';
+import { dev } from '$app/env';
+import { db } from '#lib/server/db/index.ts';
 
-const USERNAME = env.ADMIN_USERNAME;
-const PASSWORD = env.ADMIN_PASSWORD;
+const USERNAME = ADMIN_USERNAME;
+const PASSWORD = ADMIN_PASSWORD;
 
 if (!USERNAME || !PASSWORD) {
 	throw new Error('ADMIN_USERNAME and ADMIN_PASSWORD must be set to enable login.');

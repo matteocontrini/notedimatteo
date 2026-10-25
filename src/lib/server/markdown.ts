@@ -3,9 +3,9 @@ import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import { rehypeImgPlugin } from './rehype-img-plugin';
-import { STORAGE_PUBLIC_BASE_URL } from '$env/static/private';
-import remarkStrikethroughOnly from '$lib/server/markdown-strikethrough';
-import { db } from '$lib/server/db';
+import { STORAGE_PUBLIC_BASE_URL } from '$app/env/private';
+import remarkStrikethroughOnly from '#lib/server/markdown-strikethrough.ts';
+import { db } from '#lib/server/db/index.ts';
 
 export const MARKDOWN_RENDERER_VERSION = 1;
 

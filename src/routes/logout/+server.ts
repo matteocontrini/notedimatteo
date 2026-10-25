@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.ts';
 
 const SESSION_COOKIE = 'notedimatteo_session';
 

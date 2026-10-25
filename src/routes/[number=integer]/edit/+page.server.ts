@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import type { PostForEdit } from '$lib/types';
+import { db } from '#lib/server/db/index.ts';
+import type { PostForEdit } from '#lib/types.ts';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { superValidate } from 'sveltekit-superforms/server';
@@ -7,7 +7,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { ZodValidationSchema } from 'sveltekit-superforms/adapters';
 import { postFormSchema, type PostFormValues } from './schema';
-import { MARKDOWN_RENDERER_VERSION, renderMarkdown } from '$lib/server/markdown';
+import { MARKDOWN_RENDERER_VERSION, renderMarkdown } from '#lib/server/markdown.ts';
 
 const validationSchema = postFormSchema as unknown as ZodValidationSchema;
 

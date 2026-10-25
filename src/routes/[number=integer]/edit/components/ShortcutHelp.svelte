@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Kbd from '$lib/Kbd.svelte';
+	import Kbd from '#lib/Kbd.svelte';
 </script>
 
 <section class="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Sidebar from '$lib/Sidebar.svelte';
+	import Sidebar from '#lib/Sidebar.svelte';
 	import { resolve } from '$app/paths';
 	import { format } from 'timeago.js';
 

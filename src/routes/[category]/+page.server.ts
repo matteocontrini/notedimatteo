@@ -1,7 +1,7 @@
-import { getCategoryLabel, categorySlugs } from '$lib/categories';
-import { db } from '$lib/server/db';
-import { renderPostBody } from '$lib/server/markdown';
-import type { Post } from '$lib/types';
+import { getCategoryLabel, categorySlugs } from '#lib/categories.ts';
+import { db } from '#lib/server/db/index.ts';
+import { renderPostBody } from '#lib/server/markdown.ts';
+import type { Post } from '#lib/types.ts';
 import { error } from '@sveltejs/kit';
 
 export async function load({ params, url }) {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { PostForEdit } from '$lib/types';
+	import type { PostForEdit } from '#lib/types.ts';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { superForm } from 'sveltekit-superforms/client';
 	import PostContentEditor from './components/PostContentEditor.svelte';
@@ -11,7 +11,7 @@
 	import ShortcutHelp from './components/ShortcutHelp.svelte';
 	import type { PostFormValues } from './schema';
 
-	let { data } = $props<{ data: { post: PostForEdit; form: SuperValidated<PostFormValues> } }>();
+	let { data }: { data: { post: PostForEdit; form: SuperValidated<PostFormValues> } } = $props();
 
 	let showSaved = $state(false);
 	let savedTimer: ReturnType<typeof setTimeout> | undefined;

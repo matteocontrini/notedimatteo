@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Post from '$lib/Post.svelte';
-	import Sidebar from '$lib/Sidebar.svelte';
-	import Pagination from '$lib/Pagination.svelte';
+	import Post from '#lib/Post.svelte';
+	import Sidebar from '#lib/Sidebar.svelte';
+	import Pagination from '#lib/Pagination.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

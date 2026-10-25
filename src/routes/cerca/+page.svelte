@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Post from '$lib/Post.svelte';
-	import Sidebar from '$lib/Sidebar.svelte';
+	import Post from '#lib/Post.svelte';
+	import Sidebar from '#lib/Sidebar.svelte';
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();

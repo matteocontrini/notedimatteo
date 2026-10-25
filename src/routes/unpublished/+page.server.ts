@@ -1,7 +1,7 @@
-import type { Post } from '$lib/types';
-import { db } from '$lib/server/db';
-import * as logger from '$lib/server/logger';
-import { renderPostBody } from '$lib/server/markdown';
+import type { Post } from '#lib/types.ts';
+import { db } from '#lib/server/db/index.ts';
+import * as logger from '#lib/server/logger.ts';
+import { renderPostBody } from '#lib/server/markdown.ts';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formatMonthName, formatMonthParam } from '$lib/date';
-	import type { CalendarItem } from '$lib/types';
+	import { formatMonthName, formatMonthParam } from '#lib/date.ts';
+	import type { CalendarItem } from '#lib/types.ts';
 	import { resolve } from '$app/paths';
 
 	interface TagSummary {

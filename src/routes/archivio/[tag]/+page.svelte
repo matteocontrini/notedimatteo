@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Post from '$lib/Post.svelte';
-	import Sidebar from '$lib/Sidebar.svelte';
-	import Pagination from '$lib/Pagination.svelte';
+	import Post from '#lib/Post.svelte';
+	import Sidebar from '#lib/Sidebar.svelte';
+	import Pagination from '#lib/Pagination.svelte';
 
 	let { data } = $props();
 	const canEdit = $derived(data.isLoggedIn);

@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
-import { env } from '$env/dynamic/private';
-import { building } from '$app/environment';
+import { DATABASE_URL } from '$app/env/private';
+import { building } from '$app/env';
 
-if (!building && !env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
+if (!building && !DATABASE_URL) throw new Error('DATABASE_URL is not set');
 
 const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
