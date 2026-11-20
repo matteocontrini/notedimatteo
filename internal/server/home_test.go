@@ -59,9 +59,9 @@ func TestHomeRendersPosts(t *testing.T) {
 	assertContains(t, rec,
 		// Head
 		`<title>Note di Matteo</title>`,
-		`<meta name="description" content="Note di Matteo" />`,
-		`<meta property="og:type" content="website" />`,
-		`<link rel="canonical" href="https://example.com/" />`,
+		`name="description" content="Note di Matteo"`,
+		`property="og:type" content="website"`,
+		`rel="canonical" href="https://example.com/"`,
 		`href="/assets/main-abc123.css"`,
 		`src="/assets/site-def456.js"`,
 		`mode-watcher-mode`,

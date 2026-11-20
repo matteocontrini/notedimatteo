@@ -1,0 +1,106 @@
+package views
+
+import (
+	"github.com/matteocontrini/notedimatteo/internal/urls"
+	"strconv"
+)
+
+templ sidebar(page Page) {
+	<div class="md:col-span-5">
+		<h2 class="text-2xl font-semibold">Archivio</h2>
+		<ul class="mt-4">
+			for _, year := range page.Archive {
+				<li class="mt-2 font-semibold">{ strconv.Itoa(year.Year) }</li>
+				for _, m := range year.Months {
+					<li class="mt-1">
+						<a class="link" href={ urls.Month(m.Year, m.Month) }>{ monthName(m.Month) }</a>
+						({ strconv.Itoa(m.Count) })
+					</li>
+				}
+			}
+		</ul>
+		<div class="mt-8 flex items-center gap-4">
+			<h2 class="text-2xl font-medium">Tag</h2>
+			<button
+				class="mt-1.5 h-fit cursor-pointer border-0 bg-transparent p-0 text-gray-400 transition-colors aria-pressed:text-sky-700 dark:text-gray-500 dark:aria-pressed:text-sky-500"
+				aria-label="Ordina alfabeticamente"
+				aria-pressed="false"
+				title="Ordina alfabeticamente"
+				data-tag-sort
+			>
+				<svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<text x="0" y="13" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="currentColor">
+						A-Z
+					</text>
+					<path
+						d="M28 6v8m0 0l-2-2m2 2l2-2"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					></path>
+				</svg>
+			</button>
+		</div>
+		<ul class="mt-4 space-y-1" data-tag-list>
+			for _, tag := range page.Tags {
+				<li data-name={ tag.Name }>
+					<a class="link" href={ urls.Tag(tag.Name) }>#{ tag.Name }</a>
+					({ strconv.Itoa(tag.Count) })
+				</li>
+			}
+		</ul>
+		<h2 class="mt-8 text-2xl font-medium">Segui</h2>
+		<ul class="mt-4 space-y-1">
+			<li>
+				<a class="link" href="/feed.xml">Feed RSS</a>
+			</li>
+		</ul>
+	</div>
+}
+
+templ pagination(p Pagination) {
+	if p.Total > 1 {
+		<div class="mt-12 mb-8 flex items-center justify-center gap-4">
+			if p.Previous != "" {
+				<a class="link" href={ p.Previous }>← Precedente</a>
+			}
+			<span class="py-2 text-gray-600">Pagina { strconv.Itoa(p.Current) } di { strconv.Itoa(p.Total) }</span>
+			if p.Next != "" {
+				<a class="link" href={ p.Next }>Successiva →</a>
+			}
+		</div>
+	}
+}
+
+templ post(item PostItem, showDate, canEdit bool) {
+	<article class="mt-4" data-category={ item.Category }>
+		if item.Title != "" && !item.HideTitle {
+			<div>
+				<h3 class="inline font-semibold">{ item.Title }</h3>
+			</div>
+		}
+		<div class="post-content mt-4">
+			@templ.Raw(item.HTML)
+		</div>
+		<div class="mt-4 flex flex-wrap gap-2 text-sm">
+			<a href={ urls.Post(item.Number, item.Slug) }>#{ strconv.Itoa(item.Number) }</a>
+			/
+			if showDate {
+				<div class="text-slate-500">{ formatDate(item.Timestamp()) }</div>
+				/
+			}
+			<div class="text-slate-500">{ formatTime(item.Timestamp()) }</div>
+			if len(item.Tags) > 0 {
+				/
+				for _, tag := range item.Tags {
+					<a href={ urls.Tag(tag) }>#{ tag }</a>
+				}
+			}
+			if canEdit {
+				/
+				<a href={ urls.Edit(item.Number) } class="text-slate-500 hover:underline">modifica</a>
+			}
+		</div>
+	</article>
+}

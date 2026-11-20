@@ -22,26 +22,26 @@ and G1–G3 (editor).
 
 ## Decisions
 
-| Area           | Choice                                                                                                             |
-|----------------|--------------------------------------------------------------------------------------------------------------------|
-| Routing        | `net/http` `ServeMux`; one `/{seg}` handler separates post numbers from categories                                 |
-| URLs           | Post URLs built by one Go function; site address from config; the merged site's URL scheme is decided in phase 4   |
-| Templates      | `html/template` with `embed`; parse at startup and add a render test per page                                      |
-| Database       | `pgx/v5`, hand-written SQL, small pool                                                                             |
-| Migrations     | None in phase 1; `goose` from phase 2, with the existing schema as baseline                                        |
-| Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover |
-| Images         | `govips` (cgo) with libvips caching turned off                                                                     |
-| Sessions       | Keep the existing table and cookie name                                                                            |
-| CSRF           | `http.CrossOriginProtection`                                                                                       |
-| Object storage | `aws-sdk-go-v2` S3 client                                                                                          |
-| Editor data    | JSON in `<script type="application/json">`                                                                         |
-| Editor saves   | `fetch` with `FormData`, returning JSON field errors; validation lives only in Go                                  |
-| Assets         | Vite manifest with hashed files, embedded in the binary                                                            |
-| CSS            | Tailwind v4; from phase 3, only design tokens, no arbitrary values, and a Go test that checks template classes     |
-| Repo layout    | Go module at the root, code in `internal/`; editor helpers stay in place until cutover                             |
-| Deployment     | Multi-stage Dockerfile on Railway, with libvips at build time and runtime                                          |
-| Observability  | Drop OpenTelemetry; use `slog` and authenticated `pprof`                                                           |
-| Dates          | Embed `time/tzdata` and hard-code Italian month names; English ones in phase 4                                     |
+| Area           | Choice                                                                                                                                                            |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Routing        | `net/http` `ServeMux`; one `/{seg}` handler separates post numbers from categories                                                                                |
+| URLs           | Built only in `internal/urls`; site address from config; the merged site's URL scheme is decided in phase 4                                                       |
+| Templates      | templ components in `internal/views` with typed parameters; generated `_templ.go` files are committed, and CI checks formatting and generation                    |
+| Database       | `pgx/v5`, hand-written SQL, small pool                                                                                                                            |
+| Migrations     | None in phase 1; `goose` from phase 2, with the existing schema as baseline                                                                                       |
+| Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
+| Images         | `govips` (cgo) with libvips caching turned off                                                                                                                    |
+| Sessions       | Keep the existing table and cookie name                                                                                                                           |
+| CSRF           | `http.CrossOriginProtection`                                                                                                                                      |
+| Object storage | `aws-sdk-go-v2` S3 client                                                                                                                                         |
+| Editor data    | JSON in `<script type="application/json">`                                                                                                                        |
+| Editor saves   | `fetch` with `FormData`, returning JSON field errors; validation lives only in Go                                                                                 |
+| Assets         | Vite manifest with hashed files, embedded in the binary                                                                                                           |
+| CSS            | Tailwind v4, scanning `internal/views`; from phase 3, only design tokens, no arbitrary values, and a Go test that checks component classes                        |
+| Repo layout    | Go module at the root: `internal/server` (routes, handlers), `internal/views` (templ), `internal/urls` (URL builders); editor helpers stay in place until cutover |
+| Deployment     | Multi-stage Dockerfile on Railway, with libvips at build time and runtime                                                                                         |
+| Observability  | Drop OpenTelemetry; use `slog` and authenticated `pprof`                                                                                                          |
+| Dates          | Embed `time/tzdata` and hard-code Italian month names; English ones in phase 4                                                                                    |
 
 ## Architecture
 

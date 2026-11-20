@@ -1,0 +1,22 @@
+package views
+
+templ Home(page Page, groups []PostGroup, p Pagination) {
+	@layout(page) {
+		<div class="grid grid-cols-1 gap-20 md:grid-cols-12">
+			<div class="md:col-span-7">
+				for i, group := range groups {
+					<h2 class={ "mb-8 text-2xl font-semibold", templ.KV("mt-10", i != 0) }>{ group.Heading }</h2>
+					for _, item := range group.Posts {
+						@post(item, false, page.IsLoggedIn)
+						<hr class="my-6"/>
+					}
+				}
+				if len(groups) == 0 {
+					Non c'è niente qui.
+				}
+				@pagination(p)
+			</div>
+			@sidebar(page)
+		</div>
+	}
+}

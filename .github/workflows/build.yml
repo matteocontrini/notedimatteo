@@ -45,7 +45,9 @@ jobs:
       - name: Build assets
         run: npm run go:assets
       - name: Check formatting
-        run: test -z "$(gofmt -l cmd internal web)"
+        run: test -z "$(gofmt -l cmd internal web)" && go tool templ fmt -fail internal/views
+      - name: Check generated templ files are up to date
+        run: go tool templ generate && test -z "$(git status --porcelain internal/views)"
       - name: Vet
         run: go vet ./...
       - name: Test

@@ -1,4 +1,4 @@
-package server
+package views
 
 import (
 	"testing"
@@ -56,28 +56,8 @@ func TestCategoryLabel(t *testing.T) {
 	}
 
 	for slug, want := range tests {
-		if got := categoryLabel(slug); got != want {
-			t.Errorf("categoryLabel(%q) = %q, want %q", slug, got, want)
-		}
-	}
-}
-
-func TestURLs(t *testing.T) {
-	tests := map[string]string{
-		postURL(42, ""):           "/42",
-		postURL(42, "a-slug"):     "/42/a-slug",
-		editURL(42):               "/42/edit",
-		categoryURL("segnalibri"): "/segnalibri",
-		tagURL("c#"):              "/archivio/c%23",
-		tagURL("a b"):             "/archivio/a%20b",
-		monthURL(2026, 4):         "/archivio/2026/04",
-		pageURL("/", 1):           "/",
-		pageURL("/segnalibri", 2): "/segnalibri?page=2",
-	}
-
-	for got, want := range tests {
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
+		if got := CategoryLabel(slug); got != want {
+			t.Errorf("CategoryLabel(%q) = %q, want %q", slug, got, want)
 		}
 	}
 }

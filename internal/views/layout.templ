@@ -1,0 +1,128 @@
+package views
+
+import "strconv"
+
+templ layout(page Page) {
+	<!DOCTYPE html>
+	<html lang="it" class="motion-safe:scroll-smooth">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="theme-color" content="#0067B9"/>
+			@themeInit()
+			@meta(page)
+			<link rel="icon" href="/favicon.png"/>
+			<link rel="alternate" type="application/rss+xml" title="Note di Matteo" href="/feed.xml"/>
+			<link rel="stylesheet" href={ page.Stylesheet }/>
+			<script type="module" src={ page.Script }></script>
+		</head>
+		<body class="dark:bg-slate-900">
+			@topBar(page)
+			@header(page)
+			<hr class="mt-6"/>
+			<div class="container mt-10 max-w-6xl">
+				{ children... }
+			</div>
+			<hr class="mt-16"/>
+			@footer()
+			<script>
+				if (window.location.host !== {{ page.SiteHost }}) window.goatcounter = { no_onload: true };
+			</script>
+			<script defer src="https://gc.zgo.at/count.js" data-goatcounter="https://notedimatteo.goatcounter.com/count"></script>
+		</body>
+	</html>
+}
+
+templ meta(page Page) {
+	<title>{ page.Meta.Title }</title>
+	<meta name="description" content={ page.Meta.Description }/>
+	<meta property="og:site_name" content="Note di Matteo"/>
+	<meta property="og:title" content={ page.Meta.OGTitle }/>
+	<meta property="og:type" content={ page.Meta.OGType }/>
+	<meta property="og:description" content={ page.Meta.Description }/>
+	<link rel="canonical" href={ page.Canonical }/>
+}
+
+// themeInit applies the saved theme before the first paint. The key and values
+// match mode-watcher's, so preferences saved by the SvelteKit app still apply.
+// The theme select is handled in web/assets/site.ts.
+templ themeInit() {
+	<script>
+		(function () {
+			var mode = null;
+			try {
+				mode = localStorage.getItem('mode-watcher-mode');
+			} catch (e) {}
+			var light =
+				mode === 'light' ||
+				(mode !== 'dark' && window.matchMedia('(prefers-color-scheme: light)').matches);
+			document.documentElement.classList.toggle('dark', !light);
+			document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+		})();
+	</script>
+}
+
+templ topBar(page Page) {
+	<div class="h-4.5 bg-[#0067B9]">
+		<div class="container flex h-full max-w-6xl items-center justify-end gap-4">
+			if page.IsLoggedIn {
+				<a class="text-xs text-white/80 uppercase hover:text-white" href="/unpublished">
+					unpublished ({ strconv.Itoa(page.UnpublishedCount) })
+				</a>
+				<a class="text-xs text-white/80 uppercase hover:text-white" href="/unpublished/new">new</a>
+				<a class="text-xs text-white/80 uppercase hover:text-white" href="/logout">logout</a>
+			} else {
+				<a class="text-xs text-white/80 uppercase hover:text-white" href="https://matteosonoio.it">
+					blog
+					<span class="font-[system-ui]">↗︎</span>
+				</a>
+				<a class="text-xs text-white/80 uppercase hover:text-white" href="/about">about</a>
+			}
+		</div>
+	</div>
+}
+
+templ header(page Page) {
+	<div class="container mt-6 max-w-6xl">
+		<h1 class="text-4xl font-bold">
+			<a class="hover:underline" href="/">Note di Matteo</a>
+		</h1>
+		<div class="mt-4 grid items-center gap-x-20 gap-y-4 lg:grid-cols-12">
+			<div class="flex flex-wrap gap-3 lg:col-span-7">
+				for _, c := range page.Categories {
+					<a
+						class={
+							"border px-2 py-1 text-sm font-semibold hover:border-slate-700 dark:bg-slate-700 dark:hover:border-slate-300",
+							templ.KV("border-slate-700 dark:border-slate-300", c.Current),
+							templ.KV("border-slate-300 dark:border-slate-500", !c.Current),
+						}
+						href={ c.URL }
+					>
+						{ c.Label }
+						<span class="ml-1 font-normal">{ strconv.Itoa(c.Count) }</span>
+					</a>
+				}
+			</div>
+			<form class="lg:col-span-5" method="GET" action="/cerca" role="search">
+				<input
+					type="search"
+					name="q"
+					value={ page.SearchQuery }
+					placeholder="Cerca..."
+					aria-label="Cerca nel sito"
+					class="h-9 w-full"
+				/>
+			</form>
+		</div>
+	</div>
+}
+
+templ footer() {
+	<footer class="container flex max-w-6xl flex-col gap-4 py-12 sm:flex-row">
+		<select class="h-9 py-0 pr-10 pl-3 sm:ml-auto" data-theme-select>
+			<option value="system">Automatico</option>
+			<option value="light">Chiaro</option>
+			<option value="dark">Scuro</option>
+		</select>
+	</footer>
+}

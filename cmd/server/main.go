@@ -45,9 +45,8 @@ func run() error {
 	defer database.Close()
 
 	handler, err := server.New(database, server.Options{
-		SiteURL:   cfg.SiteURL,
-		Templates: web.Templates(),
-		Dist:      web.Dist(),
+		SiteURL: cfg.SiteURL,
+		Dist:    web.Dist(),
 	})
 	if err != nil {
 		return err

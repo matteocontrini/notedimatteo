@@ -1,4 +1,4 @@
-package server
+package views
 
 import (
 	"fmt"
@@ -55,9 +55,9 @@ var categoryLabels = map[string]string{
 	"progetti":   "Progetti",
 }
 
-// categoryLabel returns a category's display name. Unknown categories are
+// CategoryLabel returns a category's display name. Unknown categories are
 // title-cased like in the SvelteKit app: "foo-bar" becomes "Foo Bar".
-func categoryLabel(slug string) string {
+func CategoryLabel(slug string) string {
 	if label, ok := categoryLabels[slug]; ok {
 		return label
 	}

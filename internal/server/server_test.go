@@ -10,7 +10,6 @@ import (
 	"testing/fstest"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
-	"github.com/matteocontrini/notedimatteo/web"
 )
 
 type fakeStore struct {
@@ -66,11 +65,7 @@ func testDist() fstest.MapFS {
 func newTestHandler(t *testing.T, store Store) http.Handler {
 	t.Helper()
 
-	handler, err := New(store, Options{
-		SiteURL:   "https://example.com/",
-		Templates: web.Templates(),
-		Dist:      testDist(),
-	})
+	handler, err := New(store, Options{SiteURL: "https://example.com/", Dist: testDist()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,10 +94,19 @@ func assertContains(t *testing.T, rec *httptest.ResponseRecorder, wants ...strin
 
 func TestInvalidSiteURL(t *testing.T) {
 	for _, siteURL := range []string{"", "notedimatteo.it", "/path"} {
-		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Templates: web.Templates(), Dist: testDist()})
+		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Dist: testDist()})
 		if err == nil {
 			t.Errorf("site URL %q was accepted", siteURL)
 		}
+	}
+}
+
+func TestMissingAsset(t *testing.T) {
+	dist := testDist()
+	dist[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(`{"assets/main.css": {"file": "assets/main.css"}}`)}
+
+	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist}); err == nil {
+		t.Error("a manifest without the script was accepted")
 	}
 }
 

@@ -5,6 +5,8 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci --ignore-scripts
 COPY vite.go.config.ts ./
 COPY src/app.css src/app.css
+# Tailwind scans the templ components for class names
+COPY internal/views internal/views
 COPY web web
 RUN npm run go:assets
 

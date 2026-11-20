@@ -22,7 +22,14 @@ don't show; remove notes that stop being true.
 ## Local development
 
 - SvelteKit: `npm run dev`, port 6100. Go: `npm run go:dev`, port 6200 (builds assets, sources `.env`, `go run`).
-- No hot reload: restart `go:dev` after template or CSS changes.
+- No hot reload: restart `go:dev` after template or CSS changes. `go:dev` runs `go tool templ generate` first.
+- templ is pinned with the `tool` directive in `go.mod`: run it as `go tool templ` (`generate`, `fmt`, `lsp` for editors).
+  Generated `*_templ.go` files are committed; after editing a `.templ` file, run `go tool templ generate` and `templ fmt`.
+- `templ fmt` also formats `<script>` blocks with Prettier when `prettier` is on `PATH`; it isn't here or in CI,
+  so formatting stays consistent. Installing Prettier globally would change `templ fmt`'s output.
+- Packages: `internal/server` loads data and builds `views.Page`; `internal/views` renders it and holds date formatting;
+  `internal/urls` builds every URL. Views never query the database.
+- templ writes void elements without a trailing slash (`<meta ...>`); tests match attributes, not whole tags.
 - `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
@@ -43,6 +50,7 @@ don't show; remove notes that stop being true.
 ## Docker and deployment
 
 - Stages: `assets` (Node) → `build` (Go + libvips-dev) → `runtime` (Debian trixie + libvips) → `server` (last, the default).
+  The `assets` stage copies `internal/views` so Tailwind can scan the components; `build` uses the committed `_templ.go` files.
 - `docker build --target vipscheck .` builds and runs `cmd/vipscheck` against the runtime libvips.
 - Image is about 242 MB, runs as `nobody`; `.dockerignore` keeps `.env` and `node_modules` out.
 - Railway probably builds a root `Dockerfile` automatically (unverified): don't merge `go-migration` into `main` before cutover.

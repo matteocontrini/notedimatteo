@@ -4,7 +4,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"log/slog"
 	"net"
@@ -27,17 +26,18 @@ type Store interface {
 }
 
 type Options struct {
-	// SiteURL is the public address without a trailing slash, like https://notedimatteo.it.
-	SiteURL   string
-	Templates fs.FS
-	Dist      fs.FS
+	// SiteURL is the public address, like https://notedimatteo.it.
+	SiteURL string
+	// Dist holds the assets built by Vite, with their manifest.
+	Dist fs.FS
 }
 
 type Server struct {
-	store    Store
-	pages    map[string]*template.Template
-	siteURL  string
-	siteHost string
+	store      Store
+	siteURL    string
+	siteHost   string
+	stylesheet string
+	script     string
 }
 
 // New returns the HTTP handler for the whole site.
@@ -51,17 +51,21 @@ func New(store Store, opts Options) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	pages, err := parseTemplates(opts.Templates, templateFuncs(asset))
+	stylesheet, err := asset("assets/main.css")
+	if err != nil {
+		return nil, err
+	}
+	script, err := asset("assets/site.ts")
 	if err != nil {
 		return nil, err
 	}
 
 	s := &Server{
-		store:    store,
-		pages:    pages,
-		siteURL:  strings.TrimSuffix(opts.SiteURL, "/"),
-		siteHost: site.Host,
+		store:      store,
+		siteURL:    strings.TrimSuffix(opts.SiteURL, "/"),
+		siteHost:   site.Host,
+		stylesheet: stylesheet,
+		script:     script,
 	}
 
 	mux := http.NewServeMux()
@@ -71,20 +75,6 @@ func New(store Store, opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))
 
 	return logRequests(recoverPanics(mux)), nil
-}
-
-func templateFuncs(asset func(string) (string, error)) template.FuncMap {
-	return template.FuncMap{
-		"asset":       asset,
-		"postURL":     postURL,
-		"editURL":     editURL,
-		"tagURL":      tagURL,
-		"monthURL":    monthURL,
-		"date":        formatDate,
-		"time":        formatTime,
-		"monthName":   monthName,
-		"categoryURL": categoryURL,
-	}
 }
 
 type handlerFunc func(w http.ResponseWriter, r *http.Request) error

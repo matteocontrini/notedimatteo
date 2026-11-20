@@ -4,57 +4,27 @@ import (
 	"net/http"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/urls"
+	"github.com/matteocontrini/notedimatteo/internal/views"
 )
 
 const siteTitle = "Note di Matteo"
 
-// Meta holds a page's title and social metadata. Empty fields use site defaults.
-type Meta struct {
-	Title       string
-	Description string
-	OGTitle     string
-	OGType      string
-}
-
-// Page is the data shared by every page: metadata, header, and sidebar.
-type Page struct {
-	Meta             Meta
-	Canonical        string
-	SiteHost         string
-	SearchQuery      string
-	IsLoggedIn       bool
-	UnpublishedCount int
-	Categories       []categoryLink
-	Archive          []archiveYear
-	Tags             []db.TagCount
-}
-
-type categoryLink struct {
-	Label   string
-	Count   int
-	URL     string
-	Current bool
-}
-
-type archiveYear struct {
-	Year   int
-	Months []db.MonthCount
-}
-
-func (s *Server) newPage(r *http.Request, meta Meta) (Page, error) {
+// newPage loads the data shared by every page. Empty meta fields use site defaults.
+func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
 	ctx := r.Context()
 
 	categories, err := s.store.Categories(ctx)
 	if err != nil {
-		return Page{}, err
+		return views.Page{}, err
 	}
 	archive, err := s.store.Archive(ctx)
 	if err != nil {
-		return Page{}, err
+		return views.Page{}, err
 	}
 	tags, err := s.store.Tags(ctx)
 	if err != nil {
-		return Page{}, err
+		return views.Page{}, err
 	}
 
 	if meta.Title == "" {
@@ -70,23 +40,25 @@ func (s *Server) newPage(r *http.Request, meta Meta) (Page, error) {
 		meta.OGType = "website"
 	}
 
-	return Page{
+	return views.Page{
 		Meta:        meta,
 		Canonical:   s.siteURL + r.URL.Path,
 		SiteHost:    s.siteHost,
 		SearchQuery: r.URL.Query().Get("q"),
+		Stylesheet:  s.stylesheet,
+		Script:      s.script,
 		Categories:  categoryLinks(categories, r.URL.Path),
 		Archive:     archiveYears(archive),
 		Tags:        tags,
 	}, nil
 }
 
-func categoryLinks(categories []db.CategoryCount, currentPath string) []categoryLink {
-	links := make([]categoryLink, 0, len(categories))
+func categoryLinks(categories []db.CategoryCount, currentPath string) []views.CategoryLink {
+	links := make([]views.CategoryLink, 0, len(categories))
 	for _, c := range categories {
-		url := categoryURL(c.Slug)
-		links = append(links, categoryLink{
-			Label:   categoryLabel(c.Slug),
+		url := urls.Category(c.Slug)
+		links = append(links, views.CategoryLink{
+			Label:   views.CategoryLabel(c.Slug),
 			Count:   c.Count,
 			URL:     url,
 			Current: url == currentPath,
@@ -96,11 +68,11 @@ func categoryLinks(categories []db.CategoryCount, currentPath string) []category
 }
 
 // archiveYears groups months, already sorted newest first, by year.
-func archiveYears(months []db.MonthCount) []archiveYear {
-	var years []archiveYear
+func archiveYears(months []db.MonthCount) []views.ArchiveYear {
+	var years []views.ArchiveYear
 	for _, m := range months {
 		if len(years) == 0 || years[len(years)-1].Year != m.Year {
-			years = append(years, archiveYear{Year: m.Year})
+			years = append(years, views.ArchiveYear{Year: m.Year})
 		}
 		last := &years[len(years)-1]
 		last.Months = append(last.Months, m)
@@ -108,20 +80,13 @@ func archiveYears(months []db.MonthCount) []archiveYear {
 	return years
 }
 
-type pagination struct {
-	Current  int
-	Total    int
-	Previous string
-	Next     string
-}
-
-func newPagination(path string, current, total int) pagination {
-	p := pagination{Current: current, Total: total}
+func newPagination(path string, current, total int) views.Pagination {
+	p := views.Pagination{Current: current, Total: total}
 	if current > 1 {
-		p.Previous = pageURL(path, current-1)
+		p.Previous = urls.Page(path, current-1)
 	}
 	if current < total {
-		p.Next = pageURL(path, current+1)
+		p.Next = urls.Page(path, current+1)
 	}
 	return p
 }
