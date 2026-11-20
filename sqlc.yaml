@@ -1,0 +1,38 @@
+version: '2'
+sql:
+  - engine: postgresql
+    # The schema comes from Prisma's migrations until phase 2 moves them to goose
+    schema:
+      - src/prisma/migrations/20250920184819_create_posts_tags/migration.sql
+      - src/prisma/migrations/20250926094725_create_sessions/migration.sql
+      - src/prisma/migrations/20260628214406_add_post_html_cache/migration.sql
+    queries: internal/db/queries
+    gen:
+      go:
+        package: db
+        out: internal/db
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        initialisms: [id, html, url]
+        output_db_file_name: sqlc.go
+        output_models_file_name: sqlc_models.go
+        # Use int and time.Time instead of sqlc's default int32 and pgtype.Timestamptz.
+        # Each type is listed twice: once for required columns, once for nullable ones.
+        overrides:
+          - db_type: serial
+            go_type: int
+          - db_type: pg_catalog.int4
+            go_type: int
+          - db_type: pg_catalog.int4
+            nullable: true
+            go_type:
+              type: int
+              pointer: true
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true

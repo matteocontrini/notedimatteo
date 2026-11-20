@@ -1,4 +1,8 @@
 // Package db holds the PostgreSQL connection pool and SQL queries.
+//
+// The queries are in queries/*.sql. sqlc generates their Go code (the *.sql.go
+// and sqlc*.go files) with `go tool sqlc generate`, checking them against the
+// schema in sqlc.yaml. The other files wrap the generated code.
 package db
 
 import (
@@ -16,7 +20,8 @@ const (
 )
 
 type DB struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	queries *Queries
 }
 
 // Open connects to the database and fails if it can't be reached.
@@ -41,7 +46,7 @@ func Open(ctx context.Context, url string) (*DB, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	return &DB{pool: pool}, nil
+	return &DB{pool: pool, queries: New(pool)}, nil
 }
 
 func (db *DB) Close() {

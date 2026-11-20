@@ -27,7 +27,7 @@ and G1–G3 (editor).
 | Routing        | `net/http` `ServeMux`; one `/{seg}` handler separates post numbers from categories                                                                                |
 | URLs           | Built only in `internal/urls`; site address from config; the merged site's URL scheme is decided in phase 4                                                       |
 | Templates      | templ components in `internal/views` with typed parameters; generated `_templ.go` files are committed, and CI checks formatting and generation                    |
-| Database       | `pgx/v5`, hand-written SQL, small pool                                                                                                                            |
+| Database       | `pgx/v5` with sqlc: SQL in `internal/db/queries`, typed Go code generated and checked against the schema; small pool                                              |
 | Migrations     | None in phase 1; `goose` from phase 2, with the existing schema as baseline                                                                                       |
 | Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
 | Images         | `govips` (cgo) with libvips caching turned off                                                                                                                    |
@@ -167,6 +167,7 @@ the required formatting, lint, and Svelte checks.
 ## Phase 2: Revisions
 
 - [ ] Add `goose` with the existing schema as baseline, and drop `_prisma_migrations`
+- [ ] Point `sqlc.yaml` at the goose migrations instead of Prisma's
 - [ ] Add a revisions table keyed by post and `bodyRevision`
 - [ ] Save a revision in the save transaction whenever the body changes
 - [ ] List revisions on the edit page and restore one

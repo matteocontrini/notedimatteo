@@ -34,6 +34,16 @@ don't show; remove notes that stop being true.
 - Tests: logic is tested as plain functions (`newPage`, `newPagination`, `GroupByDay`, …) or by rendering one
   component in `internal/views`; HTTP tests check status codes, queries, and errors, not markup. templ's compiler
   catches missing fields and wrong arguments, so there are no tests that only check a field reaches the page.
+- sqlc is pinned like templ: `go tool sqlc generate` after editing `internal/db/queries/*.sql`; CI runs
+  `go tool sqlc diff`. Its first build compiles Postgres's C parser (about 25 s). `sqlc.yaml` reads the schema
+  from Prisma's migration files, listed one by one. Overrides map `int4`/`serial` to `int` and
+  `timestamptz` to `time.Time`, each twice (plain and nullable, which sqlc matches separately). Cast integer
+  parameters and results to `::int`, not `::bigint`, or they need `int8` overrides too.
+- Filters are optional parameters (`sqlc.narg(x) IS NULL OR ...`), so query text never changes. `Posts` and
+  `CountPosts` repeat the same `WHERE`: keep them identical; `db_test.go` checks they agree.
+- `db.Post` and the other row types are aliases of sqlc's generated structs (`PostsRow`, …). `PostFilter.Number` is a
+  pointer because 0 is a valid post number (a zero value once made `/0` show the newest post).
+- Database tests read only and run when `TEST_DATABASE_URL` is set, for example the production copy.
 - `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).

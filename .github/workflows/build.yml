@@ -48,6 +48,8 @@ jobs:
         run: test -z "$(gofmt -l cmd internal web)" && go tool templ fmt -fail internal/views
       - name: Check generated templ files are up to date
         run: go tool templ generate && test -z "$(git status --porcelain internal/views)"
+      - name: Check generated sqlc files are up to date
+        run: go tool sqlc diff
       - name: Vet
         run: go vet ./...
       - name: Test
