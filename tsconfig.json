@@ -1,7 +1,7 @@
 {
 	"extends": "$app/tsconfig",
-	"include": ["src", "*"],
-	"exclude": ["src/service-worker"],
+	"include": ["src", "web", "*"],
+	"exclude": ["src/service-worker", "web/dist"],
 	"compilerOptions": {
 		"sourceMap": true,
 		"strict": true,

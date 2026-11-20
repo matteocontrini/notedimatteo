@@ -10,7 +10,7 @@ export default defineConfig({
 		emptyOutDir: true,
 		manifest: true,
 		rollupOptions: {
-			input: 'assets/main.css',
+			input: ['assets/main.css', 'assets/site.ts'],
 		},
 	},
 });

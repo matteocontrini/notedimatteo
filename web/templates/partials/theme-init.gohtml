@@ -1,0 +1,18 @@
+{{define "theme-init" -}}
+{{/* Applies the saved theme before the first paint. The key and values match
+     mode-watcher's, so preferences saved by the SvelteKit app still apply. The
+     theme select is handled in assets/site.ts. */ -}}
+<script>
+	(function () {
+		var mode = null;
+		try {
+			mode = localStorage.getItem('mode-watcher-mode');
+		} catch (e) {}
+		var light =
+			mode === 'light' ||
+			(mode !== 'dark' && window.matchMedia('(prefers-color-scheme: light)').matches);
+		document.documentElement.classList.toggle('dark', !light);
+		document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+	})();
+</script>
+{{- end}}

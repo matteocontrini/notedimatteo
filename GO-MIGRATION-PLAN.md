@@ -95,11 +95,11 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 2: Public site
 
-- [ ] Build post URLs in one Go function, and read the site address from config
-- [ ] Port shared layout parts: top bar, header, footer, sidebar, and metadata
-- [ ] Port the theme script and sidebar tag sorting, keeping saved theme preferences
-- [ ] Port post queries and shared post rendering, including Europe/Rome dates
-- [ ] Port pagination
+- [x] Build post URLs in one Go function, and read the site address from config
+- [x] Port shared layout parts: top bar, header, footer, sidebar, and metadata
+- [x] Port the theme script and sidebar tag sorting, keeping saved theme preferences
+- [x] Port post queries and shared post rendering, including Europe/Rome dates
+- [x] Port pagination
 - [ ] Add goldmark as its own package with options per content type; notes get strikethrough and no raw HTML
 - [ ] Add `[img]` handling, preserving existing image URLs
 - [ ] Add HTML cache reads and writes, with a new renderer version, replacing the temporary `<pre>` fallback

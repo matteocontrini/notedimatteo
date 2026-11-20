@@ -1,0 +1,15 @@
+{{define "pagination" -}}
+{{if gt .Total 1}}
+	<div class="mt-12 mb-8 flex items-center justify-center gap-4">
+		{{with .Previous}}
+			<a class="link" href="{{.}}">← Precedente</a>
+		{{end}}
+
+		<span class="py-2 text-gray-600">Pagina {{.Current}} di {{.Total}}</span>
+
+		{{with .Next}}
+			<a class="link" href="{{.}}">Successiva →</a>
+		{{end}}
+	</div>
+{{end}}
+{{- end}}

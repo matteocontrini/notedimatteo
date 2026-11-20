@@ -1,12 +1,20 @@
 {{define "content" -}}
 <div class="grid grid-cols-1 gap-20 md:grid-cols-12">
 	<div class="md:col-span-7">
-		{{range .Posts}}
-			{{template "post" .}}
-			<hr class="my-6" />
+		{{range $index, $group := .Groups}}
+			<h2 class="mb-8 text-2xl font-semibold{{if $index}} mt-10{{end}}">{{$group.Heading}}</h2>
+
+			{{range $group.Posts}}
+				{{template "post" .}}
+				<hr class="my-6" />
+			{{end}}
 		{{else}}
 			Non c'è niente qui.
 		{{end}}
+
+		{{template "pagination" .Pagination}}
 	</div>
+
+	{{template "sidebar" .Page}}
 </div>
 {{- end}}

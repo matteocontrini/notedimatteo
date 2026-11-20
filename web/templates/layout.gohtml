@@ -5,16 +5,16 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#0067B9" />
-		<title>{{.Title}}</title>
+		{{template "theme-init"}}
+		{{template "meta" .}}
 		<link rel="icon" href="/favicon.png" />
+		<link rel="alternate" type="application/rss+xml" title="Note di Matteo" href="/feed.xml" />
 		<link rel="stylesheet" href="{{asset "assets/main.css"}}" />
+		<script type="module" src="{{asset "assets/site.ts"}}"></script>
 	</head>
 	<body class="dark:bg-slate-900">
-		<div class="container mt-6 max-w-6xl">
-			<h1 class="text-4xl font-bold">
-				<a class="hover:underline" href="/">Note di Matteo</a>
-			</h1>
-		</div>
+		{{template "topbar" .}}
+		{{template "header" .}}
 
 		<hr class="mt-6" />
 
@@ -24,8 +24,10 @@
 
 		<hr class="mt-16" />
 
+		{{template "footer"}}
+
 		<script>
-			if (window.location.host !== 'notedimatteo.it') window.goatcounter = { no_onload: true };
+			if (window.location.host !== {{.SiteHost}}) window.goatcounter = { no_onload: true };
 		</script>
 
 		<script

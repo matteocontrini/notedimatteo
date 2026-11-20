@@ -12,9 +12,9 @@ import (
 
 // parseTemplates builds one template set per page, each with the shared layout
 // and partials. Parsing at startup makes syntax errors fail immediately.
-func parseTemplates(templates fs.FS, asset func(string) (string, error)) (map[string]*template.Template, error) {
+func parseTemplates(templates fs.FS, funcs template.FuncMap) (map[string]*template.Template, error) {
 	base, err := template.New("").
-		Funcs(template.FuncMap{"asset": asset}).
+		Funcs(funcs).
 		ParseFS(templates, "layout.gohtml", "partials/*.gohtml")
 	if err != nil {
 		return nil, fmt.Errorf("parse shared templates: %w", err)

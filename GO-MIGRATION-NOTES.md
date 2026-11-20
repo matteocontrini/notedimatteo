@@ -16,6 +16,8 @@ don't show; remove notes that stop being true.
 - JPEG encoding: accept Debian's libvips without mozjpeg, or build libvips with mozjpeg (phase 1, step 4).
 - English home: a variant of board E3, not designed yet. Italian home: E2 or E4.
 - Production `BODY_SIZE_LIMIT`: `.env.example` has `1M`, local `.env` has `20M`. Match it in Go's upload limit.
+- Production database `TimeZone` (`SHOW timezone`): if it isn't UTC, the live SvelteKit app has shown wrong times
+  since the Prisma 7 upgrade (see below), and the archive's month grouping depends on it too.
 
 ## Local development
 
@@ -27,9 +29,16 @@ don't show; remove notes that stop being true.
 - libvips isn't installed on the Mac; `govips` is only compiled in Docker until phase 1 step 4 (then `brew install vips`).
 - Local database: 31 posts, 18 published, all published ones cached at renderer version 1.
   Posts 1–5 share one `publishedAt` (seed data); queries order by `publishedAt DESC, number DESC`.
-- Comparing with SvelteKit: run both, diff `.post-content` blocks, and take headless Chrome screenshots
-  (`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --screenshot`).
-  Headless Chrome renders SvelteKit in dark mode; the Go skeleton has no theme script yet.
+- Local Postgres runs with `TimeZone = Europe/Rome`.
+- Comparing with SvelteKit:
+  - The user may have `go:dev` running on 6200: run test servers on 6201, built to the scratchpad and started
+    directly, and stop them only by their own PIDs. Never `pkill -f` patterns that match the user's servers.
+  - Start SvelteKit with `node node_modules/vite/bin/vite.js dev` so its PID is the server's.
+  - Add `options=-c%20TimeZone%3DUTC` to both apps' `DATABASE_URL`, or SvelteKit shows wrong times locally.
+  - Drive headless Chrome over the DevTools protocol (Node's built-in `WebSocket`, `--remote-debugging-port`):
+    compare `document.body.innerText`, emulate `prefers-color-scheme`, click controls, take screenshots.
+- Expected differences: ties are ordered deterministically in Go (posts 1–5 by number, sidebar tags with equal
+  counts by name).
 
 ## Docker and deployment
 
@@ -56,7 +65,14 @@ don't show; remove notes that stop being true.
 - Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;
   `lastActivityAt` updated at most once a minute and has no database default (Prisma `@updatedAt`), so inserts set it.
 - Search: Prisma `contains` with `mode: insensitive` doesn't escape `%` or `_`.
+- Prisma 7's `@prisma/adapter-pg` replaces the offset of every `timestamptz` it reads with `+00:00`, so times are
+  only right when the session time zone is UTC. Go reads them correctly.
+- Archive months use `EXTRACT` in the database session's time zone, not Rome's; Go keeps the same SQL.
+- Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns,
+  in practice the order saved from the editor. Kept as is on purpose; not a bug to fix during the migration.
+- `?page=` that isn't a positive integer: SvelteKit passes it to Prisma (likely an error); Go shows page 1.
 - Theme: mode-watcher stores the preference in localStorage `mode-watcher-mode` (`system`/`light`/`dark`); dark mode is a `.dark` class.
+  Go applies it with an inline head script (`theme-init.gohtml`) and handles the select in `web/assets/site.ts`.
 - `https://notedimatteo.it` is hard-coded in `MetaTags.svelte` (canonical) and the RSS feed.
 - GoatCounter is disabled when the host isn't `notedimatteo.it`.
 

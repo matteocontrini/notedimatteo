@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"strings"
 
@@ -18,35 +19,72 @@ import (
 // Store is the database access used by the handlers.
 type Store interface {
 	Ping(ctx context.Context) error
-	LatestPosts(ctx context.Context, limit int) ([]db.Post, error)
+	PublishedPosts(ctx context.Context, limit, offset int) ([]db.Post, error)
+	CountPublishedPosts(ctx context.Context) (int, error)
+	Categories(ctx context.Context) ([]db.CategoryCount, error)
+	Archive(ctx context.Context) ([]db.MonthCount, error)
+	Tags(ctx context.Context) ([]db.TagCount, error)
+}
+
+type Options struct {
+	// SiteURL is the public address without a trailing slash, like https://notedimatteo.it.
+	SiteURL   string
+	Templates fs.FS
+	Dist      fs.FS
 }
 
 type Server struct {
-	store Store
-	pages map[string]*template.Template
+	store    Store
+	pages    map[string]*template.Template
+	siteURL  string
+	siteHost string
 }
 
 // New returns the HTTP handler for the whole site.
-func New(store Store, templates, dist fs.FS) (http.Handler, error) {
-	asset, err := assetResolver(dist)
+func New(store Store, opts Options) (http.Handler, error) {
+	site, err := url.Parse(opts.SiteURL)
+	if err != nil || site.Scheme == "" || site.Host == "" {
+		return nil, fmt.Errorf("invalid site URL %q", opts.SiteURL)
+	}
+
+	asset, err := assetResolver(opts.Dist)
 	if err != nil {
 		return nil, err
 	}
 
-	pages, err := parseTemplates(templates, asset)
+	pages, err := parseTemplates(opts.Templates, templateFuncs(asset))
 	if err != nil {
 		return nil, err
 	}
 
-	s := &Server{store: store, pages: pages}
+	s := &Server{
+		store:    store,
+		pages:    pages,
+		siteURL:  strings.TrimSuffix(opts.SiteURL, "/"),
+		siteHost: site.Host,
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handle(s.home))
 	mux.HandleFunc("GET /healthz", s.handle(s.healthz))
-	mux.Handle("GET /assets/", hashedAssets(dist))
-	mux.HandleFunc("GET /favicon.png", favicon(dist))
+	mux.Handle("GET /assets/", hashedAssets(opts.Dist))
+	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))
 
 	return logRequests(recoverPanics(mux)), nil
+}
+
+func templateFuncs(asset func(string) (string, error)) template.FuncMap {
+	return template.FuncMap{
+		"asset":       asset,
+		"postURL":     postURL,
+		"editURL":     editURL,
+		"tagURL":      tagURL,
+		"monthURL":    monthURL,
+		"date":        formatDate,
+		"time":        formatTime,
+		"monthName":   monthName,
+		"categoryURL": categoryURL,
+	}
 }
 
 type handlerFunc func(w http.ResponseWriter, r *http.Request) error
