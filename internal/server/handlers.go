@@ -1,8 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
-	"html"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -12,12 +13,27 @@ import (
 
 const postsPerPage = 20
 
-func newPostItem(post db.Post) views.PostItem {
-	if post.CachedHTML != nil {
-		return views.PostItem{Post: post, HTML: *post.CachedHTML}
+// postItems pairs posts with their HTML, rendering and caching the bodies whose
+// cached HTML is missing or out of date.
+func (s *Server) postItems(ctx context.Context, posts []db.Post) ([]views.PostItem, error) {
+	items := make([]views.PostItem, 0, len(posts))
+	for _, post := range posts {
+		if post.CachedHTML != nil {
+			items = append(items, views.PostItem{Post: post, HTML: *post.CachedHTML})
+			continue
+		}
+
+		html, err := s.markdown.Render(post.Body)
+		if err != nil {
+			return nil, fmt.Errorf("render post %d: %w", post.Number, err)
+		}
+		// A failed cache write only costs rendering again, so the page is still shown
+		if err := s.store.SavePostHTML(ctx, post.ID, post.BodyRevision, html); err != nil {
+			slog.Error("caching post HTML failed", "post", post.Number, "error", err)
+		}
+		items = append(items, views.PostItem{Post: post, HTML: html})
 	}
-	// Temporary until the Markdown renderer is ported
-	return views.PostItem{Post: post, HTML: "<pre>" + html.EscapeString(post.Body) + "</pre>"}
+	return items, nil
 }
 
 // pageNumber reads the page query parameter. Invalid values mean the first page.
@@ -45,9 +61,9 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	items := make([]views.PostItem, 0, len(posts))
-	for _, post := range posts {
-		items = append(items, newPostItem(post))
+	items, err := s.postItems(r.Context(), posts)
+	if err != nil {
+		return err
 	}
 
 	totalPages := (total + postsPerPage - 1) / postsPerPage

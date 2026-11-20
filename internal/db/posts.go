@@ -6,24 +6,25 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/matteocontrini/notedimatteo/internal/markdown"
 )
 
-// RendererVersion matches MARKDOWN_RENDERER_VERSION in the SvelteKit app, so
-// the cache written by that app stays valid until the Go renderer replaces it.
-const RendererVersion = 1
-
 type Post struct {
-	ID          int        `db:"id"`
-	Number      int        `db:"number"`
-	Category    string     `db:"category"`
-	Title       string     `db:"title"`
-	Slug        string     `db:"slug"`
-	HideTitle   bool       `db:"hideTitle"`
-	Body        string     `db:"body"`
-	CreatedAt   time.Time  `db:"createdAt"`
-	PublishedAt *time.Time `db:"publishedAt"`
-	Tags        []string   `db:"tags"`
-	// CachedHTML is nil if the cache is missing or out of date.
+	ID        int    `db:"id"`
+	Number    int    `db:"number"`
+	Category  string `db:"category"`
+	Title     string `db:"title"`
+	Slug      string `db:"slug"`
+	HideTitle bool   `db:"hideTitle"`
+	Body      string `db:"body"`
+	// BodyRevision increases whenever the body changes, and is stored with cached HTML.
+	BodyRevision int        `db:"bodyRevision"`
+	CreatedAt    time.Time  `db:"createdAt"`
+	PublishedAt  *time.Time `db:"publishedAt"`
+	Tags         []string   `db:"tags"`
+	// CachedHTML is nil if the cache is missing, or was rendered from an older
+	// body revision or by another renderer version.
 	CachedHTML *string `db:"cachedHtml"`
 }
 
@@ -48,6 +49,7 @@ const postColumns = `
 	COALESCE(p.slug, '')  AS slug,
 	p."hideTitle",
 	p.body,
+	p."bodyRevision",
 	p."createdAt",
 	p."publishedAt",
 	ARRAY(
@@ -67,7 +69,7 @@ func (db *DB) PublishedPosts(ctx context.Context, limit, offset int) ([]Post, er
 		WHERE p."publishedAt" IS NOT NULL
 		ORDER BY p."publishedAt" DESC, p.number DESC
 		LIMIT $2 OFFSET $3
-	`, RendererVersion, limit, offset)
+	`, markdown.Version, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("query published posts: %w", err)
 	}
@@ -87,4 +89,21 @@ func (db *DB) CountPublishedPosts(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("count published posts: %w", err)
 	}
 	return count, nil
+}
+
+// SavePostHTML caches a post's rendered body for the current renderer version.
+func (db *DB) SavePostHTML(ctx context.Context, postID, bodyRevision int, html string) error {
+	_, err := db.pool.Exec(ctx, `
+		INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT ("postId") DO UPDATE
+		SET "rendererVersion" = EXCLUDED."rendererVersion",
+		    "bodyRevision"    = EXCLUDED."bodyRevision",
+		    html              = EXCLUDED.html,
+		    "renderedAt"      = CURRENT_TIMESTAMP
+	`, postID, markdown.Version, bodyRevision, html)
+	if err != nil {
+		return fmt.Errorf("save post HTML: %w", err)
+	}
+	return nil
 }

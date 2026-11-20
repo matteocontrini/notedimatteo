@@ -10,6 +10,7 @@ import (
 	"testing/fstest"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/markdown"
 )
 
 type fakeStore struct {
@@ -22,6 +23,9 @@ type fakeStore struct {
 
 	// lastOffset records the offset of the last PublishedPosts call
 	lastOffset int
+	// saved records the HTML cached by SavePostHTML, by post ID
+	saved   map[int]string
+	saveErr error
 }
 
 func (f *fakeStore) Ping(context.Context) error {
@@ -49,6 +53,24 @@ func (f *fakeStore) Tags(context.Context) ([]db.TagCount, error) {
 	return f.tags, f.err
 }
 
+func (f *fakeStore) SavePostHTML(_ context.Context, postID, _ int, html string) error {
+	if f.saved == nil {
+		f.saved = map[int]string{}
+	}
+	f.saved[postID] = html
+	return f.saveErr
+}
+
+func testRenderer(t *testing.T) *markdown.Renderer {
+	t.Helper()
+
+	r, err := markdown.New(markdown.Options{StorageBaseURL: "https://storage.example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
+
 // testDist stands in for the Vite output, so tests don't depend on its hashes.
 func testDist() fstest.MapFS {
 	return fstest.MapFS{
@@ -65,7 +87,7 @@ func testDist() fstest.MapFS {
 func newTestHandler(t *testing.T, store Store) http.Handler {
 	t.Helper()
 
-	handler, err := New(store, Options{SiteURL: "https://example.com/", Dist: testDist()})
+	handler, err := New(store, Options{SiteURL: "https://example.com/", Dist: testDist(), Markdown: testRenderer(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +116,7 @@ func assertContains(t *testing.T, rec *httptest.ResponseRecorder, wants ...strin
 
 func TestInvalidSiteURL(t *testing.T) {
 	for _, siteURL := range []string{"", "notedimatteo.it", "/path"} {
-		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Dist: testDist()})
+		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Dist: testDist(), Markdown: testRenderer(t)})
 		if err == nil {
 			t.Errorf("site URL %q was accepted", siteURL)
 		}
@@ -105,7 +127,7 @@ func TestMissingAsset(t *testing.T) {
 	dist := testDist()
 	dist[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(`{"assets/main.css": {"file": "assets/main.css"}}`)}
 
-	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist}); err == nil {
+	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist, Markdown: testRenderer(t)}); err == nil {
 		t.Error("a manifest without the script was accepted")
 	}
 }

@@ -6,6 +6,9 @@ don't show; remove notes that stop being true.
 
 ## Working agreements
 
+- Phase 1 is about parity: reproduce SvelteKit's behavior, bugs included. Deferred fixes are `TODO` comments
+  in the code (`grep -rn TODO cmd internal web`), plus the open questions below.
+
 - The user handles git: never commit, push, or stage.
 - Plan terminology: phases are the broad units, steps are the smaller ones inside a phase.
 - Keep plan and notes succinct and schematic.
@@ -71,6 +74,44 @@ don't show; remove notes that stop being true.
   single and double `~` strike through; no tables or autolinks. `[img]` is handled on text nodes after parsing.
 - `[img width=W height=H link=URL alt=…]path[/img]`: `src` is the `_preview` variant, wrapped in a link to the
   original (or `link`), `loading="lazy"`.
+
+## Markdown renderer (`internal/markdown`)
+
+- goldmark with strikethrough (`~` and `~~`), raw HTML dropped, and `[img]` reimplemented to match the rehype plugin,
+  quirks included: images inside code spans and code blocks, `_preview` inserted before the last `.` of the whole
+  URL (wrong for paths without an extension), non-numeric `width` dropped, `[img][/img]` matching across text.
+- remark merges adjacent text where goldmark splits it (around brackets that aren't links), so the transformer
+  matches `[img]` across runs of adjacent text nodes; a hard line break ends a run.
+- `markdown.Version` is 2 (SvelteKit's is 1) and is stored in `post_html_cache`. Bump it whenever the output bytes
+  change. Same structure as SvelteKit's but not the same bytes: Go ends with a newline (26 of 31 local posts differ
+  only by that) and escapes `"` and `&` as `&quot;`/`&amp;` where SvelteKit writes `"`/`&#x26;` (2 posts).
+- Effects of the version change: the cutover re-renders each post once on first view; a rollback re-renders too;
+  running both apps locally makes them overwrite each other's cache entries. All harmless re-rendering.
+- Compatibility test: `testdata/compat/*.md` with the HTML the SvelteKit renderer produces, compared by parsed
+  structure (decoded text, sorted attributes, CRLF normalized). Regenerate expected files with
+  `node internal/markdown/testdata/generate.mjs`, which imports the app's own plugins; it stops working once
+  SvelteKit is removed, and the fixtures stay as they are.
+- To compare real posts: export bodies as `.md` files into a scratch directory, run `generate.mjs <dir>`, then
+  `MARKDOWN_COMPAT_DIR=<dir> go test ./internal/markdown`. All 31 local posts matched.
+- Against production: export each post's body as `.md` and its cached HTML as `.html` (that cache is SvelteKit's
+  actual output), then add `MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it`. All 670 posts matched
+  (backup of 2026-11-20).
+
+## Production data
+
+- Backups: private repo `matteocontrini/notedimatteo-backups`, committed daily by a GitHub Action running
+  `supabase db dump`: `schema.sql`, `data.sql` (`COPY`), and an almost empty `roles.sql`.
+- Import: create an empty database, then `psql "<url>" -v ON_ERROR_STOP=1 -f schema.sql -f data.sql`.
+  The 2026-11-20 backup is imported locally as `notedimatteo_prod`; the original `notedimatteo` is unchanged.
+- To use it, point `DATABASE_URL` in `.env` at `notedimatteo_prod`: `go:dev` sources `.env`, which overrides
+  a `DATABASE_URL` set on the command line.
+- 2026-11-20: 670 posts (#1–#670), all published, no drafts; 99 tags; 1,095 post–tag links; all cached at
+  renderer version 1. 189 posts use `[img]`, 43 contain backticks, 10 contain `<`, none have CRLF line endings.
+- Images are served from `https://uploads.notedimatteo.it`.
+- `sessions` holds 11 production login tokens: treat the local copy like the backup repo.
+- Cache: posts without an up-to-date entry are rendered and saved with `ON CONFLICT` upsert. Unlike SvelteKit, a
+  failed cache write is logged and the page is still shown.
+- `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
 - Uploads: keys `YYYY/MM/<12 hex>.jpg` and `…_preview.jpg` (server-local month); main JPEG q85, preview 1200 px
   wide q80, both mozjpeg with auto-orientation; the response carries the preview's dimensions; S3 metadata `original`.
 - Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;

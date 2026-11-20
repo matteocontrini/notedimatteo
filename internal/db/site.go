@@ -36,6 +36,9 @@ func (db *DB) Categories(ctx context.Context) ([]CategoryCount, error) {
 
 // Archive returns the number of published posts per month, newest first.
 // Months follow the database session's time zone, like the SvelteKit app.
+//
+// TODO: after the migration, group by month in Europe/Rome, like the dates
+// shown on posts, whatever the session's time zone is.
 func (db *DB) Archive(ctx context.Context) ([]MonthCount, error) {
 	return query[MonthCount](ctx, db, "archive", `
 		SELECT EXTRACT(YEAR FROM "publishedAt")::int  AS year,

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -101,14 +103,39 @@ func TestPageNumber(t *testing.T) {
 	}
 }
 
-func TestNewPostItem(t *testing.T) {
+func TestPostItems(t *testing.T) {
 	cached := "<p>Cached</p>"
-	if got := newPostItem(db.Post{CachedHTML: &cached}); got.HTML != cached {
-		t.Errorf("cached HTML = %q", got.HTML)
+	store := &fakeStore{}
+	s := &Server{store: store, markdown: testRenderer(t)}
+
+	items, err := s.postItems(context.Background(), []db.Post{
+		{ID: 1, CachedHTML: &cached, Body: "Not rendered"},
+		{ID: 2, Body: "~~Rendered~~"},
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	got := newPostItem(db.Post{Body: "Uncached <b>body</b>"})
-	if want := "<pre>Uncached &lt;b&gt;body&lt;/b&gt;</pre>"; got.HTML != want {
-		t.Errorf("fallback HTML = %q, want %q", got.HTML, want)
+	if items[0].HTML != cached {
+		t.Errorf("cached post HTML = %q", items[0].HTML)
+	}
+	want := "<p><del>Rendered</del></p>\n"
+	if items[1].HTML != want {
+		t.Errorf("rendered post HTML = %q, want %q", items[1].HTML, want)
+	}
+	if len(store.saved) != 1 || store.saved[2] != want {
+		t.Errorf("saved = %v, want only post 2", store.saved)
+	}
+}
+
+func TestPostItemsWhenCachingFails(t *testing.T) {
+	s := &Server{store: &fakeStore{saveErr: errors.New("read-only")}, markdown: testRenderer(t)}
+
+	items, err := s.postItems(context.Background(), []db.Post{{ID: 1, Body: "Body"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items[0].HTML != "<p>Body</p>\n" {
+		t.Errorf("HTML = %q", items[0].HTML)
 	}
 }

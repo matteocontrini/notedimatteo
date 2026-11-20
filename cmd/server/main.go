@@ -14,6 +14,7 @@ import (
 
 	"github.com/matteocontrini/notedimatteo/internal/config"
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/markdown"
 	"github.com/matteocontrini/notedimatteo/internal/server"
 	"github.com/matteocontrini/notedimatteo/web"
 )
@@ -44,9 +45,15 @@ func run() error {
 	}
 	defer database.Close()
 
+	renderer, err := markdown.New(markdown.Options{StorageBaseURL: cfg.StoragePublicBaseURL})
+	if err != nil {
+		return err
+	}
+
 	handler, err := server.New(database, server.Options{
-		SiteURL: cfg.SiteURL,
-		Dist:    web.Dist(),
+		SiteURL:  cfg.SiteURL,
+		Dist:     web.Dist(),
+		Markdown: renderer,
 	})
 	if err != nil {
 		return err

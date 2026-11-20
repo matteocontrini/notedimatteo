@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/markdown"
 )
 
 // Store is the database access used by the handlers.
@@ -23,6 +25,7 @@ type Store interface {
 	Categories(ctx context.Context) ([]db.CategoryCount, error)
 	Archive(ctx context.Context) ([]db.MonthCount, error)
 	Tags(ctx context.Context) ([]db.TagCount, error)
+	SavePostHTML(ctx context.Context, postID, bodyRevision int, html string) error
 }
 
 type Options struct {
@@ -30,10 +33,13 @@ type Options struct {
 	SiteURL string
 	// Dist holds the assets built by Vite, with their manifest.
 	Dist fs.FS
+	// Markdown renders post bodies that have no up-to-date cached HTML.
+	Markdown *markdown.Renderer
 }
 
 type Server struct {
 	store      Store
+	markdown   *markdown.Renderer
 	siteURL    string
 	siteHost   string
 	stylesheet string
@@ -45,6 +51,9 @@ func New(store Store, opts Options) (http.Handler, error) {
 	site, err := url.Parse(opts.SiteURL)
 	if err != nil || site.Scheme == "" || site.Host == "" {
 		return nil, fmt.Errorf("invalid site URL %q", opts.SiteURL)
+	}
+	if opts.Markdown == nil {
+		return nil, errors.New("a Markdown renderer is required")
 	}
 
 	asset, err := assetResolver(opts.Dist)
@@ -62,6 +71,7 @@ func New(store Store, opts Options) (http.Handler, error) {
 
 	s := &Server{
 		store:      store,
+		markdown:   opts.Markdown,
 		siteURL:    strings.TrimSuffix(opts.SiteURL, "/"),
 		siteHost:   site.Host,
 		stylesheet: stylesheet,
