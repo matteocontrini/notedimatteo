@@ -82,7 +82,7 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 1: Skeleton
 
-- [ ] Create the `go-migration` branch from `main` and commit the plan documents
+- [x] Create the `go-migration` branch from `main` and commit the plan documents
 - [x] Add the Go module, `cmd/server` entry point, and environment config
 - [x] Add the `net/http` server with logging, error handling, and graceful shutdown
 - [x] Connect to the existing local database with a small `pgx` pool

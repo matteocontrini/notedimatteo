@@ -23,7 +23,9 @@
 		"lint": "prettier --check . && eslint .",
 		"generate-migration": "prisma migrate dev --create-only",
 		"migrate": "prisma migrate deploy",
-		"check-updates": "npx npm-check-updates -i --format group,repo --cooldown 1d"
+		"check-updates": "npx npm-check-updates -i --format group,repo --cooldown 1d",
+		"go:assets": "vite build --config vite.go.config.ts",
+		"go:dev": "npm run go:assets && set -a && . ./.env && set +a && go run ./cmd/server"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

@@ -1,0 +1,38 @@
+{{define "layout" -}}
+<!doctype html>
+<html lang="it" class="motion-safe:scroll-smooth">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#0067B9" />
+		<title>{{.Title}}</title>
+		<link rel="icon" href="/favicon.png" />
+		<link rel="stylesheet" href="{{asset "assets/main.css"}}" />
+	</head>
+	<body class="dark:bg-slate-900">
+		<div class="container mt-6 max-w-6xl">
+			<h1 class="text-4xl font-bold">
+				<a class="hover:underline" href="/">Note di Matteo</a>
+			</h1>
+		</div>
+
+		<hr class="mt-6" />
+
+		<div class="container mt-10 max-w-6xl">
+			{{template "content" .}}
+		</div>
+
+		<hr class="mt-16" />
+
+		<script>
+			if (window.location.host !== 'notedimatteo.it') window.goatcounter = { no_onload: true };
+		</script>
+
+		<script
+			defer
+			src="https://gc.zgo.at/count.js"
+			data-goatcounter="https://notedimatteo.goatcounter.com/count"
+		></script>
+	</body>
+</html>
+{{end}}

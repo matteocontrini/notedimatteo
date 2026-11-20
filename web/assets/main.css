@@ -1,0 +1,4 @@
+@import '@fontsource-variable/inter/index.css';
+@import '../../src/app.css';
+
+@source '../templates';

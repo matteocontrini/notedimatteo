@@ -1,0 +1,15 @@
+{{define "post" -}}
+<article class="mt-4" data-category="{{.Category}}">
+	{{if and .Title (not .HideTitle)}}
+		<div>
+			<h3 class="inline font-semibold">{{.Title}}</h3>
+		</div>
+	{{end}}
+
+	<div class="post-content mt-4">{{.HTML}}</div>
+
+	<div class="mt-4 flex flex-wrap gap-2 text-sm">
+		<a href="/{{.Number}}{{if .Slug}}/{{.Slug}}{{end}}">#{{.Number}}</a>
+	</div>
+</article>
+{{- end}}

@@ -1,0 +1,12 @@
+{{define "content" -}}
+<div class="grid grid-cols-1 gap-20 md:grid-cols-12">
+	<div class="md:col-span-7">
+		{{range .Posts}}
+			{{template "post" .}}
+			<hr class="my-6" />
+		{{else}}
+			Non c'è niente qui.
+		{{end}}
+	</div>
+</div>
+{{- end}}
