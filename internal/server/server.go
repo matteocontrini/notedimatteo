@@ -20,8 +20,9 @@ import (
 // Store is the database access used by the handlers.
 type Store interface {
 	Ping(ctx context.Context) error
-	PublishedPosts(ctx context.Context, limit, offset int) ([]db.Post, error)
-	CountPublishedPosts(ctx context.Context) (int, error)
+	Posts(ctx context.Context, filter db.PostFilter, limit, offset int) ([]db.Post, error)
+	CountPosts(ctx context.Context, filter db.PostFilter) (int, error)
+	PostByNumber(ctx context.Context, number int) (*db.Post, error)
 	Categories(ctx context.Context) ([]db.CategoryCount, error)
 	Archive(ctx context.Context) ([]db.MonthCount, error)
 	Tags(ctx context.Context) ([]db.TagCount, error)
@@ -78,25 +79,42 @@ func New(store Store, opts Options) (http.Handler, error) {
 		script:     script,
 	}
 
+	// The URLs match the SvelteKit app's routes. The router redirects paths with
+	// empty or dot segments to their clean version.
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handle(s.home))
+	mux.HandleFunc("GET /about", s.handle(s.about))
+	mux.HandleFunc("GET /cerca", s.handle(s.search))
+	mux.HandleFunc("GET /feed.xml", s.handle(s.feed))
+	mux.HandleFunc("GET /archivio/{tag}", s.handle(s.tag))
+	mux.HandleFunc("GET /archivio/{year}/{month}", s.handle(s.month))
+	mux.HandleFunc("GET /{segment}", s.handle(s.postOrCategory))
+	mux.HandleFunc("GET /{number}/{slug}", s.handle(s.postWithSlug))
 	mux.HandleFunc("GET /healthz", s.handle(s.healthz))
-	mux.Handle("GET /assets/", hashedAssets(opts.Dist))
+	mux.Handle("GET /assets/{file}", hashedAssets(opts.Dist))
 	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))
+	mux.HandleFunc("/", s.handle(s.notFound))
 
-	return logRequests(recoverPanics(mux)), nil
+	return logRequests(recoverPanics(trimTrailingSlash(mux))), nil
 }
 
-type handlerFunc func(w http.ResponseWriter, r *http.Request) error
-
-// handle turns a returned error into a logged 500 response.
-func (s *Server) handle(h handlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := h(w, r); err != nil {
-			slog.Error("request failed", "method", r.Method, "path", r.URL.Path, "error", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// trimTrailingSlash redirects /path/ to /path, like the SvelteKit app, so old
+// links with a trailing slash keep working.
+func trimTrailingSlash(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.EscapedPath()
+		if path == "/" || !strings.HasSuffix(path, "/") {
+			next.ServeHTTP(w, r)
+			return
 		}
-	}
+
+		// A single leading slash, so //example.com/ can't redirect to another host
+		target := "/" + strings.Trim(path, "/")
+		if r.URL.RawQuery != "" {
+			target += "?" + r.URL.RawQuery
+		}
+		redirect(w, target, http.StatusPermanentRedirect)
+	})
 }
 
 func recoverPanics(next http.Handler) http.Handler {

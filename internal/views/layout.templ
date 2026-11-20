@@ -40,6 +40,9 @@ templ meta(page Page) {
 	<meta property="og:title" content={ page.Meta.OGTitle }/>
 	<meta property="og:type" content={ page.Meta.OGType }/>
 	<meta property="og:description" content={ page.Meta.Description }/>
+	if page.Meta.JSONLD != "" {
+		@templ.Raw(`<script type="application/ld+json">` + page.Meta.JSONLD + `</script>`)
+	}
 	<link rel="canonical" href={ page.Canonical }/>
 }
 

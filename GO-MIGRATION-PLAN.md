@@ -103,14 +103,14 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 - [x] Add goldmark as its own package with options per content type; notes get strikethrough and no raw HTML
 - [x] Add `[img]` handling, preserving existing image URLs
 - [x] Add HTML cache reads and writes, with a new renderer version, replacing the temporary `<pre>` fallback
-- [ ] Port the home and single post pages, including slug behavior
-- [ ] Port the category pages
-- [ ] Port the tag and year/month archive pages
-- [ ] Port search
-- [ ] Port the about page
-- [ ] Port the RSS feed
-- [ ] Port 404 and error pages, and match trailing-slash behavior
-- [ ] Add a status test for every public page, and function or component tests for page logic
+- [x] Port the home and single post pages, including slug behavior
+- [x] Port the category pages
+- [x] Port the tag and year/month archive pages
+- [x] Port search
+- [x] Port the about page
+- [x] Port the RSS feed
+- [x] Port 404 and error pages, and match trailing-slash behavior
+- [x] Add a status test for every public page, and function or component tests for page logic
 
 ### Step 3: Authentication and draft management
 

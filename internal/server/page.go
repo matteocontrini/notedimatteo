@@ -10,19 +10,10 @@ import (
 
 const siteTitle = "Note di Matteo"
 
-// newPage loads the data shared by every page. Empty meta fields use site defaults.
+// newPage loads the data shared by every page: metadata and the header's
+// categories. Empty meta fields use site defaults.
 func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
-	ctx := r.Context()
-
-	categories, err := s.store.Categories(ctx)
-	if err != nil {
-		return views.Page{}, err
-	}
-	archive, err := s.store.Archive(ctx)
-	if err != nil {
-		return views.Page{}, err
-	}
-	tags, err := s.store.Tags(ctx)
+	categories, err := s.store.Categories(r.Context())
 	if err != nil {
 		return views.Page{}, err
 	}
@@ -48,9 +39,28 @@ func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
 		Stylesheet:  s.stylesheet,
 		Script:      s.script,
 		Categories:  categoryLinks(categories, r.URL.Path),
-		Archive:     archiveYears(archive),
-		Tags:        tags,
 	}, nil
+}
+
+// newSidebarPage is newPage plus the sidebar's archive and tags.
+func (s *Server) newSidebarPage(r *http.Request, meta views.Meta) (views.Page, error) {
+	page, err := s.newPage(r, meta)
+	if err != nil {
+		return views.Page{}, err
+	}
+
+	archive, err := s.store.Archive(r.Context())
+	if err != nil {
+		return views.Page{}, err
+	}
+	tags, err := s.store.Tags(r.Context())
+	if err != nil {
+		return views.Page{}, err
+	}
+
+	page.Archive = archiveYears(archive)
+	page.Tags = tags
+	return page, nil
 }
 
 func categoryLinks(categories []db.CategoryCount, currentPath string) []views.CategoryLink {

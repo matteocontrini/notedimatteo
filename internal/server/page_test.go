@@ -93,13 +93,33 @@ func TestNewPagination(t *testing.T) {
 }
 
 func TestPageNumber(t *testing.T) {
-	tests := map[string]int{"": 1, "page=2": 2, "page=0": 1, "page=-1": 1, "page=abc": 1}
-
-	for query, want := range tests {
+	valid := map[string]int{"": 1, "page=": 1, "page=1": 1, "page=2": 2}
+	for query, want := range valid {
 		r := httptest.NewRequest(http.MethodGet, "/?"+query, nil)
-		if got := pageNumber(r); got != want {
-			t.Errorf("pageNumber(%q) = %d, want %d", query, got, want)
+		if got, err := pageNumber(r); got != want || err != nil {
+			t.Errorf("pageNumber(%q) = %d, %v, want %d", query, got, err, want)
 		}
+	}
+
+	for _, query := range []string{"page=0", "page=-1", "page=abc", "page=2abc", "page=1.5", "page=99999999999"} {
+		r := httptest.NewRequest(http.MethodGet, "/?"+query, nil)
+		if _, err := pageNumber(r); err != errBadRequest {
+			t.Errorf("pageNumber(%q) error = %v", query, err)
+		}
+	}
+}
+
+func TestSidebarOnlyWhenNeeded(t *testing.T) {
+	s := &Server{store: &fakeStore{archive: []db.MonthCount{{Year: 2026, Month: 4, Count: 1}}, tags: []db.TagCount{{Name: "ai", Count: 1}}}}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	page, err := s.newPage(r, views.Meta{})
+	if err != nil || page.Archive != nil || page.Tags != nil {
+		t.Errorf("newPage loaded the sidebar: %+v, %v", page, err)
+	}
+	page, err = s.newSidebarPage(r, views.Meta{})
+	if err != nil || len(page.Archive) != 1 || len(page.Tags) != 1 {
+		t.Errorf("newSidebarPage didn't load the sidebar: %+v, %v", page, err)
 	}
 }
 

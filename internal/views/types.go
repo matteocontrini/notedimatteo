@@ -9,6 +9,8 @@ type Meta struct {
 	Description string
 	OGTitle     string
 	OGType      string
+	// JSONLD is structured data, already encoded as JSON safe to embed in HTML.
+	JSONLD string
 }
 
 // Page is the data shared by every page: metadata, assets, header, and sidebar.

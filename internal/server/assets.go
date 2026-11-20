@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"strings"
 )
 
 const manifestPath = ".vite/manifest.json"
@@ -41,11 +40,6 @@ func hashedAssets(dist fs.FS) http.Handler {
 	files := http.FileServerFS(dist)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// FileServer would otherwise list the directory
-		if strings.HasSuffix(r.URL.Path, "/") {
-			http.NotFound(w, r)
-			return
-		}
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		files.ServeHTTP(w, r)
 	})

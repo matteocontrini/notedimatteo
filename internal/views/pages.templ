@@ -1,0 +1,95 @@
+package views
+
+import "strconv"
+
+templ PostPage(page Page, item PostItem) {
+	@layout(page) {
+		<div class="lg:w-7/12">
+			@post(item, true, page.IsLoggedIn)
+		</div>
+	}
+}
+
+// Listing is a page of posts with a heading and the sidebar: categories, tags,
+// and months. A zero Pagination shows no pagination.
+templ Listing(page Page, heading, emptyMessage string, items []PostItem, p Pagination) {
+	@layout(page) {
+		<div class="grid gap-20 md:grid-cols-12">
+			<div class="md:col-span-7">
+				<h2 class="mb-8 text-2xl font-semibold">{ heading }</h2>
+				if len(items) == 0 {
+					<p class="mt-4 text-slate-500">{ emptyMessage }</p>
+				} else {
+					for _, item := range items {
+						@post(item, true, page.IsLoggedIn)
+						<hr class="my-6"/>
+					}
+				}
+				@pagination(p)
+			</div>
+			@sidebar(page)
+		</div>
+	}
+}
+
+templ Search(page Page, query string, items []PostItem) {
+	@layout(page) {
+		<div class="grid gap-20 md:grid-cols-12">
+			<div class="md:col-span-7">
+				if len(items) == 0 || query == "" {
+					<h2 class="text-2xl font-semibold">Nessun risultato per "{ query }"</h2>
+					<a class="link mt-4 block" href="/">Torna alla home</a>
+				} else {
+					<h2 class="mb-2 text-2xl font-semibold">
+						if len(items) == 1 {
+							1 risultato
+						} else {
+							{ strconv.Itoa(len(items)) } risultati
+						}
+						per "{ query }"
+					</h2>
+					<hr class="my-6"/>
+					for _, item := range items {
+						@post(item, true, page.IsLoggedIn)
+						<hr class="my-6"/>
+					}
+				}
+			</div>
+			@sidebar(page)
+		</div>
+	}
+}
+
+templ About(page Page) {
+	@layout(page) {
+		<article class="space-y-4 lg:w-7/12">
+			<p>
+				Ciao! Sono <a href="https://matteosonoio.it">Matteo Contrini</a> e questo è il mio spazio personale
+				dove condivido appunti, idee e segnalazioni sulle cose che mi capita di leggere o di vedere.
+			</p>
+			<p>
+				Non è una newsletter e nemmeno un blog tradizionale. È una specie di archivio, forse un diario,
+				nello spirito del Web 1.0: non ci sono notifiche, non ci sono commenti, non ci sono reazioni,
+				non ci sono pubblicità. Il design è brutto. Alcune note non hanno nemmeno un titolo. È tutto
+				voluto.
+			</p>
+			<p>
+				Scrivimi a <a href="mailto:matteo@notedimatteo.it">matteo@notedimatteo.it</a>.
+			</p>
+			<p>
+				Segui questo spazio con il <a href="/feed.xml">feed RSS</a>.
+			</p>
+			<p>
+				Il codice sorgente di questo sito è su <a href="https://github.com/matteocontrini/notedimatteo">GitHub</a>.
+			</p>
+		</article>
+	}
+}
+
+// ErrorPage shows an error inside the site layout, like SvelteKit's built-in error page.
+templ ErrorPage(page Page, status int, message string) {
+	@layout(page) {
+		<h1>{ strconv.Itoa(status) }</h1>
+		<p>{ message }</p>
+	}
+}

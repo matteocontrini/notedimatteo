@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	stdhtml "html"
+	"net/url"
+	"path"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -20,13 +23,9 @@ import (
 // becomes a lazy-loaded image of the _preview variant, linked to the original
 // or to the link attribute.
 var (
-	// TODO: after the migration, don't match an empty path: "[img][/img] and
-	// [img]x[/img]" currently takes "[/img] and [img]x" as the first path.
-	imgPattern       = regexp.MustCompile(`\[img([^\]]*)\](.+?)\[/img\]`)
+	// The path can't be empty or contain brackets or line breaks.
+	imgPattern       = regexp.MustCompile(`\[img([^\]]*)\]([^\[\]\n]+?)\[/img\]`)
 	attributePattern = regexp.MustCompile(`(\w+)=(?:"([^"]*)"|(\S+))`)
-	// TODO: after the migration, match the extension of the path only. Applied
-	// to the whole URL, a path without an extension changes the host instead.
-	extensionPattern = regexp.MustCompile(`(\.[^.]+)$`)
 )
 
 var kindImage = ast.NewNodeKind("StorageImage")
@@ -70,7 +69,8 @@ func (t *imageTransformer) Transform(doc *ast.Document, reader text.Reader, _ pa
 		if !entering {
 			return ast.WalkContinue, nil
 		}
-		// Code spans are handled by nodeRenderer.renderCodeSpan
+		// [img] markup in code stays as written; goldmark's code span renderer
+		// also only accepts Text children
 		if n.Kind() == ast.KindCodeSpan {
 			return ast.WalkSkipChildren, nil
 		}
@@ -153,7 +153,7 @@ func (t *imageTransformer) replaceRun(parent ast.Node, run []*ast.Text, source [
 	}
 }
 
-func newImage(storageBaseURL, attributeString, path string) *imageNode {
+func newImage(storageBaseURL, attributeString, imagePath string) *imageNode {
 	attributes := map[string]string{}
 	for _, m := range attributePattern.FindAllStringSubmatch(strings.TrimSpace(attributeString), -1) {
 		value := m[2]
@@ -163,22 +163,20 @@ func newImage(storageBaseURL, attributeString, path string) *imageNode {
 		attributes[m[1]] = value
 	}
 
-	original := storageBaseURL + "/" + path
+	ext := path.Ext(imagePath)
 	image := &imageNode{
-		href: original,
-		src:  extensionPattern.ReplaceAllString(original, "_preview${1}"),
+		href: storageBaseURL + "/" + imagePath,
+		src:  storageBaseURL + "/" + strings.TrimSuffix(imagePath, ext) + "_preview" + ext,
 		alt:  attributes["alt"],
 	}
-	// TODO: after the migration, allow only http(s) links: javascript: URLs are
-	// output as they are, which only the admin can write but still shouldn't be.
-	if link := attributes["link"]; link != "" {
-		image.href = link
+	if link, err := url.Parse(attributes["link"]); err == nil && (link.Scheme == "http" || link.Scheme == "https") {
+		image.href = attributes["link"]
 	}
-	if width := attributes["width"]; width != "" {
-		image.width = parseIntLikeJS(width)
+	if width, err := strconv.Atoi(attributes["width"]); err == nil {
+		image.width = strconv.Itoa(width)
 	}
-	if height := attributes["height"]; height != "" {
-		image.height = parseIntLikeJS(height)
+	if height, err := strconv.Atoi(attributes["height"]); err == nil {
+		image.height = strconv.Itoa(height)
 	}
 	return image
 }
@@ -191,30 +189,4 @@ func decodeText(segment []byte) string {
 	html.DefaultWriter.Write(w, segment)
 	_ = w.Flush()
 	return stdhtml.UnescapeString(buf.String())
-}
-
-// parseIntLikeJS mimics JavaScript's parseInt(value, 10) for an attribute
-// value: leading digits after optional whitespace and sign, or "" if there are
-// none. The rehype plugin's NaN result for "" is dropped by its HTML output.
-func parseIntLikeJS(value string) string {
-	s := strings.TrimLeft(value, " \t\n\r\f\v")
-	sign := ""
-	if s != "" && (s[0] == '+' || s[0] == '-') {
-		if s[0] == '-' {
-			sign = "-"
-		}
-		s = s[1:]
-	}
-	end := 0
-	for end < len(s) && s[end] >= '0' && s[end] <= '9' {
-		end++
-	}
-	if end == 0 {
-		return ""
-	}
-	digits := strings.TrimLeft(s[:end], "0")
-	if digits == "" {
-		return "0"
-	}
-	return sign + digits
 }

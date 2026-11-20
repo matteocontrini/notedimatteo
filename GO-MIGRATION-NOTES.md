@@ -6,9 +6,9 @@ don't show; remove notes that stop being true.
 
 ## Working agreements
 
-- Phase 1 is about parity: reproduce SvelteKit's behavior, bugs included. Deferred fixes are `TODO` comments
-  in the code (`grep -rn TODO cmd internal web`), plus the open questions below.
-
+- Phase 1 parity means the same pages, URLs, and behavior for what visitors and existing links produce. Edge-case
+  input handling (number parsing, odd paths, error wording) uses plain, idiomatic Go instead of emulating SvelteKit.
+  Visible fixes that change real content are deferred as `TODO` comments (`grep -rn TODO cmd internal web`).
 - The user handles git: never commit, push, or stage.
 - Plan terminology: phases are the broad units, steps are the smaller ones inside a phase.
 - Keep plan and notes succinct and schematic.
@@ -19,8 +19,6 @@ don't show; remove notes that stop being true.
 - JPEG encoding: accept Debian's libvips without mozjpeg, or build libvips with mozjpeg (phase 1, step 4).
 - English home: a variant of board E3, not designed yet. Italian home: E2 or E4.
 - Production `BODY_SIZE_LIMIT`: `.env.example` has `1M`, local `.env` has `20M`. Match it in Go's upload limit.
-- Production database `TimeZone` (`SHOW timezone`): if it isn't UTC, the live SvelteKit app has shown wrong times
-  since the Prisma 7 upgrade (see below), and the archive's month grouping depends on it too.
 
 ## Local development
 
@@ -40,18 +38,19 @@ don't show; remove notes that stop being true.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
 - libvips isn't installed on the Mac; `govips` is only compiled in Docker until phase 1 step 4 (then `brew install vips`).
+- The file-writing tool can turn `\u` escapes in written Go source into literal characters; check non-ASCII strings.
 - Local database: 31 posts, 18 published, all published ones cached at renderer version 1.
   Posts 1–5 share one `publishedAt` (seed data); queries order by `publishedAt DESC, number DESC`.
 - Local Postgres runs with `TimeZone = Europe/Rome`.
-- Comparing with SvelteKit:
+- Running test servers next to the user's:
   - The user may have `go:dev` running on 6200: run test servers on 6201, built to the scratchpad and started
     directly, and stop them only by their own PIDs. Never `pkill -f` patterns that match the user's servers.
-  - Start SvelteKit with `node node_modules/vite/bin/vite.js dev` so its PID is the server's.
+  - Start SvelteKit with `node node_modules/vite/bin/vite.js dev` so its PID is the server's, and use a
+    `trap ... EXIT` so a failing command doesn't leave it running.
   - Add `options=-c%20TimeZone%3DUTC` to both apps' `DATABASE_URL`, or SvelteKit shows wrong times locally.
-  - Drive headless Chrome over the DevTools protocol (Node's built-in `WebSocket`, `--remote-debugging-port`):
-    compare `document.body.innerText`, emulate `prefers-color-scheme`, click controls, take screenshots.
-- Expected differences: ties are ordered deterministically in Go (posts 1–5 by number, sidebar tags with equal
-  counts by name).
+  - Quote URLs containing `?` in zsh, or it treats them as globs and the command fails.
+  - Headless Chrome over the DevTools protocol (Node's built-in `WebSocket`, `--remote-debugging-port`) can
+    compare `document.body.innerText`, emulate `prefers-color-scheme`, click controls, and take screenshots.
 
 ## Docker and deployment
 
@@ -68,34 +67,67 @@ don't show; remove notes that stop being true.
 - `vips.Startup(&vips.Config{})` turns caching off: values ≥ 0 are applied. `Startup(nil)` uses govips defaults, with caching.
 - Debian trixie ships libvips 8.16.1, which ignores `trellis_quant`, `overshoot_deringing`, `optimize_scans`, and `quant_table`: no mozjpeg.
 
-## Current SvelteKit behavior to preserve
+## SvelteKit behavior
 
-- Markdown (unified/remark): raw HTML is dropped (inline tags removed, text kept); `&` becomes `&#x26;`; `<br>`;
-  single and double `~` strike through; no tables or autolinks. `[img]` is handled on text nodes after parsing.
-- `[img width=W height=H link=URL alt=…]path[/img]`: `src` is the `_preview` variant, wrapped in a link to the
-  original (or `link`), `loading="lazy"`.
+- Uploads: keys `YYYY/MM/<12 hex>.jpg` and `…_preview.jpg` (server-local month); main JPEG q85, preview 1200 px
+  wide q80, both mozjpeg with auto-orientation; the response carries the preview's dimensions; S3 metadata `original`.
+- Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;
+  `lastActivityAt` updated at most once a minute and has no database default (Prisma `@updatedAt`), so inserts set it.
+- Prisma 7's `@prisma/adapter-pg` replaces the offset of every `timestamptz` it reads with `+00:00`, so times are
+  only right when the session time zone is UTC. Go reads them correctly.
+- Archive months use `EXTRACT` in the database session's time zone, not Rome's; Go keeps the same SQL (TODO).
+- Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns,
+  in practice the order saved from the editor. Kept as is on purpose.
+- Theme: mode-watcher stores the preference in localStorage `mode-watcher-mode` (`system`/`light`/`dark`); dark mode
+  is a `.dark` class. Go applies it with an inline head script (`themeInit` in `layout.templ`) and handles the
+  select in `web/assets/site.ts`.
+- GoatCounter is disabled when the host isn't `notedimatteo.it` (Go uses the host of `SITE_URL`).
 
 ## Markdown renderer (`internal/markdown`)
 
-- goldmark with strikethrough (`~` and `~~`), raw HTML dropped, and `[img]` reimplemented to match the rehype plugin,
-  quirks included: images inside code spans and code blocks, `_preview` inserted before the last `.` of the whole
-  URL (wrong for paths without an extension), non-numeric `width` dropped, `[img][/img]` matching across text.
+- goldmark with strikethrough (`~` and `~~`), raw HTML dropped (inline tags removed, text kept), and `[img]`
+  reimplemented after the rehype plugin: the `_preview` variant, linked to the original or to `link`, lazy-loaded.
 - remark merges adjacent text where goldmark splits it (around brackets that aren't links), so the transformer
   matches `[img]` across runs of adjacent text nodes; a hard line break ends a run.
+- Fixed on purpose, with no effect on the 670 production posts (`image_test.go`): `[img]` in code stays as written;
+  `_preview` goes before the path's extension; an empty path doesn't match; `link` must be http(s); `width` and
+  `height` must be integers.
 - `markdown.Version` is 2 (SvelteKit's is 1) and is stored in `post_html_cache`. Bump it whenever the output bytes
-  change. Same structure as SvelteKit's but not the same bytes: Go ends with a newline (26 of 31 local posts differ
-  only by that) and escapes `"` and `&` as `&quot;`/`&amp;` where SvelteKit writes `"`/`&#x26;` (2 posts).
-- Effects of the version change: the cutover re-renders each post once on first view; a rollback re-renders too;
-  running both apps locally makes them overwrite each other's cache entries. All harmless re-rendering.
+  change. Same structure as SvelteKit's but not the same bytes: Go ends with a newline and escapes `"` and `&` as
+  `&quot;`/`&amp;` where SvelteKit writes `"`/`&#x26;`. The cutover and a rollback re-render each post once.
+- Cache: posts without an up-to-date entry are rendered and saved with an `ON CONFLICT` upsert. Unlike SvelteKit, a
+  failed cache write is logged and the page is still shown.
+- `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
 - Compatibility test: `testdata/compat/*.md` with the HTML the SvelteKit renderer produces, compared by parsed
   structure (decoded text, sorted attributes, CRLF normalized). Regenerate expected files with
   `node internal/markdown/testdata/generate.mjs`, which imports the app's own plugins; it stops working once
   SvelteKit is removed, and the fixtures stay as they are.
-- To compare real posts: export bodies as `.md` files into a scratch directory, run `generate.mjs <dir>`, then
-  `MARKDOWN_COMPAT_DIR=<dir> go test ./internal/markdown`. All 31 local posts matched.
 - Against production: export each post's body as `.md` and its cached HTML as `.html` (that cache is SvelteKit's
-  actual output), then add `MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it`. All 670 posts matched
-  (backup of 2026-11-20).
+  actual output), then run `MARKDOWN_COMPAT_DIR=<dir> MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it
+  go test ./internal/markdown`. All 670 posts match (backup of 2026-11-20).
+
+## Public pages (`scripts/parity.py`)
+
+- Compares SvelteKit (6100) and Go (6201) for a list of paths: status, `Location`, title, meta, canonical,
+  JSON-LD, link `href`s (resolved and decoded), visible text, and the feed as parsed XML.
+  `python3 -I scripts/parity.py http://localhost:6100 http://localhost:6201 <paths file> <report file>`.
+- Run both apps on `notedimatteo_prod` with `options=-c%20TimeZone%3DUTC` and
+  `STORAGE_PUBLIC_BASE_URL=https://uploads.notedimatteo.it` for both, or SvelteKit caches HTML with the dev R2 URL.
+- Paths used (905): every post's canonical URL, stale slugs, every tag, category, and month, home pages, search
+  terms, errors, redirects, and unusual paths. Normalized on purpose: SvelteKit's relative links and redirect
+  locations, sidebar tags with equal counts (ordered by name in Go), feed `content:encoded` as decoded HTML.
+- Intended differences (40 paths): `?page=` that isn't a positive integer is a 400 (SvelteKit: 500, or `2abc` as
+  page 2); paths with `//`, `.`, or `..` get the router's 307 to the clean path (SvelteKit: 404 or 200); every 404
+  says "Not Found" (SvelteKit: "Error: 404" for some); search escapes `%` and `_`; descriptions are cut by
+  characters, so #651's ends one character later (an emoji at the limit).
+- Known difference: SvelteKit's server render never marks the current category chip, because its relative link
+  isn't equal to the path; hydration fixes it. Go marks it in the HTML, like the hydrated page.
+- Routes: Go's `ServeMux` panics on overlapping patterns, so assets use `/assets/{file}` (Vite's output is flat)
+  rather than `/assets/`, which would overlap `/{number}/{slug}`.
+- Errors show the status and its standard text inside the layout, without the sidebar. Redirects have no body.
+  A trailing slash is a 308 to the path without it.
+- Only pages with a sidebar load the archive and tag counts (`newSidebarPage`).
+- JSON-LD is encoded with `json.Marshal`, which escapes `<`, `>`, and `&` (same JSON, safe inside `<script>`).
 
 ## Production data
 
@@ -106,27 +138,14 @@ don't show; remove notes that stop being true.
 - To use it, point `DATABASE_URL` in `.env` at `notedimatteo_prod`: `go:dev` sources `.env`, which overrides
   a `DATABASE_URL` set on the command line.
 - 2026-11-20: 670 posts (#1–#670), all published, no drafts; 99 tags; 1,095 post–tag links; all cached at
-  renderer version 1. 189 posts use `[img]`, 43 contain backticks, 10 contain `<`, none have CRLF line endings.
+  renderer version 1. 189 posts use `[img]`, 43 contain backticks, 10 contain `<`, none have CRLF line endings,
+  none contain `]]>`, and no two share a `publishedAt`.
 - Images are served from `https://uploads.notedimatteo.it`.
+- Production Postgres runs with `TimeZone = Etc/UTC`, so the Prisma 7 time zone bug doesn't affect the live site,
+  and archive months are grouped in UTC. Local comparisons force a UTC session to match.
+- After a comparison run, restore the production copy's cache, which both apps overwrite: extract the
+  `post_html_cache` `COPY` block from `data.sql`, then `TRUNCATE post_html_cache` and load it in one transaction.
 - `sessions` holds 11 production login tokens: treat the local copy like the backup repo.
-- Cache: posts without an up-to-date entry are rendered and saved with `ON CONFLICT` upsert. Unlike SvelteKit, a
-  failed cache write is logged and the page is still shown.
-- `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
-- Uploads: keys `YYYY/MM/<12 hex>.jpg` and `…_preview.jpg` (server-local month); main JPEG q85, preview 1200 px
-  wide q80, both mozjpeg with auto-orientation; the response carries the preview's dimensions; S3 metadata `original`.
-- Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;
-  `lastActivityAt` updated at most once a minute and has no database default (Prisma `@updatedAt`), so inserts set it.
-- Search: Prisma `contains` with `mode: insensitive` doesn't escape `%` or `_`.
-- Prisma 7's `@prisma/adapter-pg` replaces the offset of every `timestamptz` it reads with `+00:00`, so times are
-  only right when the session time zone is UTC. Go reads them correctly.
-- Archive months use `EXTRACT` in the database session's time zone, not Rome's; Go keeps the same SQL.
-- Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns,
-  in practice the order saved from the editor. Kept as is on purpose; not a bug to fix during the migration.
-- `?page=` that isn't a positive integer: SvelteKit passes it to Prisma (likely an error); Go shows page 1.
-- Theme: mode-watcher stores the preference in localStorage `mode-watcher-mode` (`system`/`light`/`dark`); dark mode is a `.dark` class.
-  Go applies it with an inline head script (`theme-init.gohtml`) and handles the select in `web/assets/site.ts`.
-- `https://notedimatteo.it` is hard-coded in `MetaTags.svelte` (canonical) and the RSS feed.
-- GoatCounter is disabled when the host isn't `notedimatteo.it`.
 
 ## Blog (`../blog`)
 

@@ -44,7 +44,7 @@ func New(opts Options) (*Renderer, error) {
 		),
 		goldmark.WithRendererOptions(
 			// A lower number takes precedence over goldmark's HTML renderer (1000)
-			renderer.WithNodeRenderers(util.Prioritized(&nodeRenderer{storageBaseURL: storageBaseURL}, 100)),
+			renderer.WithNodeRenderers(util.Prioritized(&nodeRenderer{}, 100)),
 		),
 	)
 

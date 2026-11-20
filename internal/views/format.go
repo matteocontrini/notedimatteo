@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 	_ "time/tzdata" // fallback for time zones if the system has no time zone database
+
+	"github.com/matteocontrini/notedimatteo/internal/db"
 )
 
 var rome = mustLoadLocation("Europe/Rome")
@@ -46,6 +48,28 @@ func monthName(month int) string {
 	return italianMonths[month-1]
 }
 
+// MonthName returns the lowercase Italian name of a month, from 1 to 12.
+func MonthName(month int) string {
+	return monthName(month)
+}
+
+// CapitalizedMonthName returns the Italian name of a month with a capital letter.
+func CapitalizedMonthName(month int) string {
+	name := monthName(month)
+	if name == "" {
+		return ""
+	}
+	return strings.ToUpper(name[:1]) + name[1:]
+}
+
+// PostTitle is a post's title, or "Nota #670 del 19/11/2026" for untitled posts.
+func PostTitle(post db.Post) string {
+	if post.Title != "" {
+		return post.Title
+	}
+	return fmt.Sprintf("Nota #%d del %s", post.Number, post.Timestamp().In(rome).Format("02/01/2006"))
+}
+
 var categoryLabels = map[string]string{
 	"note":       "Note",
 	"til":        "TIL",
@@ -53,6 +77,12 @@ var categoryLabels = map[string]string{
 	"segnalibri": "Segnalibri",
 	"video":      "Video",
 	"progetti":   "Progetti",
+}
+
+// IsCategory reports whether a category has its own page.
+func IsCategory(slug string) bool {
+	_, ok := categoryLabels[slug]
+	return ok
 }
 
 // CategoryLabel returns a category's display name. Unknown categories are

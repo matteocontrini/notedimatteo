@@ -16,12 +16,14 @@ import (
 type fakeStore struct {
 	posts      []db.Post
 	total      int
+	post       *db.Post
 	categories []db.CategoryCount
 	archive    []db.MonthCount
 	tags       []db.TagCount
 	err        error
 
-	// lastOffset records the offset of the last PublishedPosts call
+	// lastFilter and lastOffset record the last Posts call
+	lastFilter db.PostFilter
 	lastOffset int
 	// saved records the HTML cached by SavePostHTML, by post ID
 	saved   map[int]string
@@ -32,13 +34,18 @@ func (f *fakeStore) Ping(context.Context) error {
 	return f.err
 }
 
-func (f *fakeStore) PublishedPosts(_ context.Context, _, offset int) ([]db.Post, error) {
+func (f *fakeStore) Posts(_ context.Context, filter db.PostFilter, _, offset int) ([]db.Post, error) {
+	f.lastFilter = filter
 	f.lastOffset = offset
 	return f.posts, f.err
 }
 
-func (f *fakeStore) CountPublishedPosts(context.Context) (int, error) {
+func (f *fakeStore) CountPosts(context.Context, db.PostFilter) (int, error) {
 	return f.total, f.err
+}
+
+func (f *fakeStore) PostByNumber(context.Context, int) (*db.Post, error) {
+	return f.post, f.err
 }
 
 func (f *fakeStore) Categories(context.Context) ([]db.CategoryCount, error) {
@@ -160,8 +167,9 @@ func TestAssets(t *testing.T) {
 		t.Errorf("missing asset Cache-Control = %q", got)
 	}
 
-	if rec := get(t, &fakeStore{}, "/assets/"); rec.Code != http.StatusNotFound {
-		t.Errorf("directory listing status = %d", rec.Code)
+	// No directory listing: /assets/ redirects to /assets, which isn't a category
+	if rec := get(t, &fakeStore{}, "/assets"); rec.Code != http.StatusNotFound {
+		t.Errorf("/assets status = %d", rec.Code)
 	}
 	if rec := get(t, &fakeStore{}, "/.vite/manifest.json"); rec.Code != http.StatusNotFound {
 		t.Errorf("manifest status = %d", rec.Code)
