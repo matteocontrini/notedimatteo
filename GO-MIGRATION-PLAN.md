@@ -110,7 +110,7 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 - [ ] Port the about page
 - [ ] Port the RSS feed
 - [ ] Port 404 and error pages, and match trailing-slash behavior
-- [ ] Add render tests for every public page
+- [ ] Add a status test for every public page, and function or component tests for page logic
 
 ### Step 3: Authentication and draft management
 

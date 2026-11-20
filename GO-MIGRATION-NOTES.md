@@ -30,6 +30,9 @@ don't show; remove notes that stop being true.
 - Packages: `internal/server` loads data and builds `views.Page`; `internal/views` renders it and holds date formatting;
   `internal/urls` builds every URL. Views never query the database.
 - templ writes void elements without a trailing slash (`<meta ...>`); tests match attributes, not whole tags.
+- Tests: logic is tested as plain functions (`newPage`, `newPagination`, `GroupByDay`, …) or by rendering one
+  component in `internal/views`; HTTP tests check status codes, queries, and errors, not markup. templ's compiler
+  catches missing fields and wrong arguments, so there are no tests that only check a field reaches the page.
 - `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
