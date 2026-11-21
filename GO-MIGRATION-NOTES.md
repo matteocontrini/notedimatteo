@@ -84,6 +84,9 @@ don't show; remove notes that stop being true.
   the linker warns about libvips's flags appearing twice.
 - Comments directly above `import "C"` are compiled as C.
 - The JPEG settings are sharp's with `mozjpeg: true`; outputs match sharp's within 1 KB.
+- Like sharp, `Process` converts images with an embedded ICC profile to sRGB, then strips the profile. Dropping the
+  profile without converting made the blog's WebPs look washed out (Hugo, September 2026). A test converts an sRGB
+  color to Display P3 with libvips's built-in `"p3"` profile and checks that the output has the sRGB values again.
 - Install with `go get github.com/davidbyttow/govips/v2/vips@v2.20.0`. Asking for `.../govips/v2` resolves to a stale 2020 root-module version.
 - `vips.Startup(&vips.Config{})` turns caching off: values ≥ 0 are applied. `Startup(nil)` uses govips defaults, with caching.
 - Why not Debian's libvips: trixie ships 8.16.1 without mozjpeg, and files came out 14% (main) and 19% (preview)
