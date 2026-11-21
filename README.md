@@ -42,8 +42,9 @@ go tool sqlc generate    # internal/db/queries/*.sql and internal/db/migrations/
 ## Tests
 
 ```sh
-npm test          # the editor's tests (Vitest)
-npm run test:go   # the Go tests
+npm test           # the editor's tests (Vitest)
+npm run test:go    # the Go tests
+npm run test:e2e   # the browser tests (Playwright)
 ```
 
 The database tests run only when `TEST_DATABASE_URL` points at a database with the schema; they roll back what they write.

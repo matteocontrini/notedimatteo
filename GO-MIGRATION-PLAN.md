@@ -167,9 +167,9 @@ Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 8: Browser tests
 
-- [ ] Add Playwright, with a global setup that builds and starts the Go server
-- [ ] Start Postgres and rclone's S3 with testcontainers; apply the goose migrations and a small seed
-- [ ] Test the main flows: reading, login and logout, writing a note with an upload, and editor errors
+- [x] Add Playwright, with a global setup that builds and starts the Go server
+- [x] Start Postgres and rclone's S3 with testcontainers; apply the goose migrations and a small seed
+- [x] Test the main flows: reading, login and logout, writing a note with an upload, and editor errors
 - [ ] Run them in CI, keeping the Playwright report when they fail
 
 ### Step 9: Cutover

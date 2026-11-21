@@ -113,6 +113,23 @@ don't show; remove notes that stop being true.
   through goose's own requirements.
 - Neither local database has been migrated: `npm run migrate` adds `goose_db_version` to the one in `.env`.
 
+## Browser tests (`tests/e2e`)
+
+- `npm run test:e2e` builds the assets, `.e2e/server`, and `.e2e/migrate`, then runs Playwright. The global setup starts
+  `postgres:18` and `rclone/rclone:1.74.4` with testcontainers, applies the goose migrations, loads the seed from
+  `data.ts` with `psql` inside the Postgres container, and starts the server on port 6210.
+- rclone serves one directory twice: S3 on 9000 (the bucket is a subdirectory, so no bucket creation) and plain
+  HTTP on 8080 for the bucket, which is `STORAGE_PUBLIC_BASE_URL`, so uploaded images load in the browser.
+- `SITE_URL` is `https://notedimatteo.it`, so the page turns GoatCounter off; the fixture also aborts requests to
+  other hosts. The fixture fails a test on any uncaught JavaScript error (checked by breaking the editor's script).
+- Flows: reading (pagination, slug redirect, category, tag, month, search, feed, 404, theme), login and logout,
+  and writing a note (field errors, shortcuts, preview, tag Tab completion, pasted and chosen uploads, publish,
+  the note on the home page with its image and in the feed, a taken number, unpublish, delete). About 10 s locally.
+- The editor's "Preview" and "Back to editing" buttons are inside the Body `<label>`, so their accessible name
+  is "Body"; the test matches them by text. Markup kept as it was.
+- Postgres 18 because local is 18.6; production's version isn't in the backup dump.
+- Not run on GitHub yet: the CI job also answers whether Linux resolves `uploads.localhost` (see above).
+
 ## govips and libvips
 
 - libvips is sharp's prebuilt build from npm, 8.18.7 with mozjpeg: `@img/sharp-libvips-dev` (headers, dev dependency)

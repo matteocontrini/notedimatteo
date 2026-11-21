@@ -2,6 +2,11 @@ node_modules
 
 # Output
 /web/dist
+# Browser tests: the binaries they run, and Playwright's results
+/.e2e
+/test-results
+/playwright-report
+/blob-report
 # pkg-config file for the libvips in node_modules: npm run libvips
 /.libvips
 
