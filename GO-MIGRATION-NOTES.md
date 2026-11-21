@@ -214,12 +214,11 @@ don't show; remove notes that stop being true.
 - Cache: posts without an up-to-date entry are rendered and saved with an `ON CONFLICT` upsert. Unlike SvelteKit, a
   failed cache write is logged and the page is still shown.
 - `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
-- Compatibility test: `testdata/compat/*.md` with the HTML the SvelteKit renderer produced, compared by parsed
-  structure (decoded text, sorted attributes, CRLF normalized). The script that generated them was deleted with
-  SvelteKit, so the fixtures stay as they are; new cases go in `image_test.go` or similar.
-- Against production: export each post's body as `.md` and its cached HTML as `.html` (that cache is SvelteKit's
-  actual output), then run `MARKDOWN_COMPAT_DIR=<dir> MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it
-  go test ./internal/markdown`. All 670 posts match (backup of 2026-11-20).
+- Golden test: `testdata/golden/*.md` with Go's exact output in `.html`, compared byte for byte;
+  `go test ./internal/markdown -update` rewrites them after an intended change. Until 2026-11-21 the same inputs
+  were compared by structure with SvelteKit's output; the switch only changed escaping and the final newline.
+- Against production (2026-11-20, before the golden switch): all 670 posts matched SvelteKit's cached HTML by
+  structure. That comparison mode and its `golang.org/x/net/html` normalizer were removed with the golden switch.
 
 ## Authentication and drafts
 

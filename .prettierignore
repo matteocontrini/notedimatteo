@@ -6,7 +6,7 @@ bun.lock
 bun.lockb
 
 # Expected Markdown renderer output
-/internal/markdown/testdata/compat/
+/internal/markdown/testdata/golden/
 
 # Markdown: Prettier rewrites emphasis (*text* to _text_) with no opt-out
 # and reformats fenced code blocks.

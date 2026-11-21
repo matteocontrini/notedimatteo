@@ -12,7 +12,6 @@ require (
 	github.com/pressly/goose/v3 v3.30.1
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.45.0
 	github.com/yuin/goldmark v1.8.7
-	golang.org/x/net v0.63.0
 )
 
 require (
@@ -119,6 +118,7 @@ require (
 	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/mod v0.43.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
