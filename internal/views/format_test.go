@@ -46,13 +46,9 @@ func TestMonthName(t *testing.T) {
 
 func TestCategoryLabel(t *testing.T) {
 	tests := map[string]string{
-		"cit":        "Cit.",
-		"til":        "TIL",
-		"foo-bar":    "Foo Bar",
-		"l'arte":     "L'Arte",
-		"già-fatto":  "Già Fatto",
-		"snake_case": "Snake_case",
-		"":           "",
+		"cit":     "Cit.",
+		"til":     "TIL",
+		"foo-bar": "foo-bar",
 	}
 
 	for slug, want := range tests {

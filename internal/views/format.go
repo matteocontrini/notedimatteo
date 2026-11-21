@@ -129,27 +129,11 @@ func IsCategory(slug string) bool {
 	return ok
 }
 
-// CategoryLabel returns a category's display name. Unknown categories are
-// title-cased: "foo-bar" becomes "Foo Bar".
+// CategoryLabel returns a category's display name, or the slug itself for a
+// category that isn't in Categories.
 func CategoryLabel(slug string) string {
 	if label, ok := categoryLabels[slug]; ok {
 		return label
 	}
-
-	var b strings.Builder
-	prevWord := false
-	for _, r := range strings.ReplaceAll(slug, "-", " ") {
-		word := isASCIIWord(r)
-		if word && !prevWord {
-			r = []rune(strings.ToUpper(string(r)))[0]
-		}
-		b.WriteRune(r)
-		prevWord = word
-	}
-	return b.String()
-}
-
-// isASCIIWord determines whether r is an ASCII letter, digit, or underscore (\w).
-func isASCIIWord(r rune) bool {
-	return r == '_' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
+	return slug
 }
