@@ -109,9 +109,9 @@
 	</label>
 
 	<label class="block md:col-span-2">
-		<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-			>Tags (comma separated)</span
-		>
+		<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+			Tags (comma separated)
+		</span>
 		<input
 			class="h-9 w-full"
 			name="tags"
