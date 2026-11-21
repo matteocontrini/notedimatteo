@@ -36,6 +36,7 @@ type Store interface {
 	CreateDraft(ctx context.Context) (int, error)
 	DeleteDraft(ctx context.Context, number int) (bool, error)
 
+	PostForEdit(ctx context.Context, number int) (*db.EditablePost, error)
 	SavePost(ctx context.Context, number int, edit db.PostEdit) (*db.EditablePost, error)
 }
 
@@ -61,6 +62,8 @@ type Server struct {
 	siteHost   string
 	stylesheet string
 	script     string
+	// editorScript is the URL of the Svelte editor, which only the edit page loads.
+	editorScript string
 
 	adminUsername string
 	adminPassword string
@@ -92,6 +95,10 @@ func New(store Store, opts Options) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	editorScript, err := asset("editor/main.ts")
+	if err != nil {
+		return nil, err
+	}
 
 	s := &Server{
 		store:      store,
@@ -100,6 +107,8 @@ func New(store Store, opts Options) (http.Handler, error) {
 		siteHost:   site.Host,
 		stylesheet: stylesheet,
 		script:     script,
+
+		editorScript: editorScript,
 
 		adminUsername: opts.AdminUsername,
 		adminPassword: opts.AdminPassword,

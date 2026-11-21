@@ -190,6 +190,17 @@ templ draft(item PostItem, now time.Time) {
 	</article>
 }
 
+// Editor is the page where the Svelte editor in web/editor edits a post.
+// The editor reads its data from the JSON script and loads its code from script.
+// JSONScript escapes <, >, and &, so a post's body can't close the script element.
+templ Editor(page Page, data any, script string) {
+	@layout(page) {
+		@templ.JSONScript("editor-data", data)
+		<div id="editor"></div>
+		<script type="module" src={ script }></script>
+	}
+}
+
 // ErrorPage shows an error inside the site layout, like SvelteKit's built-in error page.
 templ ErrorPage(page Page, status int, message string) {
 	@layout(page) {

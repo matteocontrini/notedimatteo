@@ -2,3 +2,4 @@
 @import '../../src/app.css';
 
 @source '../../internal/views';
+@source '../editor';

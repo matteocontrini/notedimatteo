@@ -12,13 +12,29 @@ import (
 	"time"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/urls"
+	"github.com/matteocontrini/notedimatteo/internal/views"
 )
 
 // postSizeLimit is the largest save or preview request the server reads.
 const postSizeLimit = 1 << 20
 
+// editorData is the JSON that the edit page gives the editor when it loads.
+type editorData struct {
+	Post editorPost `json:"post"`
+	// Tags are the names the tags field suggests: the tags of published posts.
+	Tags       []string         `json:"tags"`
+	Categories []editorCategory `json:"categories"`
+}
+
+type editorCategory struct {
+	Slug  string `json:"slug"`
+	Label string `json:"label"`
+}
+
 // editorPost is a post as the editor receives it in JSON.
 type editorPost struct {
+	ID          int        `json:"id"`
 	Number      int        `json:"number"`
 	Category    string     `json:"category"`
 	Title       string     `json:"title"`
@@ -29,6 +45,17 @@ type editorPost struct {
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   *time.Time `json:"updatedAt"`
 	PublishedAt *time.Time `json:"publishedAt"`
+	URLs        editorURLs `json:"urls"`
+}
+
+// editorURLs holds the URLs of the post's page and of the editor's endpoints.
+// A save that changes the post's number changes them, so the editor takes them
+// from each saved post.
+type editorURLs struct {
+	Post    string `json:"post"`
+	Edit    string `json:"edit"`
+	Preview string `json:"preview"`
+	Upload  string `json:"upload"`
 }
 
 func newEditorPost(post db.EditablePost) editorPost {
@@ -37,6 +64,7 @@ func newEditorPost(post db.EditablePost) editorPost {
 		tags = []string{}
 	}
 	return editorPost{
+		ID:          post.ID,
 		Number:      post.Number,
 		Category:    post.Category,
 		Title:       post.Title,
@@ -47,7 +75,51 @@ func newEditorPost(post db.EditablePost) editorPost {
 		CreatedAt:   post.CreatedAt,
 		UpdatedAt:   post.UpdatedAt,
 		PublishedAt: post.PublishedAt,
+		URLs: editorURLs{
+			Post:    urls.Post(post.Number, post.Slug),
+			Edit:    urls.Edit(post.Number),
+			Preview: urls.EditPreview(post.Number),
+			Upload:  urls.EditUpload(post.Number),
+		},
 	}
+}
+
+// editPage renders the page where the Svelte editor edits a post, published
+// or not.
+func (s *Server) editPage(w http.ResponseWriter, r *http.Request) error {
+	number, ok := postNumber(r.PathValue("number"))
+	if !ok {
+		return errNotFound
+	}
+	post, err := s.store.PostForEdit(r.Context(), number)
+	if err != nil {
+		return err
+	}
+	if post == nil {
+		return errNotFound
+	}
+
+	tags, err := s.store.Tags(r.Context())
+	if err != nil {
+		return err
+	}
+	data := editorData{
+		Post:       newEditorPost(*post),
+		Tags:       make([]string, 0, len(tags)),
+		Categories: make([]editorCategory, 0, len(views.Categories)),
+	}
+	for _, tag := range tags {
+		data.Tags = append(data.Tags, tag.Name)
+	}
+	for _, slug := range views.Categories {
+		data.Categories = append(data.Categories, editorCategory{Slug: slug, Label: views.CategoryLabel(slug)})
+	}
+
+	page, err := s.newPage(r, views.Meta{Title: fmt.Sprintf("Modifica #%d", post.Number)})
+	if err != nil {
+		return err
+	}
+	return s.render(w, r, http.StatusOK, views.Editor(page, data, s.editorScript))
 }
 
 // saveResponse is the save endpoint's JSON: the saved post, or the errors of

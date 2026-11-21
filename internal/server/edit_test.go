@@ -200,3 +200,69 @@ func TestPreview(t *testing.T) {
 		}
 	}
 }
+
+func TestEditPage(t *testing.T) {
+	store := loggedInStore()
+	store.tags = []db.TagCount{{Name: "go", Count: 3}}
+	store.editPost = &db.EditablePost{
+		ID:     7,
+		Number: 5,
+		Slug:   "a-slug",
+		// The page must escape this, or the body would end the script element
+		Body: "</script><script>alert(1)</script>",
+	}
+
+	rec := serve(t, store, newRequest(http.MethodGet, "/5/edit", nil, "token"))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+
+	page := rec.Body.String()
+	start := `<script id="editor-data" type="application/json">`
+	i := strings.Index(page, start)
+	if i < 0 {
+		t.Fatal("the page has no editor data")
+	}
+	script, _, _ := strings.Cut(page[i+len(start):], "</script>")
+	data := decodeJSON[editorData](t, script)
+
+	if data.Post.ID != 7 || data.Post.Body != store.editPost.Body {
+		t.Errorf("post = %+v", data.Post)
+	}
+	want := editorURLs{Post: "/5/a-slug", Edit: "/5/edit", Preview: "/5/edit/preview", Upload: "/5/edit/upload"}
+	if data.Post.URLs != want {
+		t.Errorf("URLs = %+v", data.Post.URLs)
+	}
+	if !slices.Equal(data.Tags, []string{"go"}) {
+		t.Errorf("tags = %v", data.Tags)
+	}
+	if len(data.Categories) == 0 || data.Categories[0] != (editorCategory{"note", "Note"}) {
+		t.Errorf("categories = %v", data.Categories)
+	}
+	assertContains(t, rec, `<script type="module" src="/assets/editor-789abc.js">`, "<title>Modifica #5</title>")
+}
+
+func TestEditPageNotFound(t *testing.T) {
+	for _, path := range []string{"/5/edit", "/abc/edit"} {
+		rec := serve(t, loggedInStore(), newRequest(http.MethodGet, path, nil, "token"))
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("%s status = %d", path, rec.Code)
+		}
+	}
+}
+
+// TestEditRouting checks that /{number}/edit reaches the editor, while
+// /archivio/edit stays the archive of the tag "edit".
+func TestEditRouting(t *testing.T) {
+	store := loggedInStore()
+	store.editPost = &db.EditablePost{Number: 5}
+	if rec := serve(t, store, newRequest(http.MethodGet, "/5/edit", nil, "token")); rec.Code != http.StatusOK {
+		t.Errorf("/5/edit status = %d", rec.Code)
+	}
+
+	store = &fakeStore{posts: []db.Post{{Number: 1}}, total: 1}
+	rec := get(t, store, "/archivio/edit")
+	if rec.Code != http.StatusOK || store.lastFilter.Tag != "edit" {
+		t.Errorf("/archivio/edit status = %d, filter %+v", rec.Code, store.lastFilter)
+	}
+}

@@ -69,6 +69,7 @@ func TestLoggedOutAccess(t *testing.T) {
 		{http.MethodGet, "/unpublished", http.StatusSeeOther, "/login"},
 		{http.MethodPost, "/unpublished/new", http.StatusSeeOther, "/login"},
 		{http.MethodPost, "/5/delete", http.StatusSeeOther, "/login"},
+		{http.MethodGet, "/5/edit", http.StatusSeeOther, "/login"},
 		// SvelteKit's GET links no longer exist
 		{http.MethodGet, "/unpublished/new", http.StatusNotFound, ""},
 		{http.MethodGet, "/logout", http.StatusNotFound, ""},

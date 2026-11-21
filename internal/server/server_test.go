@@ -39,6 +39,8 @@ type fakeStore struct {
 	createdDraft  int
 	deletedDrafts []int
 
+	// editPost is what PostForEdit returns
+	editPost *db.EditablePost
 	// savedEdit records the last SavePost call, which fails with savePostErr
 	savedEdit   *db.PostEdit
 	savePostErr error
@@ -128,6 +130,10 @@ func (f *fakeStore) DeleteDraft(_ context.Context, number int) (bool, error) {
 	return false, f.err
 }
 
+func (f *fakeStore) PostForEdit(context.Context, int) (*db.EditablePost, error) {
+	return f.editPost, f.err
+}
+
 func (f *fakeStore) SavePost(_ context.Context, number int, edit db.PostEdit) (*db.EditablePost, error) {
 	f.savedEdit = &edit
 	if f.savePostErr != nil || f.post == nil || f.post.Number != number {
@@ -151,7 +157,8 @@ func testDist() fstest.MapFS {
 	return fstest.MapFS{
 		".vite/manifest.json": {Data: []byte(`{
 			"assets/main.css": {"file": "assets/main-abc123.css"},
-			"assets/site.ts": {"file": "assets/site-def456.js"}
+			"assets/site.ts": {"file": "assets/site-def456.js"},
+			"editor/main.ts": {"file": "assets/editor-789abc.js"}
 		}`)},
 		"assets/main-abc123.css": {Data: []byte("body{}")},
 		"assets/site-def456.js":  {Data: []byte("")},
@@ -209,11 +216,21 @@ func TestInvalidSiteURL(t *testing.T) {
 }
 
 func TestMissingAsset(t *testing.T) {
-	dist := testDist()
-	dist[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(`{"assets/main.css": {"file": "assets/main.css"}}`)}
-
-	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist, Markdown: testRenderer(t), AdminUsername: "admin", AdminPassword: "secret"}); err == nil {
-		t.Error("a manifest without the script was accepted")
+	manifests := map[string]string{
+		"without the script": `{"assets/main.css": {"file": "assets/main.css"}}`,
+		// The editor page would miss this CSS: it loads only the editor's script
+		"with editor CSS": `{
+			"assets/main.css": {"file": "assets/main.css"},
+			"assets/site.ts": {"file": "assets/site.js"},
+			"editor/main.ts": {"file": "assets/main.js", "css": ["assets/main.css"]}
+		}`,
+	}
+	for name, manifest := range manifests {
+		dist := testDist()
+		dist[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(manifest)}
+		if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist, Markdown: testRenderer(t), AdminUsername: "admin", AdminPassword: "secret"}); err == nil {
+			t.Errorf("a manifest %s was accepted", name)
+		}
 	}
 }
 

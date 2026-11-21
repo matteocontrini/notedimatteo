@@ -38,7 +38,7 @@ and G1–G3 (editor).
 | Editor saves   | `fetch` with `FormData`, returning JSON field errors; validation lives only in Go                                                                                 |
 | Assets         | Vite manifest with hashed files, embedded in the binary                                                                                                           |
 | CSS            | Tailwind v4, scanning `internal/views`; from phase 3, only design tokens, no arbitrary values, and a Go test that checks component classes                        |
-| Repo layout    | Go module at the root: `internal/server` (routes, handlers), `internal/views` (templ), `internal/urls` (URL builders); editor helpers stay in place until cutover |
+| Repo layout    | Go module at the root: `internal/server` (routes, handlers), `internal/views` (templ), `internal/urls` (URL builders); the editor in `web/editor`, copied from SvelteKit |
 | Deployment     | Multi-stage Dockerfile on Railway, with sharp's libvips from npm at build time and runtime                                                                       |
 | Observability  | Drop OpenTelemetry; use `slog` and authenticated `pprof`                                                                                                          |
 | Dates          | Embed `time/tzdata` and hard-code Italian month names; English ones in phase 4                                                                                    |
@@ -140,14 +140,14 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 5: Standalone editor
 
-- [ ] Add a Vite entry that mounts the Svelte editor
-- [ ] Render the edit page in Go with safely encoded post data, tags, and endpoint URLs
-- [ ] Replace `$app` imports with props
-- [ ] Replace Superforms with local state, dirty tracking, and `fetch`
-- [ ] Connect field errors, save feedback, and keyboard shortcuts
-- [ ] Connect preview, tag suggestions, slug normalization, and pasted-image uploads
-- [ ] Run the existing editor helper tests against the new setup
-- [ ] Check every editor feature in the browser against the Go endpoints
+- [x] Add a Vite entry that mounts the Svelte editor
+- [x] Render the edit page in Go with safely encoded post data, tags, and endpoint URLs
+- [x] Replace `$app` imports with props
+- [x] Replace Superforms with local state, dirty tracking, and `fetch`
+- [x] Connect field errors, save feedback, and keyboard shortcuts
+- [x] Connect preview, tag suggestions, slug normalization, and pasted-image uploads
+- [x] Copy the editor helpers and their tests into `web/editor`, so it imports nothing from `src`
+- [x] Check every editor feature in the browser against the Go endpoints
 
 ### Step 6: Cutover and cleanup
 

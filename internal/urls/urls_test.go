@@ -10,6 +10,8 @@ func TestURLs(t *testing.T) {
 		{Post(42, ""), "/42"},
 		{Post(42, "a-slug"), "/42/a-slug"},
 		{Edit(42), "/42/edit"},
+		{EditPreview(42), "/42/edit/preview"},
+		{EditUpload(42), "/42/edit/upload"},
 		{Category("segnalibri"), "/segnalibri"},
 		{Tag("c#"), "/archivio/c%23"},
 		{Tag("a b"), "/archivio/a%20b"},

@@ -14,8 +14,19 @@ func Post(number int, slug string) string {
 	return "/" + strconv.Itoa(number) + "/" + url.PathEscape(slug)
 }
 
+// Edit returns the URL of a post's editor. The editor also saves the post to this URL.
 func Edit(number int) string {
 	return "/" + strconv.Itoa(number) + "/edit"
+}
+
+// EditPreview returns the URL that renders the editor's Markdown preview.
+func EditPreview(number int) string {
+	return Edit(number) + "/preview"
+}
+
+// EditUpload returns the URL that receives the editor's image uploads.
+func EditUpload(number int) string {
+	return Edit(number) + "/upload"
 }
 
 // Delete returns the URL that deletes a draft, like /670/delete.

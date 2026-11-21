@@ -39,4 +39,11 @@ export default defineConfig(
 			'svelte/no-navigation-without-resolve': ['warn'],
 		},
 	},
+	{
+		// Go builds the Go-served pages' URLs, so SvelteKit's resolve() doesn't apply
+		files: ['web/**'],
+		rules: {
+			'svelte/no-navigation-without-resolve': 'off',
+		},
+	},
 );

@@ -49,8 +49,12 @@ don't show; remove notes that stop being true.
   or `cmd/server` need `PKG_CONFIG_LIBDIR=$PWD/.libvips` (absolute: cgo runs `pkg-config` in each package's folder).
   `npm run go:dev` and `npm run go:test` set it; set it in the editor's Go settings so gopls can compile cgo.
   Other packages, including `internal/server`, compile without it.
+- cgo still needs the `pkg-config` command (Homebrew `pkgconf` on the Mac; the Dockerfile installs it).
+- End-to-end checks: build the server to the scratchpad, run it on 6201 against the local `notedimatteo` database,
+  and drive it with curl (log in, act, log out so no session rows are left). Upload checks use rclone's S3 (see "Uploads").
 - The file-writing tool can turn `\u` escapes in written Go source into literal characters; check non-ASCII strings.
-- Local database: 31 posts, 18 published, all published ones cached at renderer version 1.
+- Local database (2026-11-21): 30 posts (numbers up to 33), 18 published. Draft #29 disappeared on 2026-11-21,
+  probably deleted from the browser; tests don't delete posts. Test scripts delete the drafts they create.
   Posts 1–5 share one `publishedAt` (seed data); queries order by `publishedAt DESC, number DESC`.
 - Local Postgres runs with `TimeZone = Europe/Rome`.
 - Running test servers next to the user's:
@@ -60,6 +64,8 @@ don't show; remove notes that stop being true.
     `trap ... EXIT` so a failing command doesn't leave it running.
   - Add `options=-c%20TimeZone%3DUTC` to both apps' `DATABASE_URL`, or SvelteKit shows wrong times locally.
   - Quote URLs containing `?` in zsh, or it treats them as globs and the command fails.
+  - Headless Chrome on a DevTools port that a Chrome left running already holds connects the script to the old
+    one: check the port is free first, and stop leftover Chromes by PID.
   - Headless Chrome over the DevTools protocol (Node's built-in `WebSocket`, `--remote-debugging-port`) can
     compare `document.body.innerText`, emulate `prefers-color-scheme`, click controls, and take screenshots.
 
@@ -96,7 +102,8 @@ don't show; remove notes that stop being true.
 
 - `POST /{number}/edit/upload`, multipart field `file`, up to 20 MB. Answers `{main, preview, width, height}` like
   SvelteKit; a file libvips can't read is a 400, and without the `STORAGE_S3_*` variables uploads answer 503.
-- `STORAGE_S3_*` are all set or all unset; the local `.env` has none, so uploads are off locally by default.
+- `STORAGE_S3_*` are all set or all unset. The local `.env` points them at the dev R2 bucket
+  (`dev-notedimatteo-uploads`): test servers override them with rclone's.
 - `internal/images` is plain Go (keys, the two `Put`s, interfaces), so the server and its tests don't need libvips.
 - Non-ASCII file names go into the `original` metadata as RFC 2047 (`=?utf-8?q?…?=`): S3 metadata must be ASCII.
   SvelteKit's JS SDK would have failed on them.
@@ -162,7 +169,6 @@ don't show; remove notes that stop being true.
   GET links from other sites. Their old GET URLs now return 404. The delete form posts to `/{number}/delete`,
   which deletes only drafts; a published post gets a 404.
 - `http.CrossOriginProtection` returns the 403 error page for POSTs from other sites.
-- The "modifica" links lead to `/{number}/edit`, which Go serves only from step 5 (404 until then).
 - TODOs: expire sessions in the database, and limit failed logins. SvelteKit does neither.
 - Tested by hand against the local database: login, the drafts list (same text as SvelteKit), creating and
   deleting a draft, a cross-site POST, and logout.
@@ -186,6 +192,29 @@ don't show; remove notes that stop being true.
   production copy.
 - Pitfall: `ParseMultipartForm` hides `ParseForm`'s errors for URL-encoded bodies, so `parseForm` calls
   `ParseForm` first.
+
+## Editor (`web/editor`)
+
+- `GET /{number}/edit` (login required) renders the layout, the editor's data in `<script id="editor-data"
+  type="application/json">` (`templ.JSONScript`, which escapes `<`), and the `editor/main.ts` bundle.
+  `postWithSlug` serves it: a `GET /{number}/edit` pattern would conflict with `GET /archivio/{tag}`.
+- The editor is a copy of SvelteKit's components and helpers, with no imports from `src`. SvelteKit's copy is
+  frozen until step 6 deletes it.
+- Each post in the JSON carries its URLs (`post`, `edit`, `preview`, `upload`), built by `internal/urls`.
+  After a save that changes the number, the editor uses the new ones and `history.replaceState`s the address.
+  SvelteKit showed a 404 there, because it reloaded the old number.
+- `form.ts` holds the requests and dirty tracking: the form is dirty when it differs from what the last
+  successful save sent, so typing during a save stays unsaved. Errors other than field errors show an `alert`,
+  like Superforms' `onError`. ⌘S always saves, even when the Save button is disabled, like SvelteKit's.
+- Superforms had no `taintedMessage`, so leaving with unsaved changes doesn't warn, then or now.
+- Known difference: the top bar's unpublished count doesn't change after publishing until the next page load
+  (SvelteKit reloaded the layout's data after every save).
+- `assetResolver` refuses manifest entries with `css` or `imports`: pages load each entry with one tag.
+  The editor's components have no `<style>`, so the bundle is one 84 KB file (31 KB gzipped).
+- `npm test` (vitest) runs the editor's tests; CI now runs it too.
+- Tested in headless Chrome against the local database and rclone (2026-11-21): every shortcut, field errors,
+  preview, slug, tag Tab completion, pasted and file uploads, publish, unpublish, renumbering, a taken number,
+  and the alert after logout. The script lives in the session scratchpad, not the repo.
 
 ## Public pages (`scripts/parity.py`)
 

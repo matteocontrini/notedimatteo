@@ -10,7 +10,9 @@ import (
 const manifestPath = ".vite/manifest.json"
 
 type manifestEntry struct {
-	File string `json:"file"`
+	File    string   `json:"file"`
+	CSS     []string `json:"css"`
+	Imports []string `json:"imports"`
 }
 
 // assetResolver returns a function mapping a Vite source path, relative to the
@@ -30,6 +32,11 @@ func assetResolver(dist fs.FS) (func(string) (string, error), error) {
 		entry, ok := manifest[source]
 		if !ok {
 			return "", fmt.Errorf("asset %q is not in the manifest", source)
+		}
+		// Vite can move part of an entry into other CSS or JavaScript files.
+		// Pages load only the entry's own file, so they would miss those files.
+		if len(entry.CSS) > 0 || len(entry.Imports) > 0 {
+			return "", fmt.Errorf("asset %q has parts in other files, which pages don't load", source)
 		}
 		return "/" + entry.File, nil
 	}, nil

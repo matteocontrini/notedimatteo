@@ -26,6 +26,8 @@ jobs:
         run: npm run lint
       - name: Run Svelte checks
         run: npm run check
+      - name: Run JavaScript tests
+        run: npm test
 
   go:
     runs-on: ubuntu-latest

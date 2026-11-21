@@ -49,8 +49,14 @@ func (s *Server) postOrCategory(w http.ResponseWriter, r *http.Request) error {
 	return s.category(w, r, segment)
 }
 
-// postWithSlug serves /{number}/{slug}.
+// postWithSlug serves /{number}/{slug}, and the editor at /{number}/edit.
+// The router would reject a separate GET /{number}/edit pattern. That pattern
+// and GET /archivio/{tag} both match /archivio/edit, and neither is more
+// specific than the other.
 func (s *Server) postWithSlug(w http.ResponseWriter, r *http.Request) error {
+	if r.PathValue("slug") == "edit" {
+		return requireLogin(s.editPage)(w, r)
+	}
 	number, ok := postNumber(r.PathValue("number"))
 	if !ok {
 		return errNotFound

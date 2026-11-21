@@ -88,3 +88,14 @@ func TestRelativeTime(t *testing.T) {
 		}
 	}
 }
+
+func TestCategoriesHaveLabels(t *testing.T) {
+	if len(Categories) != len(categoryLabels) {
+		t.Errorf("%d categories, %d labels", len(Categories), len(categoryLabels))
+	}
+	for _, slug := range Categories {
+		if !IsCategory(slug) {
+			t.Errorf("%s has no label", slug)
+		}
+	}
+}

@@ -111,6 +111,9 @@ func PostTitle(post db.Post) string {
 	return fmt.Sprintf("Nota #%d del %s", post.Number, post.Timestamp().In(rome).Format("02/01/2006"))
 }
 
+// Categories lists the categories in the order the editor offers them.
+var Categories = []string{"note", "til", "cit", "segnalibri", "video", "progetti"}
+
 var categoryLabels = map[string]string{
 	"note":       "Note",
 	"til":        "TIL",
