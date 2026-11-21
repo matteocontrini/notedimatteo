@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -67,7 +68,9 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request) error {
 
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=60")
-	return writeBody(w, r, http.StatusOK, []byte(b.String()))
+	w.Header().Set("Content-Length", strconv.Itoa(b.Len()))
+	_, err = io.WriteString(w, b.String())
+	return err
 }
 
 // cdata wraps text in a CDATA section, splitting it where the text contains

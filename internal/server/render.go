@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/a-h/templ"
 )
@@ -27,25 +25,13 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, comp
 	} else {
 		w.Header().Set("Cache-Control", "no-cache")
 	}
-	return writeBody(w, r, status, buf.Bytes())
-}
 
-// writeBody writes a complete response body with its length: Railway's edge
-// compresses only responses that declare it. A successful GET also gets an
-// ETag, so a browser that already has the same body gets a 304 instead.
-func writeBody(w http.ResponseWriter, r *http.Request, status int, body []byte) error {
-	if status == http.StatusOK && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		hash := fnv.New64a()
-		hash.Write(body)
-		w.Header().Set("ETag", fmt.Sprintf(`"%016x"`, hash.Sum64()))
-		// ServeContent sets the length and answers If-None-Match
-		http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(body))
-		return nil
-	}
+	// Set the Content-Length to facilitate CDN caching/compression
+	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 
-	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(status)
-	_, err := w.Write(body)
+
+	_, err := buf.WriteTo(w)
 	return err
 }
 
