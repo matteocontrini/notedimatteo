@@ -20,6 +20,7 @@ const (
 	errUnauthorized = statusError(http.StatusUnauthorized)
 	errNotFound     = statusError(http.StatusNotFound)
 	errTooLarge     = statusError(http.StatusRequestEntityTooLarge)
+	errUnavailable  = statusError(http.StatusServiceUnavailable)
 )
 
 // errorStatus returns the status for an error returned by a handler. It logs

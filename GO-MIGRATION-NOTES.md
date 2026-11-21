@@ -16,9 +16,7 @@ don't show; remove notes that stop being true.
 ## Open questions
 
 - Merged site's URL scheme and domains (phase 4). Affects routes, redirects, and giscus threads.
-- JPEG encoding: accept Debian's libvips without mozjpeg, or build libvips with mozjpeg (phase 1, step 4).
 - English home: a variant of board E3, not designed yet. Italian home: E2 or E4.
-- Production `BODY_SIZE_LIMIT`: `.env.example` has `1M`, local `.env` has `20M`. Match it in Go's upload limit.
 
 ## Local development
 
@@ -47,7 +45,10 @@ don't show; remove notes that stop being true.
 - `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
-- libvips isn't installed on the Mac; `govips` is only compiled in Docker until phase 1 step 4 (then `brew install vips`).
+- libvips comes from npm, not the system (see "govips and libvips"). Go commands that compile `internal/images/libvips`
+  or `cmd/server` need `PKG_CONFIG_LIBDIR=$PWD/.libvips` (absolute: cgo runs `pkg-config` in each package's folder).
+  `npm run go:dev` and `npm run go:test` set it; set it in the editor's Go settings so gopls can compile cgo.
+  Other packages, including `internal/server`, compile without it.
 - The file-writing tool can turn `\u` escapes in written Go source into literal characters; check non-ASCII strings.
 - Local database: 31 posts, 18 published, all published ones cached at renderer version 1.
   Posts 1–5 share one `publishedAt` (seed data); queries order by `publishedAt DESC, number DESC`.
@@ -64,21 +65,49 @@ don't show; remove notes that stop being true.
 
 ## Docker and deployment
 
-- Stages: `assets` (Node) → `build` (Go + libvips-dev) → `runtime` (Debian trixie + libvips) → `server` (last, the default).
+- Stages: `assets` (Node, also writes `.libvips`) → `build` (Go, with `node_modules/@img` and `.libvips` at the same
+  paths) → `runtime` (Debian trixie + sharp's `libvips-cpp.so`) → `server` (last, the default).
   The `assets` stage copies `internal/views` so Tailwind can scan the components; `build` uses the committed `_templ.go` files.
-- `docker build --target vipscheck .` builds and runs `cmd/vipscheck` against the runtime libvips.
-- Image is about 242 MB, runs as `nobody`; `.dockerignore` keeps `.env` and `node_modules` out.
+- `docker build --target libvips-test .` runs the image processing tests inside the runtime image.
+- Image is about 146 MB (242 MB with Debian's libvips), runs as `nobody`; `.dockerignore` keeps `.env` and `node_modules` out.
 - Railway probably builds a root `Dockerfile` automatically (unverified): don't merge `go-migration` into `main` before cutover.
 - Production currently starts through `npm start`, whose launcher process used 55.5 MiB.
 
 ## govips and libvips
 
+- libvips is sharp's prebuilt build from npm, 8.18.7 with mozjpeg: `@img/sharp-libvips-dev` (headers, dev dependency)
+  and `@img/sharp-libvips-<os>-<arch>` (one library with every dependency built in; optional dependencies, so npm
+  installs only the current platform's). `scripts/libvips.mjs` (`npm run go:libvips`) writes `.libvips/vips.pc`.
+  The same version runs in development and production. Add a platform to `optionalDependencies` to build on it.
+- `internal/images/libvips/magick.c` stubs `vips_magickload_buffer`: sharp's build has no ImageMagick, and govips calls
+  it for formats like BMP, which now fail to load. The stub declares what it uses instead of including `vips.h`, or
+  the linker warns about libvips's flags appearing twice.
+- Comments directly above `import "C"` are compiled as C.
+- The JPEG settings are sharp's with `mozjpeg: true`; outputs match sharp's within 1 KB.
 - Install with `go get github.com/davidbyttow/govips/v2/vips@v2.20.0`. Asking for `.../govips/v2` resolves to a stale 2020 root-module version.
 - `vips.Startup(&vips.Config{})` turns caching off: values ≥ 0 are applied. `Startup(nil)` uses govips defaults, with caching.
-- Debian trixie ships libvips 8.16.1, which ignores `trellis_quant`, `overshoot_deringing`, `optimize_scans`, and `quant_table`: no mozjpeg.
+- Why not Debian's libvips: trixie ships 8.16.1 without mozjpeg, and files came out 14% (main) and 19% (preview)
+  bigger. No Go binding bundles libvips, and building it from source in Docker costs minutes per uncached build.
+
+## Uploads
+
+- `POST /{number}/edit/upload`, multipart field `file`, up to 20 MB. Answers `{main, preview, width, height}` like
+  SvelteKit; a file libvips can't read is a 400, and without the `STORAGE_S3_*` variables uploads answer 503.
+- `STORAGE_S3_*` are all set or all unset; the local `.env` has none, so uploads are off locally by default.
+- `internal/images` is plain Go (keys, the two `Put`s, interfaces), so the server and its tests don't need libvips.
+- Non-ASCII file names go into the `original` metadata as RFC 2047 (`=?utf-8?q?…?=`): S3 metadata must be ASCII.
+  SvelteKit's JS SDK would have failed on them.
+- The SDK addresses the bucket in the host name (`bucket.endpoint`), like SvelteKit's.
+- Local S3 for testing: `rclone serve s3 :memory: --addr 127.0.0.1:9100 --auth-key test,test --force-path-style=false`
+  (rclone is installed; nothing is stored on disk). Create the bucket with a signed `PUT http://uploads.localhost:9100/`
+  (`curl --aws-sigv4 'aws:amz:us-east-1:s3' --user test:test`), then run the server with `STORAGE_S3_ENDPOINT=http://localhost:9100`.
+  MinIO no longer publishes images on Docker Hub or Quay.
+- Tested end to end (2026-11-21): a blog photo gave a 174 KB main image and a 99 KB 1200×1073 preview (sharp: 175 and
+  100 KB), with `image/jpeg` and the encoded file name.
 
 ## SvelteKit behavior
 
+- Production `BODY_SIZE_LIMIT` is `20M`: the Go upload limit must match.
 - Uploads: keys `YYYY/MM/<12 hex>.jpg` and `…_preview.jpg` (server-local month); main JPEG q85, preview 1200 px
   wide q80, both mozjpeg with auto-orientation; the response carries the preview's dimensions; S3 metadata `original`.
 - Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;

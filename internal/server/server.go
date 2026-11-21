@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/images"
 	"github.com/matteocontrini/notedimatteo/internal/markdown"
 )
 
@@ -48,6 +49,9 @@ type Options struct {
 	// AdminUsername and AdminPassword are the only login credentials.
 	AdminUsername string
 	AdminPassword string
+	// Uploader stores images uploaded from the editor. If it's nil, uploads
+	// answer 503.
+	Uploader *images.Uploader
 }
 
 type Server struct {
@@ -60,6 +64,7 @@ type Server struct {
 
 	adminUsername string
 	adminPassword string
+	uploader      *images.Uploader
 }
 
 // New returns the HTTP handler for the whole site.
@@ -98,6 +103,7 @@ func New(store Store, opts Options) (http.Handler, error) {
 
 		adminUsername: opts.AdminUsername,
 		adminPassword: opts.AdminPassword,
+		uploader:      opts.Uploader,
 	}
 
 	// The URLs match the SvelteKit app's routes. The router redirects paths with
@@ -119,6 +125,7 @@ func New(store Store, opts Options) (http.Handler, error) {
 	mux.HandleFunc("POST /{number}/delete", s.handle(requireLogin(s.deleteDraft)))
 	mux.HandleFunc("POST /{number}/edit", s.handleAPI(s.savePost))
 	mux.HandleFunc("POST /{number}/edit/preview", s.handleAPI(s.preview))
+	mux.HandleFunc("POST /{number}/edit/upload", s.handleAPI(s.upload))
 	mux.HandleFunc("GET /healthz", s.handle(s.healthz))
 	mux.Handle("GET /assets/{file}", hashedAssets(opts.Dist))
 	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))

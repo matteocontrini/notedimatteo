@@ -3,6 +3,10 @@ WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 # The prepare script is for the SvelteKit app and isn't needed for this build
 RUN npm ci --ignore-scripts
+# npm installs sharp's prebuilt libvips for this architecture; the script
+# writes the pkg-config file that points the Go build at it
+COPY scripts/libvips.mjs scripts/
+RUN node scripts/libvips.mjs
 COPY vite.go.config.ts ./
 COPY src/app.css src/app.css
 # Tailwind scans the templ components for class names
@@ -11,8 +15,12 @@ COPY web web
 RUN npm run go:assets
 
 FROM golang:1.26-trixie AS build
-RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev pkg-config
+RUN apt-get update && apt-get install -y --no-install-recommends pkg-config
 WORKDIR /app
+# Same paths as in the assets stage, which the pkg-config file refers to
+COPY --from=assets /app/node_modules/@img node_modules/@img
+COPY --from=assets /app/.libvips .libvips
+ENV PKG_CONFIG_LIBDIR=/app/.libvips
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd cmd
@@ -23,16 +31,19 @@ RUN go build -trimpath -ldflags='-s -w' -o /out/server ./cmd/server
 
 FROM debian:trixie-slim AS runtime
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends ca-certificates libvips42t64 \
+	&& apt-get install -y --no-install-recommends ca-certificates \
 	&& rm -rf /var/lib/apt/lists/*
+# sharp's libvips is a single library with its dependencies built in
+COPY --from=assets /app/node_modules/@img/sharp-libvips-linux-*/lib/libvips-cpp.so.* /usr/local/lib/
+RUN ldconfig
 
-# Proves that govips works against the runtime libvips: docker build --target vipscheck .
-FROM build AS vipscheck-build
-RUN go build -tags vipscheck -o /out/vipscheck ./cmd/vipscheck
+# Runs the image processing tests in the runtime image: docker build --target libvips-test .
+FROM build AS libvips-test-build
+RUN go test -c -o /out/libvips.test ./internal/images/libvips
 
-FROM runtime AS vipscheck
-COPY --from=vipscheck-build /out/vipscheck /usr/local/bin/vipscheck
-RUN vipscheck
+FROM runtime AS libvips-test
+COPY --from=libvips-test-build /out/libvips.test /usr/local/bin/libvips.test
+RUN libvips.test
 
 FROM runtime AS server
 COPY --from=build /out/server /usr/local/bin/server

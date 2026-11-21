@@ -30,7 +30,7 @@ and G1–G3 (editor).
 | Database       | `pgx/v5` with sqlc: SQL in `internal/db/queries`, typed Go code generated and checked against the schema; small pool                                              |
 | Migrations     | None in phase 1; `goose` from phase 2, with the existing schema as baseline                                                                                       |
 | Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
-| Images         | `govips` (cgo) with libvips caching turned off                                                                                                                    |
+| Images         | `govips` (cgo) against sharp's prebuilt libvips from npm, with mozjpeg; libvips caching turned off                                                               |
 | Sessions       | Keep the existing table and cookie name                                                                                                                           |
 | CSRF           | `http.CrossOriginProtection`                                                                                                                                      |
 | Object storage | `aws-sdk-go-v2` S3 client                                                                                                                                         |
@@ -39,7 +39,7 @@ and G1–G3 (editor).
 | Assets         | Vite manifest with hashed files, embedded in the binary                                                                                                           |
 | CSS            | Tailwind v4, scanning `internal/views`; from phase 3, only design tokens, no arbitrary values, and a Go test that checks component classes                        |
 | Repo layout    | Go module at the root: `internal/server` (routes, handlers), `internal/views` (templ), `internal/urls` (URL builders); editor helpers stay in place until cutover |
-| Deployment     | Multi-stage Dockerfile on Railway, with libvips at build time and runtime                                                                                         |
+| Deployment     | Multi-stage Dockerfile on Railway, with sharp's libvips from npm at build time and runtime                                                                       |
 | Observability  | Drop OpenTelemetry; use `slog` and authenticated `pprof`                                                                                                          |
 | Dates          | Embed `time/tzdata` and hard-code Italian month names; English ones in phase 4                                                                                    |
 
@@ -130,13 +130,13 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 - [x] Port the publish and unpublish behavior
 - [x] Add the JSON response format for success and field errors
 - [x] Port the Markdown preview endpoint
-- [ ] Decide on JPEG encoding: Debian's libvips ignores the mozjpeg options, so either accept larger files or build libvips with mozjpeg
-- [ ] Add `govips` startup with caching turned off, and remove `cmd/vipscheck`
-- [ ] Port image processing: orientation, JPEG output, and 1200px previews
-- [ ] Add S3 uploads, preserving object keys and the `original` metadata
-- [ ] Port the upload endpoint with a request size limit
-- [ ] Add tests for validation, the save transaction, and image processing
-- [ ] Test save, publish, preview, and upload against local services without the UI
+- [x] Decide on JPEG encoding: mozjpeg, through sharp's prebuilt libvips from npm instead of Debian's
+- [x] Add `govips` startup with caching turned off, and remove `cmd/vipscheck`
+- [x] Port image processing: orientation, JPEG output, and 1200px previews
+- [x] Add S3 uploads, preserving object keys and the `original` metadata
+- [x] Port the upload endpoint with a request size limit
+- [x] Add tests for validation, the save transaction, and image processing
+- [x] Test save, publish, preview, and upload against local services without the UI
 
 ### Step 5: Standalone editor
 

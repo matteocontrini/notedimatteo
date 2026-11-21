@@ -44,6 +44,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Build assets
         run: npm run go:assets
+      - name: Point pkg-config at the libvips in node_modules
+        run: npm run go:libvips && echo "PKG_CONFIG_LIBDIR=$PWD/.libvips" >> "$GITHUB_ENV"
       - name: Check formatting
         run: test -z "$(gofmt -l cmd internal web)" && go tool templ fmt -fail internal/views
       - name: Check generated templ files are up to date
@@ -54,7 +56,7 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test ./...
-      - name: Check govips against the Docker image
-        run: docker build --target vipscheck .
+      - name: Test image processing in the Docker image
+        run: docker build --target libvips-test .
       - name: Build the Docker image
         run: docker build .

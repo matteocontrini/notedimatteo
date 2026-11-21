@@ -9,6 +9,8 @@ node_modules
 /build
 /src/lib/server/db/generated
 /web/dist
+# pkg-config file for the libvips in node_modules: npm run go:libvips
+/.libvips
 
 # OS
 .DS_Store

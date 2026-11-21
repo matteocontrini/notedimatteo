@@ -14,8 +14,11 @@ import (
 
 	"github.com/matteocontrini/notedimatteo/internal/config"
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/images"
+	"github.com/matteocontrini/notedimatteo/internal/images/libvips"
 	"github.com/matteocontrini/notedimatteo/internal/markdown"
 	"github.com/matteocontrini/notedimatteo/internal/server"
+	"github.com/matteocontrini/notedimatteo/internal/storage"
 	"github.com/matteocontrini/notedimatteo/web"
 )
 
@@ -50,6 +53,18 @@ func run() error {
 		return err
 	}
 
+	var uploader *images.Uploader
+	if cfg.S3 != nil {
+		stopLibvips, err := libvips.Start()
+		if err != nil {
+			return err
+		}
+		defer stopLibvips()
+		uploader = images.NewUploader(libvips.Processor{}, storage.NewS3(*cfg.S3))
+	} else {
+		slog.Warn("uploads are off: the STORAGE_S3_* variables aren't set")
+	}
+
 	handler, err := server.New(database, server.Options{
 		SiteURL:  cfg.SiteURL,
 		Dist:     web.Dist(),
@@ -57,6 +72,7 @@ func run() error {
 
 		AdminUsername: cfg.AdminUsername,
 		AdminPassword: cfg.AdminPassword,
+		Uploader:      uploader,
 	})
 	if err != nil {
 		return err
