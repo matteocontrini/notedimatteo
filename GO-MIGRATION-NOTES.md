@@ -309,8 +309,12 @@ don't show; remove notes that stop being true.
   `parity.py` decodes URLs, so it can't see this. Post numbers beyond int32 are 404s.
 - GoatCounter will count more page views after cutover: every Go page is a full load, while SvelteKit counted only
   a visit's first page.
-- Go doesn't compress responses. SvelteKit served precompressed assets; the CDN in front (Railway's, or Bunny
-  later) is expected to compress instead.
+- Go doesn't compress responses. Railway's edge gzips responses with a `Content-Length` (seen after cutover: CSS
+  yes; HTML and the feed, streamed without one, no). `writeBody` therefore sends pages and the feed with their
+  length, an `ETag`, and 304s for `If-None-Match`, like SvelteKit's pages. Pages also get `no-cache`, and `private, no-cache`
+  for a logged-in user (admin controls); SvelteKit sent no `Cache-Control` on pages. Compression of pages unverified until the next deploy.
+- SvelteKit's other headers (2.61.1, adapter-node 5.5.4): `x-sveltekit-page` and `link` preloads (its own JS),
+  no security headers. Assets: `immutable` for a year, precompressed gzip/Brotli.
 - Known difference: SvelteKit's server render never marks the current category chip, because its relative link
   isn't equal to the path; hydration fixes it. Go marks it in the HTML, like the hydrated page.
 - Routes: Go's `ServeMux` panics on overlapping patterns, so assets use `/assets/{file}` (Vite's output is flat)

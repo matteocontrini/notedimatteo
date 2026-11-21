@@ -67,8 +67,7 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request) error {
 
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=60")
-	_, err = w.Write([]byte(b.String()))
-	return err
+	return writeBody(w, r, http.StatusOK, []byte(b.String()))
 }
 
 // cdata wraps text in a CDATA section, splitting it where the text contains

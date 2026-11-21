@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/xml"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -221,5 +223,65 @@ func TestFeed(t *testing.T) {
 	}
 	if strings.TrimSpace(item.Content) != html {
 		t.Errorf("content = %q", item.Content)
+	}
+}
+
+func TestResponseCaching(t *testing.T) {
+	tests := []struct {
+		path         string
+		status       int
+		cacheControl string
+		etag         bool
+	}{
+		{"/about", http.StatusOK, "no-cache", true},
+		{"/feed.xml", http.StatusOK, "public, max-age=60", true},
+		{"/unknown-category", http.StatusNotFound, "no-cache", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			handler := newTestHandler(t, &fakeStore{})
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
+
+			if rec.Code != tt.status {
+				t.Fatalf("status = %d, want %d", rec.Code, tt.status)
+			}
+			if got := rec.Header().Get("Cache-Control"); got != tt.cacheControl {
+				t.Errorf("Cache-Control = %q, want %q", got, tt.cacheControl)
+			}
+			if got, want := rec.Header().Get("Content-Length"), strconv.Itoa(rec.Body.Len()); got != want {
+				t.Errorf("Content-Length = %q, want %q", got, want)
+			}
+
+			etag := rec.Header().Get("ETag")
+			if !tt.etag {
+				if etag != "" {
+					t.Errorf("ETag = %q, want none", etag)
+				}
+				return
+			}
+			if etag == "" {
+				t.Fatal("no ETag")
+			}
+
+			// Railway's edge turns the ETag into a weak one when it compresses the body
+			for _, ifNoneMatch := range []string{etag, "W/" + etag} {
+				req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+				req.Header.Set("If-None-Match", ifNoneMatch)
+				rec := httptest.NewRecorder()
+				handler.ServeHTTP(rec, req)
+				if rec.Code != http.StatusNotModified || rec.Body.Len() != 0 {
+					t.Errorf("If-None-Match %s: status = %d with %d bytes, want 304 and no body", ifNoneMatch, rec.Code, rec.Body.Len())
+				}
+			}
+		})
+	}
+}
+
+func TestLoggedInPagesArePrivate(t *testing.T) {
+	rec := send(t, loggedInStore(), http.MethodGet, "/about", nil, "token")
+	if got := rec.Header().Get("Cache-Control"); got != "private, no-cache" {
+		t.Errorf("Cache-Control = %q, want private, no-cache", got)
 	}
 }
