@@ -57,6 +57,8 @@ func TestStatusAndRedirects(t *testing.T) {
 		{"/670/a-slug", &fakeStore{post: publishedPost()}, http.StatusOK, "", ""},
 		{"/670/a-slug", &fakeStore{post: &db.Post{Number: 670, PublishedAt: at("2026-01-01T00:00:00Z")}}, http.StatusTemporaryRedirect, "/670", ""},
 		{"/99999999999999999999", &fakeStore{}, http.StatusNotFound, "", "Not Found"},
+		// Too big for the database's integer column
+		{"/3000000000", &fakeStore{post: publishedPost()}, http.StatusNotFound, "", "Not Found"},
 
 		// Tags
 		{"/archivio/ai", &fakeStore{}, http.StatusNotFound, "", "Not Found"},

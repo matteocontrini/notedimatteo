@@ -2,6 +2,7 @@ package libvips
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -11,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/davidbyttow/govips/v2/vips"
+
+	"github.com/matteocontrini/notedimatteo/internal/images"
 )
 
 func TestMain(m *testing.M) {
@@ -116,8 +119,8 @@ func TestProcessInvalid(t *testing.T) {
 	// BMP goes through the ImageMagick loader, which magick.c replaces
 	bmp := append([]byte("BM"), make([]byte, 100)...)
 	for name, data := range map[string][]byte{"text": []byte("not an image"), "BMP": bmp} {
-		if _, err := (Processor{}).Process(data); err == nil {
-			t.Errorf("%s: no error", name)
+		if _, err := (Processor{}).Process(data); !errors.Is(err, images.ErrUnreadable) {
+			t.Errorf("%s: %v", name, err)
 		}
 	}
 }

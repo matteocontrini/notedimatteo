@@ -1,11 +1,11 @@
 version: '2'
 sql:
   - engine: postgresql
-    # The schema comes from Prisma's migrations until phase 2 moves them to goose
+    # Copies of Prisma's migrations, until phase 2 replaces them with goose migrations
     schema:
-      - src/prisma/migrations/20250920184819_create_posts_tags/migration.sql
-      - src/prisma/migrations/20250926094725_create_sessions/migration.sql
-      - src/prisma/migrations/20260628214406_add_post_html_cache/migration.sql
+      - internal/db/schema/20250920184819_create_posts_tags.sql
+      - internal/db/schema/20250926094725_create_sessions.sql
+      - internal/db/schema/20260628214406_add_post_html_cache.sql
     queries: internal/db/queries
     gen:
       go:

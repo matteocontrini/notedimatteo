@@ -78,7 +78,8 @@ authorization, CSRF protection, and input validation in Go.
 
 ## Phase 1: Go migration
 
-SvelteKit keeps serving production until step 6, so nothing partial reaches visitors.
+SvelteKit keeps serving production until step 6, so nothing partial reaches visitors. There's no second
+Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 1: Skeleton
 
@@ -151,13 +152,13 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 6: Cutover and cleanup
 
-- [ ] Review real posts for Markdown differences and fix the ones that matter
-- [ ] Check URLs, RSS, login, and an upload against a copy of production data
-- [ ] Deploy the Go service to Railway without production traffic
-- [ ] Switch production traffic, keeping the old deployment ready for rollback
-- [ ] Watch logs and Railway's memory graph after the switch
+- [x] Review real posts for Markdown differences and fix the ones that matter
+- [x] Check URLs, RSS, login, and an upload against a copy of production data
+- [x] Review the Go code against SvelteKit's, file by file, for behavior lost by accident
 - [ ] Remove SvelteKit, Prisma, OpenTelemetry, and unused Node dependencies
 - [ ] Update CI, `package.json`, `README.md`, and `AGENTS.md`
+- [ ] Deploy the Go server to the existing Railway service; Railway's previous deployment is the rollback
+- [ ] Watch logs and Railway's memory graph after the switch
 
 Completion means feature parity, preserved URLs/data, reviewed Markdown and image
 output, working editor errors and save/publish flows, and a production artifact

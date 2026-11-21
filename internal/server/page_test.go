@@ -159,3 +159,14 @@ func TestPostItemsWhenCachingFails(t *testing.T) {
 		t.Errorf("HTML = %q", items[0].HTML)
 	}
 }
+
+// TestLinksKeepPathEncoding checks that links built from the request path keep
+// its encoding: a tag like "c#" would otherwise end its path at the #.
+func TestLinksKeepPathEncoding(t *testing.T) {
+	store := &fakeStore{posts: []db.Post{{Number: 1}}, total: 41}
+	rec := get(t, store, "/archivio/c%23")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertContains(t, rec, `href="https://example.com/archivio/c%23"`, `href="/archivio/c%23?page=2"`)
+}

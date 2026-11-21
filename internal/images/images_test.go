@@ -3,6 +3,7 @@ package images
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -73,12 +74,14 @@ func TestUpload(t *testing.T) {
 
 func TestUploadErrors(t *testing.T) {
 	failure := errors.New("failure")
+	unreadable := fmt.Errorf("%w: failure", ErrUnreadable)
 	for name, uploader := range map[string]*Uploader{
+		"unreadable": NewUploader(fakeProcessor{err: unreadable}, &fakeStorage{}),
 		"processing": NewUploader(fakeProcessor{err: failure}, &fakeStorage{}),
 		"storage":    NewUploader(fakeProcessor{}, &fakeStorage{err: failure}),
 	} {
 		_, err := uploader.Upload(context.Background(), nil, "x.png")
-		if !errors.Is(err, failure) || errors.Is(err, ErrProcessing) != (name == "processing") {
+		if err == nil || errors.Is(err, ErrUnreadable) != (name == "unreadable") {
 			t.Errorf("%s: %v", name, err)
 		}
 	}

@@ -69,9 +69,9 @@ func (t *imageTransformer) Transform(doc *ast.Document, reader text.Reader, _ pa
 		if !entering {
 			return ast.WalkContinue, nil
 		}
-		// [img] markup in code stays as written; goldmark's code span renderer
-		// also only accepts Text children
-		if n.Kind() == ast.KindCodeSpan {
+		// [img] markup in code and in an image's alt text stays as written.
+		// goldmark renders both from Text children only.
+		if n.Kind() == ast.KindCodeSpan || n.Kind() == ast.KindImage {
 			return ast.WalkSkipChildren, nil
 		}
 		if n.HasChildren() {
@@ -169,7 +169,7 @@ func newImage(storageBaseURL, attributeString, imagePath string) *imageNode {
 		src:  storageBaseURL + "/" + strings.TrimSuffix(imagePath, ext) + "_preview" + ext,
 		alt:  attributes["alt"],
 	}
-	if link, err := url.Parse(attributes["link"]); err == nil && (link.Scheme == "http" || link.Scheme == "https") {
+	if allowedLink(attributes["link"]) {
 		image.href = attributes["link"]
 	}
 	if width, err := strconv.Atoi(attributes["width"]); err == nil {
@@ -189,4 +189,14 @@ func decodeText(segment []byte) string {
 	html.DefaultWriter.Write(w, segment)
 	_ = w.Flush()
 	return stdhtml.UnescapeString(buf.String())
+}
+
+// allowedLink reports whether an image can link to link: an http(s) URL, or a
+// path on this site like /670. Browsers read //host and /\host as other hosts.
+func allowedLink(link string) bool {
+	if strings.HasPrefix(link, "/") {
+		return !strings.HasPrefix(link, "//") && !strings.HasPrefix(link, "/\\")
+	}
+	u, err := url.Parse(link)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https")
 }

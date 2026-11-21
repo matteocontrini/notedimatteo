@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -32,9 +33,11 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	uploaded, err := s.uploader.Upload(r.Context(), data, header.Filename)
-	if errors.Is(err, images.ErrProcessing) {
-		// Usually a file that isn't an image, so it's the request's fault
+	// The upload continues if the client goes away, so the main image is never
+	// stored without its preview. The server's write timeout still ends it.
+	uploaded, err := s.uploader.Upload(context.WithoutCancel(r.Context()), data, header.Filename)
+	if errors.Is(err, images.ErrUnreadable) {
+		// The client sent a file that isn't an image, or one libvips can't read
 		slog.Warn("upload rejected", "file", header.Filename, "error", err)
 		return errBadRequest
 	}

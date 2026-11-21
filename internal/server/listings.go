@@ -44,7 +44,7 @@ func (s *Server) paginatedPosts(r *http.Request, filter db.PostFilter, count int
 	}
 
 	totalPages := (count + postsPerPage - 1) / postsPerPage
-	return items, newPagination(r.URL.Path, current, totalPages), nil
+	return items, newPagination(r.URL.EscapedPath(), current, totalPages), nil
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) error {

@@ -64,13 +64,14 @@ func (s *Server) postWithSlug(w http.ResponseWriter, r *http.Request) error {
 	return s.post(w, r, number, r.PathValue("slug"))
 }
 
-// postNumber parses a post number written with digits only, like 670.
+// postNumber parses a post number written with digits only, like 670. It
+// refuses numbers too big for the database's integer column.
 func postNumber(segment string) (int, bool) {
 	if segment == "" || strings.Trim(segment, "0123456789") != "" {
 		return 0, false
 	}
-	number, err := strconv.Atoi(segment)
-	return number, err == nil
+	number, err := strconv.ParseInt(segment, 10, 32)
+	return int(number), err == nil
 }
 
 func (s *Server) post(w http.ResponseWriter, r *http.Request, number int, slug string) error {

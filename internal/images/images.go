@@ -42,9 +42,9 @@ type Uploaded struct {
 	Height  int    `json:"height"`
 }
 
-// ErrProcessing means the processor couldn't read or convert the image, usually
-// because the file isn't an image.
-var ErrProcessing = errors.New("can't process image")
+// ErrUnreadable means the processor couldn't read the file as an image. The
+// processor wraps it; other processing errors are the server's fault.
+var ErrUnreadable = errors.New("can't read the file as an image")
 
 type Uploader struct {
 	processor Processor
@@ -62,7 +62,7 @@ func NewUploader(processor Processor, storage Storage) *Uploader {
 func (u *Uploader) Upload(ctx context.Context, data []byte, filename string) (Uploaded, error) {
 	processed, err := u.processor.Process(data)
 	if err != nil {
-		return Uploaded{}, fmt.Errorf("%w: %w", ErrProcessing, err)
+		return Uploaded{}, fmt.Errorf("process image: %w", err)
 	}
 
 	base := newKeyBase(u.now())

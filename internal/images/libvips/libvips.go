@@ -45,7 +45,7 @@ type Processor struct{}
 func (Processor) Process(data []byte) (images.Processed, error) {
 	img, err := vips.NewImageFromBuffer(data)
 	if err != nil {
-		return images.Processed{}, fmt.Errorf("load: %w", err)
+		return images.Processed{}, fmt.Errorf("%w: %w", images.ErrUnreadable, err)
 	}
 	defer img.Close()
 

@@ -34,7 +34,7 @@ don't show; remove notes that stop being true.
   catches missing fields and wrong arguments, so there are no tests that only check a field reaches the page.
 - sqlc is pinned like templ: `go tool sqlc generate` after editing `internal/db/queries/*.sql`; CI runs
   `go tool sqlc diff`. Its first build compiles Postgres's C parser (about 25 s). `sqlc.yaml` reads the schema
-  from Prisma's migration files, listed one by one. Overrides map `int4`/`serial` to `int` and
+  from `internal/db/schema/`, copies of Prisma's migration files, listed one by one. Overrides map `int4`/`serial` to `int` and
   `timestamptz` to `time.Time`, each twice (plain and nullable, which sqlc matches separately). Cast integer
   parameters and results to `::int`, not `::bigint`, or they need `int8` overrides too.
 - Filters are optional parameters (`sqlc.narg(x) IS NULL OR ...`), so query text never changes. `Posts` and
@@ -42,6 +42,8 @@ don't show; remove notes that stop being true.
 - `db.Post` and the other row types are aliases of sqlc's generated structs (`PostsRow`, …). `PostFilter.Number` is a
   pointer because 0 is a valid post number (a zero value once made `/0` show the newest post).
 - Database tests read only and run when `TEST_DATABASE_URL` is set, for example the production copy.
+- The Go build uses nothing in `src/`: `web/assets/main.css` holds a copy of `src/app.css`, and `internal/db/schema/`
+  copies of the migrations.
 - `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
@@ -102,6 +104,9 @@ don't show; remove notes that stop being true.
 
 - `POST /{number}/edit/upload`, multipart field `file`, up to 20 MB. Answers `{main, preview, width, height}` like
   SvelteKit; a file libvips can't read is a 400, and without the `STORAGE_S3_*` variables uploads answer 503.
+  Other processing errors are 500s.
+- An upload continues if the client goes away (`context.WithoutCancel`), so the main image is never stored without
+  its preview. SvelteKit's did the same. The server's 30 s timeouts apply to uploads too: decided that's fine.
 - `STORAGE_S3_*` are all set or all unset. The local `.env` points them at the dev R2 bucket
   (`dev-notedimatteo-uploads`): test servers override them with rclone's.
 - `internal/images` is plain Go (keys, the two `Put`s, interfaces), so the server and its tests don't need libvips.
@@ -140,11 +145,17 @@ don't show; remove notes that stop being true.
 - remark merges adjacent text where goldmark splits it (around brackets that aren't links), so the transformer
   matches `[img]` across runs of adjacent text nodes; a hard line break ends a run.
 - Fixed on purpose, with no effect on the 670 production posts (`image_test.go`): `[img]` in code stays as written;
-  `_preview` goes before the path's extension; an empty path doesn't match; `link` must be http(s); `width` and
-  `height` must be integers.
+  `_preview` goes before the path's extension; an empty path doesn't match; `link` must be http(s) or a path on
+  the site like `/670`; `width` and `height` must be integers; `[img]` inside a normal image's alt text stays as
+  written.
+- Accepted differences for future posts (none of the 670 has them):
+  - goldmark's strikethrough matches tilde runs of different lengths: `~a~~` is `<del>a</del>~` (remark: literal).
+  - Without raw HTML, goldmark empties `javascript:`, `vbscript:`, `file:`, and non-image `data:` URLs in links
+    and images.
+  - An `[img]` path can't contain brackets: `[img]a[1].jpg[/img]` stays text.
 - `markdown.Version` is 2 (SvelteKit's is 1) and is stored in `post_html_cache`. Bump it whenever the output bytes
   change. Same structure as SvelteKit's but not the same bytes: Go ends with a newline and escapes `"` and `&` as
-  `&quot;`/`&amp;` where SvelteKit writes `"`/`&#x26;`. The cutover and a rollback re-render each post once.
+  `&quot;`/`&amp;` where SvelteKit writes `"`/`&#x26;`; text in a run with `[img]` uses `&#34;` and `&#39;`. The cutover and a rollback re-render each post once.
 - Cache: posts without an up-to-date entry are rendered and saved with an `ON CONFLICT` upsert. Unlike SvelteKit, a
   failed cache write is logged and the page is still shown.
 - `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
@@ -164,7 +175,10 @@ don't show; remove notes that stop being true.
 - New tokens come from `crypto/rand.Text()` (26 characters). SvelteKit's 64-character hex tokens keep working,
   because the server only looks tokens up.
 - The cookie isn't `Secure` when the request's host is localhost or a loopback address. `SITE_URL` can't decide
-  this: local `.env` keeps it at notedimatteo.it, or GoatCounter would count local visits.
+  this: local `.env` keeps it at notedimatteo.it, or GoatCounter would count local visits. Logging in to the dev
+  server from another device (`http://192.168…`) fails, because the cookie is `Secure` there.
+- Accepted: the cross-site 403 page shows the logged-out top bar (it skips the session). A logged-out
+  `/abc/edit` redirects to the login page instead of returning 404.
 - Changed on purpose: logout and "new" are POST forms (`/logout`, `/unpublished/new`), because Lax cookies reach
   GET links from other sites. Their old GET URLs now return 404. The delete form posts to `/{number}/delete`,
   which deletes only drafts; a published post gets a 404.
@@ -207,14 +221,20 @@ don't show; remove notes that stop being true.
   successful save sent, so typing during a save stays unsaved. Errors other than field errors show an `alert`,
   like Superforms' `onError`. ⌘S always saves, even when the Save button is disabled, like SvelteKit's.
 - Superforms had no `taintedMessage`, so leaving with unsaved changes doesn't warn, then or now.
+- Accepted differences from Superforms: a new draft doesn't show "Body is required" before its first save; fields
+  keep what the user typed instead of the server's trimmed values; tag suggestions refresh only on reload; ⌘S
+  skips the browser's own field validation, so the server's message shows instead.
 - Known difference: the top bar's unpublished count doesn't change after publishing until the next page load
-  (SvelteKit reloaded the layout's data after every save).
+  (SvelteKit reloaded the layout's data after every save). Left as is: the redesign may drop the count.
 - `assetResolver` refuses manifest entries with `css` or `imports`: pages load each entry with one tag.
   The editor's components have no `<style>`, so the bundle is one 84 KB file (31 KB gzipped).
 - `npm test` (vitest) runs the editor's tests; CI now runs it too.
-- Tested in headless Chrome against the local database and rclone (2026-11-21): every shortcut, field errors,
-  preview, slug, tag Tab completion, pasted and file uploads, publish, unpublish, renumbering, a taken number,
-  and the alert after logout. The script lives in the session scratchpad, not the repo.
+- `scripts/editor-check.mjs` drives login, the drafts page, and the editor in headless Chrome, and prints
+  PASS/FAIL lines. It creates a draft, deletes it through the drafts page, and logs out, so it leaves no
+  draft or session. Run the server with rclone's S3 for the upload checks.
+- 2026-11-21: all 30 checks pass on the local database and on the production copy. Real posts (#1, #670, and
+  #152 with 4 images) load in the editor with the same body and tags as the database. The run re-rendered
+  20 cached posts on the production copy; restoring the cache fixed them.
 
 ## Public pages (`scripts/parity.py`)
 
@@ -228,13 +248,21 @@ don't show; remove notes that stop being true.
   locations, sidebar tags with equal counts (ordered by name in Go), feed `content:encoded` as decoded HTML.
 - Intended differences (40 paths): `?page=` that isn't a positive integer is a 400 (SvelteKit: 500, or `2abc` as
   page 2); paths with `//`, `.`, or `..` get the router's 307 to the clean path (SvelteKit: 404 or 200); every 404
-  says "Not Found" (SvelteKit: "Error: 404" for some); search escapes `%` and `_`; descriptions are cut by
-  characters, so #651's ends one character later (an emoji at the limit).
+  says "Not Found" (SvelteKit: "Error: 404" for some); search escapes `%` and `_`; descriptions (meta and
+  feed) are cut by characters, so #651's ends one character later (an emoji at the limit).
+- Canonical and pagination links keep the request path's encoding (`EscapedPath`), like SvelteKit's.
+  `parity.py` decodes URLs, so it can't see this. Post numbers beyond int32 are 404s.
+- GoatCounter will count more page views after cutover: every Go page is a full load, while SvelteKit counted only
+  a visit's first page.
+- Go doesn't compress responses. SvelteKit served precompressed assets; the CDN in front (Railway's, or Bunny
+  later) is expected to compress instead.
 - Known difference: SvelteKit's server render never marks the current category chip, because its relative link
   isn't equal to the path; hydration fixes it. Go marks it in the HTML, like the hydrated page.
 - Routes: Go's `ServeMux` panics on overlapping patterns, so assets use `/assets/{file}` (Vite's output is flat)
   rather than `/assets/`, which would overlap `/{number}/{slug}`.
 - Errors show the status and its standard text inside the layout, without the sidebar. Redirects have no body.
+  An error after a handler started its response (usually a client that went away) is logged at debug level only.
+- Every request is logged, assets and health checks included: kept on purpose.
   A trailing slash is a 308 to the path without it.
 - Only pages with a sidebar load the archive and tag counts (`newSidebarPage`).
 - JSON-LD is encoded with `json.Marshal`, which escapes `<`, `>`, and `&` (same JSON, safe inside `<script>`).
@@ -242,8 +270,10 @@ don't show; remove notes that stop being true.
 ## Production data
 
 - Backups: private repo `matteocontrini/notedimatteo-backups`, committed daily by a GitHub Action running
-  `supabase db dump`: `schema.sql`, `data.sql` (`COPY`), and an almost empty `roles.sql`.
+  `supabase db dump` (only the CLI: production is plain Postgres, not Supabase): `schema.sql`, `data.sql` (`COPY`), and an almost empty `roles.sql`.
 - Import: create an empty database, then `psql "<url>" -v ON_ERROR_STOP=1 -f schema.sql -f data.sql`.
+- The local clone `../notedimatteo-backups` stops at 2025-11-09. The 2026-11-20 backup (commit `73cc0e2`) is in
+  the session scratchpad, under `prod-backup-73cc0e2`, which a reboot can clear: fetch it again if it's gone.
   The 2026-11-20 backup is imported locally as `notedimatteo_prod`; the original `notedimatteo` is unchanged.
 - To use it, point `DATABASE_URL` in `.env` at `notedimatteo_prod`: `go:dev` sources `.env`, which overrides
   a `DATABASE_URL` set on the command line.

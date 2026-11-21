@@ -19,7 +19,7 @@ func (s *Server) handle(h handlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r, err := s.loadSession(w, r)
 		if err == nil {
-			err = h(w, r)
+			err = runHandler(h, w, r)
 		}
 		if err != nil {
 			s.renderError(w, r, errorStatus(r, err))
@@ -36,7 +36,7 @@ func (s *Server) handleAPI(h handlerFunc) http.HandlerFunc {
 			err = errUnauthorized
 		}
 		if err == nil {
-			err = h(w, r)
+			err = runHandler(h, w, r)
 		}
 		if err != nil {
 			status := errorStatus(r, err)
@@ -45,6 +45,40 @@ func (s *Server) handleAPI(h handlerFunc) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+// runHandler runs h and returns its error, unless h had already started the
+// response. Then the client already has a status, so no error response can
+// follow. That error usually means the client went away during the response.
+func runHandler(h handlerFunc, w http.ResponseWriter, r *http.Request) error {
+	sw := &startWriter{ResponseWriter: w}
+	err := h(sw, r)
+	if err != nil && sw.started {
+		slog.Debug("response failed after it started", "path", r.URL.Path, "error", err)
+		return nil
+	}
+	return err
+}
+
+// startWriter records whether a handler wrote a status or any of the body.
+type startWriter struct {
+	http.ResponseWriter
+	started bool
+}
+
+func (w *startWriter) WriteHeader(status int) {
+	w.started = true
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *startWriter) Write(b []byte) (int, error) {
+	w.started = true
+	return w.ResponseWriter.Write(b)
+}
+
+// Unwrap lets http.ResponseController reach the connection.
+func (w *startWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }
 
 // trimTrailingSlash redirects /path/ to /path, like the SvelteKit app, so old

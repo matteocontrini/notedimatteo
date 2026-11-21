@@ -38,6 +38,11 @@ func TestImageMarkup(t *testing.T) {
 			`<p><a href="https://storage.example.com/a.jpg"><img src="https://storage.example.com/a_preview.jpg" alt="" loading="lazy"></a> <a href="https://example.com/page"><img src="https://storage.example.com/b_preview.jpg" alt="" loading="lazy"></a></p>`,
 		},
 		{
+			"links to paths on the site",
+			`[img link=/670]a.jpg[/img] [img link=//example.com]b.jpg[/img] [img link=/\\example.com]c.jpg[/img]`,
+			`<p><a href="/670"><img src="https://storage.example.com/a_preview.jpg" alt="" loading="lazy"></a> <a href="https://storage.example.com/b.jpg"><img src="https://storage.example.com/b_preview.jpg" alt="" loading="lazy"></a> <a href="https://storage.example.com/c.jpg"><img src="https://storage.example.com/c_preview.jpg" alt="" loading="lazy"></a></p>`,
+		},
+		{
 			"only numeric sizes",
 			"[img width=abc height=12px]a.jpg[/img] [img width=640 height=480]b.jpg[/img]",
 			`<p><a href="https://storage.example.com/a.jpg"><img src="https://storage.example.com/a_preview.jpg" alt="" loading="lazy"></a> <a href="https://storage.example.com/b.jpg"><img src="https://storage.example.com/b_preview.jpg" alt="" loading="lazy" width="640" height="480"></a></p>`,
@@ -46,6 +51,11 @@ func TestImageMarkup(t *testing.T) {
 			"markup in code stays as written",
 			"`[img]a.jpg[/img]`\n\n```\n[img]b.jpg[/img]\n```",
 			"<p><code>[img]a.jpg[/img]</code></p>\n<pre><code>[img]b.jpg[/img]\n</code></pre>",
+		},
+		{
+			"markup in alt text stays as written",
+			"![alt [img]x.jpg[/img] end](p.png)",
+			`<p><img src="p.png" alt="alt [img]x.jpg[/img] end"></p>`,
 		},
 	}
 

@@ -42,12 +42,12 @@ func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
 
 	return views.Page{
 		Meta:        meta,
-		Canonical:   s.siteURL + r.URL.Path,
+		Canonical:   s.siteURL + r.URL.EscapedPath(),
 		SiteHost:    s.siteHost,
 		SearchQuery: r.URL.Query().Get("q"),
 		Stylesheet:  s.stylesheet,
 		Script:      s.script,
-		Categories:  categoryLinks(categories, r.URL.Path),
+		Categories:  categoryLinks(categories, r.URL.EscapedPath()),
 
 		IsLoggedIn:       loggedIn,
 		UnpublishedCount: drafts,

@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +16,7 @@ type fakeProcessor struct{}
 
 func (fakeProcessor) Process(data []byte) (images.Processed, error) {
 	if string(data) != "image" {
-		return images.Processed{}, errors.New("not an image")
+		return images.Processed{}, fmt.Errorf("%w: not an image", images.ErrUnreadable)
 	}
 	return images.Processed{Main: data, Preview: data, PreviewWidth: 1200, PreviewHeight: 800}, nil
 }
