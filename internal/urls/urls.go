@@ -18,6 +18,11 @@ func Edit(number int) string {
 	return "/" + strconv.Itoa(number) + "/edit"
 }
 
+// Delete returns the URL that deletes a draft, like /670/delete.
+func Delete(number int) string {
+	return "/" + strconv.Itoa(number) + "/delete"
+}
+
 func Category(slug string) string {
 	return "/" + url.PathEscape(slug)
 }

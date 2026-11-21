@@ -61,3 +61,30 @@ func TestCategoryLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestRelativeTime(t *testing.T) {
+	now := time.Date(2026, 11, 21, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		ago  time.Duration
+		want string
+	}{
+		{-time.Minute, "just now"},
+		{0, "just now"},
+		{9 * time.Second, "just now"},
+		{10 * time.Second, "10 seconds ago"},
+		{time.Minute, "1 minute ago"},
+		{119 * time.Second, "1 minute ago"},
+		{2 * time.Hour, "2 hours ago"},
+		{24 * time.Hour, "1 day ago"},
+		{13 * 24 * time.Hour, "1 week ago"},
+		{30 * 24 * time.Hour, "4 weeks ago"},
+		{31 * 24 * time.Hour, "1 month ago"},
+		{400 * 24 * time.Hour, "1 year ago"},
+		{1000 * 24 * time.Hour, "2 years ago"},
+	}
+	for _, tt := range tests {
+		if got := relativeTime(now.Add(-tt.ago), now); got != tt.want {
+			t.Errorf("%v ago = %q, want %q", tt.ago, got, tt.want)
+		}
+	}
+}

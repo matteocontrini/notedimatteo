@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
 	"github.com/matteocontrini/notedimatteo/internal/markdown"
@@ -28,6 +29,15 @@ type fakeStore struct {
 	// saved records the HTML cached by SavePostHTML, by post ID
 	saved   map[int]string
 	saveErr error
+
+	// sessions maps tokens to sessions; touched and deleted record changes
+	sessions map[string]*db.Session
+	touched  []int
+	deleted  []string
+
+	drafts        []db.Post
+	createdDraft  int
+	deletedDrafts []int
 }
 
 func (f *fakeStore) Ping(context.Context) error {
@@ -68,6 +78,52 @@ func (f *fakeStore) SavePostHTML(_ context.Context, postID, _ int, html string) 
 	return f.saveErr
 }
 
+func (f *fakeStore) SessionByToken(_ context.Context, token string) (*db.Session, error) {
+	return f.sessions[token], f.err
+}
+
+func (f *fakeStore) CreateSession(_ context.Context, token string) error {
+	if f.sessions == nil {
+		f.sessions = map[string]*db.Session{}
+	}
+	f.sessions[token] = &db.Session{ID: len(f.sessions) + 1, LastActivityAt: time.Now()}
+	return f.err
+}
+
+func (f *fakeStore) TouchSession(_ context.Context, id int) error {
+	f.touched = append(f.touched, id)
+	return f.err
+}
+
+func (f *fakeStore) DeleteSession(_ context.Context, token string) error {
+	f.deleted = append(f.deleted, token)
+	delete(f.sessions, token)
+	return f.err
+}
+
+func (f *fakeStore) Drafts(context.Context) ([]db.Post, error) {
+	return f.drafts, f.err
+}
+
+func (f *fakeStore) CountDrafts(context.Context) (int, error) {
+	return len(f.drafts), f.err
+}
+
+func (f *fakeStore) CreateDraft(context.Context) (int, error) {
+	f.createdDraft = 671
+	return f.createdDraft, f.err
+}
+
+func (f *fakeStore) DeleteDraft(_ context.Context, number int) (bool, error) {
+	for _, d := range f.drafts {
+		if d.Number == number {
+			f.deletedDrafts = append(f.deletedDrafts, number)
+			return true, f.err
+		}
+	}
+	return false, f.err
+}
+
 func testRenderer(t *testing.T) *markdown.Renderer {
 	t.Helper()
 
@@ -91,10 +147,20 @@ func testDist() fstest.MapFS {
 	}
 }
 
+func testOptions(t *testing.T) Options {
+	return Options{
+		SiteURL:       "https://example.com/",
+		Dist:          testDist(),
+		Markdown:      testRenderer(t),
+		AdminUsername: "admin",
+		AdminPassword: "secret",
+	}
+}
+
 func newTestHandler(t *testing.T, store Store) http.Handler {
 	t.Helper()
 
-	handler, err := New(store, Options{SiteURL: "https://example.com/", Dist: testDist(), Markdown: testRenderer(t)})
+	handler, err := New(store, testOptions(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +189,7 @@ func assertContains(t *testing.T, rec *httptest.ResponseRecorder, wants ...strin
 
 func TestInvalidSiteURL(t *testing.T) {
 	for _, siteURL := range []string{"", "notedimatteo.it", "/path"} {
-		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Dist: testDist(), Markdown: testRenderer(t)})
+		_, err := New(&fakeStore{}, Options{SiteURL: siteURL, Dist: testDist(), Markdown: testRenderer(t), AdminUsername: "admin", AdminPassword: "secret"})
 		if err == nil {
 			t.Errorf("site URL %q was accepted", siteURL)
 		}
@@ -134,7 +200,7 @@ func TestMissingAsset(t *testing.T) {
 	dist := testDist()
 	dist[".vite/manifest.json"] = &fstest.MapFile{Data: []byte(`{"assets/main.css": {"file": "assets/main.css"}}`)}
 
-	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist, Markdown: testRenderer(t)}); err == nil {
+	if _, err := New(&fakeStore{}, Options{SiteURL: "https://example.com", Dist: dist, Markdown: testRenderer(t), AdminUsername: "admin", AdminPassword: "secret"}); err == nil {
 		t.Error("a manifest without the script was accepted")
 	}
 }

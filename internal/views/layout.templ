@@ -72,8 +72,8 @@ templ topBar(page Page) {
 				<a class="text-xs text-white/80 uppercase hover:text-white" href="/unpublished">
 					unpublished ({ strconv.Itoa(page.UnpublishedCount) })
 				</a>
-				<a class="text-xs text-white/80 uppercase hover:text-white" href="/unpublished/new">new</a>
-				<a class="text-xs text-white/80 uppercase hover:text-white" href="/logout">logout</a>
+				@topBarButton("/unpublished/new", "new")
+				@topBarButton("/logout", "logout")
 			} else {
 				<a class="text-xs text-white/80 uppercase hover:text-white" href="https://matteosonoio.it">
 					blog
@@ -83,6 +83,19 @@ templ topBar(page Page) {
 			}
 		</div>
 	</div>
+}
+
+// topBarButton is a form button styled like the top bar's links. Actions that
+// change data use it, because they must be POST requests.
+templ topBarButton(action, label string) {
+	<form class="contents" method="post" action={ action }>
+		<button
+			type="submit"
+			class="h-auto border-0 bg-transparent p-0 text-xs text-white/80 uppercase hover:bg-transparent hover:text-white"
+		>
+			{ label }
+		</button>
+	</form>
 }
 
 templ header(page Page) {

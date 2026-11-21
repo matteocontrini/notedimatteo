@@ -18,6 +18,9 @@ type Config struct {
 	SiteURL string
 	// StoragePublicBaseURL is the public address of uploaded images.
 	StoragePublicBaseURL string
+	// AdminUsername and AdminPassword are the only login credentials.
+	AdminUsername string
+	AdminPassword string
 }
 
 func Load() (Config, error) {
@@ -26,6 +29,8 @@ func Load() (Config, error) {
 		Port:                 os.Getenv("PORT"),
 		SiteURL:              os.Getenv("SITE_URL"),
 		StoragePublicBaseURL: os.Getenv("STORAGE_PUBLIC_BASE_URL"),
+		AdminUsername:        os.Getenv("ADMIN_USERNAME"),
+		AdminPassword:        os.Getenv("ADMIN_PASSWORD"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -33,6 +38,9 @@ func Load() (Config, error) {
 	}
 	if cfg.StoragePublicBaseURL == "" {
 		return Config{}, errors.New("STORAGE_PUBLIC_BASE_URL must be set")
+	}
+	if cfg.AdminUsername == "" || cfg.AdminPassword == "" {
+		return Config{}, errors.New("ADMIN_USERNAME and ADMIN_PASSWORD must be set")
 	}
 	if cfg.Port == "" {
 		cfg.Port = defaultPort

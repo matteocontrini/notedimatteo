@@ -74,5 +74,15 @@ function setUpTagSort() {
 	});
 }
 
+// Ask for confirmation before submitting a form with data-confirm, like a draft's delete form
+function setUpConfirmations() {
+	for (const form of document.querySelectorAll<HTMLFormElement>('form[data-confirm]')) {
+		form.addEventListener('submit', (event) => {
+			if (!confirm(form.dataset.confirm ?? '')) event.preventDefault();
+		});
+	}
+}
+
 setUpThemeSelect();
 setUpTagSort();
+setUpConfirmations();

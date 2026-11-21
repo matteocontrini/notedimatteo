@@ -10,12 +10,21 @@ import (
 
 const siteTitle = "Note di Matteo"
 
-// newPage loads the data shared by every page: metadata and the header's
-// categories. Empty meta fields use site defaults.
+// newPage loads the data every page needs: metadata, the header's categories,
+// and, for logged-in users, the number of drafts. It fills empty meta fields
+// with site defaults.
 func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
 	categories, err := s.store.Categories(r.Context())
 	if err != nil {
 		return views.Page{}, err
+	}
+
+	loggedIn := isLoggedIn(r)
+	drafts := 0
+	if loggedIn {
+		if drafts, err = s.store.CountDrafts(r.Context()); err != nil {
+			return views.Page{}, err
+		}
 	}
 
 	if meta.Title == "" {
@@ -39,6 +48,9 @@ func (s *Server) newPage(r *http.Request, meta views.Meta) (views.Page, error) {
 		Stylesheet:  s.stylesheet,
 		Script:      s.script,
 		Categories:  categoryLinks(categories, r.URL.Path),
+
+		IsLoggedIn:       loggedIn,
+		UnpublishedCount: drafts,
 	}, nil
 }
 

@@ -6,11 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log/slog"
-	"net"
 	"net/http"
 	"net/url"
-	"runtime/debug"
 	"strings"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
@@ -27,6 +24,16 @@ type Store interface {
 	Archive(ctx context.Context) ([]db.MonthCount, error)
 	Tags(ctx context.Context) ([]db.TagCount, error)
 	SavePostHTML(ctx context.Context, postID, bodyRevision int, html string) error
+
+	SessionByToken(ctx context.Context, token string) (*db.Session, error)
+	CreateSession(ctx context.Context, token string) error
+	TouchSession(ctx context.Context, id int) error
+	DeleteSession(ctx context.Context, token string) error
+
+	Drafts(ctx context.Context) ([]db.Post, error)
+	CountDrafts(ctx context.Context) (int, error)
+	CreateDraft(ctx context.Context) (int, error)
+	DeleteDraft(ctx context.Context, number int) (bool, error)
 }
 
 type Options struct {
@@ -36,6 +43,9 @@ type Options struct {
 	Dist fs.FS
 	// Markdown renders post bodies that have no up-to-date cached HTML.
 	Markdown *markdown.Renderer
+	// AdminUsername and AdminPassword are the only login credentials.
+	AdminUsername string
+	AdminPassword string
 }
 
 type Server struct {
@@ -45,6 +55,9 @@ type Server struct {
 	siteHost   string
 	stylesheet string
 	script     string
+
+	adminUsername string
+	adminPassword string
 }
 
 // New returns the HTTP handler for the whole site.
@@ -55,6 +68,9 @@ func New(store Store, opts Options) (http.Handler, error) {
 	}
 	if opts.Markdown == nil {
 		return nil, errors.New("a Markdown renderer is required")
+	}
+	if opts.AdminUsername == "" || opts.AdminPassword == "" {
+		return nil, errors.New("admin credentials are required")
 	}
 
 	asset, err := assetResolver(opts.Dist)
@@ -77,6 +93,9 @@ func New(store Store, opts Options) (http.Handler, error) {
 		siteHost:   site.Host,
 		stylesheet: stylesheet,
 		script:     script,
+
+		adminUsername: opts.AdminUsername,
+		adminPassword: opts.AdminPassword,
 	}
 
 	// The URLs match the SvelteKit app's routes. The router redirects paths with
@@ -90,88 +109,34 @@ func New(store Store, opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /archivio/{year}/{month}", s.handle(s.month))
 	mux.HandleFunc("GET /{segment}", s.handle(s.postOrCategory))
 	mux.HandleFunc("GET /{number}/{slug}", s.handle(s.postWithSlug))
+	mux.HandleFunc("GET /login", s.handle(s.loginPage))
+	mux.HandleFunc("POST /login", s.handle(s.login))
+	mux.HandleFunc("POST /logout", s.handle(s.logout))
+	mux.HandleFunc("GET /unpublished", s.handle(requireLogin(s.unpublished)))
+	mux.HandleFunc("POST /unpublished/new", s.handle(requireLogin(s.newDraft)))
+	mux.HandleFunc("POST /{number}/delete", s.handle(requireLogin(s.deleteDraft)))
 	mux.HandleFunc("GET /healthz", s.handle(s.healthz))
 	mux.Handle("GET /assets/{file}", hashedAssets(opts.Dist))
 	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))
 	mux.HandleFunc("/", s.handle(s.notFound))
 
-	return logRequests(recoverPanics(trimTrailingSlash(mux))), nil
+	// CrossOriginProtection rejects POSTs from other sites, using the
+	// Sec-Fetch-Site and Origin headers
+	csrf := http.NewCrossOriginProtection()
+	csrf.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.renderError(w, r, http.StatusForbidden)
+	}))
+
+	return logRequests(recoverPanics(trimTrailingSlash(csrf.Handler(mux)))), nil
 }
 
-// trimTrailingSlash redirects /path/ to /path, like the SvelteKit app, so old
-// links with a trailing slash keep working.
-func trimTrailingSlash(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.EscapedPath()
-		if path == "/" || !strings.HasSuffix(path, "/") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// A single leading slash, so //example.com/ can't redirect to another host
-		target := "/" + strings.Trim(path, "/")
-		if r.URL.RawQuery != "" {
-			target += "?" + r.URL.RawQuery
-		}
-		redirect(w, target, http.StatusPermanentRedirect)
-	})
-}
-
-func recoverPanics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			v := recover()
-			if v == nil {
-				return
-			}
-			if v == http.ErrAbortHandler {
-				panic(v)
-			}
-			slog.Error("request panicked",
-				"method", r.Method,
-				"path", r.URL.Path,
-				"error", fmt.Sprint(v),
-				"stack", string(debug.Stack()),
-			)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}()
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status int
-}
-
-func (r *statusRecorder) WriteHeader(status int) {
-	r.status = status
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func logRequests(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-
-		next.ServeHTTP(rec, r)
-
-		slog.Info("request",
-			"ip", clientIP(r),
-			"status", rec.status,
-			"method", r.Method,
-			"path", r.URL.RequestURI(),
-		)
-	})
-}
-
-func clientIP(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		ip, _, _ := strings.Cut(forwarded, ",")
-		return strings.TrimSpace(ip)
+// healthz reports whether the server can reach the database, for health checks.
+func (s *Server) healthz(w http.ResponseWriter, r *http.Request) error {
+	if err := s.store.Ping(r.Context()); err != nil {
+		return fmt.Errorf("ping database: %w", err)
 	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-	return r.RemoteAddr
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, err := w.Write([]byte("ok\n"))
+	return err
 }

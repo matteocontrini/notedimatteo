@@ -35,6 +35,47 @@ func formatTime(t time.Time) string {
 	return t.In(rome).Format("15:04")
 }
 
+// formatDateTime formats a time like "21/11/2026, 14:05", in Rome's time zone.
+func formatDateTime(t time.Time) string {
+	return t.In(rome).Format("02/01/2006, 15:04")
+}
+
+// timeUnits lists the units relativeTime uses. next is how many of a unit make
+// the next one, like 60 seconds in a minute.
+var timeUnits = []struct {
+	name string
+	next float64
+}{
+	{"second", 60},
+	{"minute", 60},
+	{"hour", 24},
+	{"day", 7},
+	{"week", 365.0 / 7 / 12},
+	{"month", 12},
+	{"year", 0},
+}
+
+// relativeTime says how long before now t was, in English, with the wording of
+// the timeago.js package: "just now", "10 seconds ago", "1 week ago".
+func relativeTime(t, now time.Time) string {
+	amount := max(now.Sub(t).Seconds(), 0)
+	unit := 0
+	for unit < len(timeUnits)-1 && amount >= timeUnits[unit].next {
+		amount /= timeUnits[unit].next
+		unit++
+	}
+
+	n := int(amount)
+	if unit == 0 && n < 10 {
+		return "just now"
+	}
+	name := timeUnits[unit].name
+	if n > 1 {
+		name += "s"
+	}
+	return fmt.Sprintf("%d %s ago", n, name)
+}
+
 // dateKey identifies a day in Rome's time zone.
 func dateKey(t time.Time) string {
 	return t.In(rome).Format(time.DateOnly)

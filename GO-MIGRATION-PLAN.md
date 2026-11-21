@@ -114,14 +114,14 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 3: Authentication and draft management
 
-- [ ] Port login and logout, keeping the session table and cookie name
-- [ ] Port session loading and the `lastActivityAt` update
-- [ ] Add CSRF protection to state-changing requests
-- [ ] Show admin-only controls on Go-rendered pages for logged-in users
-- [ ] Port the unpublished list, including relative dates
-- [ ] Port new draft creation
-- [ ] Port post deletion and its confirmation script
-- [ ] Add tests for logged-out access to protected routes and actions
+- [x] Port login and logout, keeping the session table and cookie name
+- [x] Port session loading and the `lastActivityAt` update
+- [x] Add CSRF protection to state-changing requests
+- [x] Show admin-only controls on Go-rendered pages for logged-in users
+- [x] Port the unpublished list, including relative dates
+- [x] Port new draft creation
+- [x] Port post deletion and its confirmation script
+- [x] Add tests for logged-out access to protected routes and actions
 
 ### Step 4: Editor backend
 

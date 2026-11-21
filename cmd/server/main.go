@@ -54,6 +54,9 @@ func run() error {
 		SiteURL:  cfg.SiteURL,
 		Dist:     web.Dist(),
 		Markdown: renderer,
+
+		AdminUsername: cfg.AdminUsername,
+		AdminPassword: cfg.AdminPassword,
 	})
 	if err != nil {
 		return err

@@ -116,6 +116,24 @@ don't show; remove notes that stop being true.
   actual output), then run `MARKDOWN_COMPAT_DIR=<dir> MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it
   go test ./internal/markdown`. All 670 posts match (backup of 2026-11-20).
 
+## Authentication and drafts
+
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD` are required, as in SvelteKit. Go compares them in constant time.
+- `handle` (`internal/server/middleware.go`) loads the session before every page handler. Assets skip it, and a page
+  request queries `sessions` only when it carries the cookie.
+- New tokens come from `crypto/rand.Text()` (26 characters). SvelteKit's 64-character hex tokens keep working,
+  because the server only looks tokens up.
+- The cookie isn't `Secure` when the request's host is localhost or a loopback address. `SITE_URL` can't decide
+  this: local `.env` keeps it at notedimatteo.it, or GoatCounter would count local visits.
+- Changed on purpose: logout and "new" are POST forms (`/logout`, `/unpublished/new`), because Lax cookies reach
+  GET links from other sites. Their old GET URLs now return 404. The delete form posts to `/{number}/delete`,
+  which deletes only drafts; a published post gets a 404.
+- `http.CrossOriginProtection` returns the 403 error page for POSTs from other sites.
+- The "modifica" links lead to `/{number}/edit`, which Go serves only from step 5 (404 until then).
+- TODOs: expire sessions in the database, and limit failed logins. SvelteKit does neither.
+- Tested by hand against the local database: login, the drafts list (same text as SvelteKit), creating and
+  deleting a draft, a cross-site POST, and logout.
+
 ## Public pages (`scripts/parity.py`)
 
 - Compares SvelteKit (6100) and Go (6201) for a list of paths: status, `Location`, title, meta, canonical,

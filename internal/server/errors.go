@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -19,25 +18,6 @@ const (
 	errBadRequest = statusError(http.StatusBadRequest)
 	errNotFound   = statusError(http.StatusNotFound)
 )
-
-type handlerFunc func(w http.ResponseWriter, r *http.Request) error
-
-// handle shows an error page for a returned error, logging unexpected ones.
-func (s *Server) handle(h handlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := h(w, r)
-		if err == nil {
-			return
-		}
-
-		var status statusError
-		if !errors.As(err, &status) {
-			slog.Error("request failed", "method", r.Method, "path", r.URL.Path, "error", err)
-			status = http.StatusInternalServerError
-		}
-		s.renderError(w, r, int(status))
-	}
-}
 
 // renderError shows the error page in the site layout, or plain text if the
 // layout's data can't be loaded either.
