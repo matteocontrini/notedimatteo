@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -15,9 +16,21 @@ func (e statusError) Error() string {
 }
 
 const (
-	errBadRequest = statusError(http.StatusBadRequest)
-	errNotFound   = statusError(http.StatusNotFound)
+	errBadRequest   = statusError(http.StatusBadRequest)
+	errUnauthorized = statusError(http.StatusUnauthorized)
+	errNotFound     = statusError(http.StatusNotFound)
+	errTooLarge     = statusError(http.StatusRequestEntityTooLarge)
 )
+
+// errorStatus returns the status for an error returned by a handler. It logs
+// errors that aren't a statusError, and returns 500 for them.
+func errorStatus(r *http.Request, err error) int {
+	if status, ok := errors.AsType[statusError](err); ok {
+		return int(status)
+	}
+	slog.Error("request failed", "method", r.Method, "path", r.URL.Path, "error", err)
+	return http.StatusInternalServerError
+}
 
 // renderError shows the error page in the site layout, or plain text if the
 // layout's data can't be loaded either.

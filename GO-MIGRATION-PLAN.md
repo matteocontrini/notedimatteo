@@ -125,11 +125,11 @@ SvelteKit keeps serving production until step 6, so nothing partial reaches visi
 
 ### Step 4: Editor backend
 
-- [ ] Port post form validation and field errors
-- [ ] Port the save transaction: post, tags, and HTML cache
-- [ ] Port the publish and unpublish behavior
-- [ ] Add the JSON response format for success and field errors
-- [ ] Port the Markdown preview endpoint
+- [x] Port post form validation and field errors
+- [x] Port the save transaction: post, tags, and HTML cache
+- [x] Port the publish and unpublish behavior
+- [x] Add the JSON response format for success and field errors
+- [x] Port the Markdown preview endpoint
 - [ ] Decide on JPEG encoding: Debian's libvips ignores the mozjpeg options, so either accept larger files or build libvips with mozjpeg
 - [ ] Add `govips` startup with caching turned off, and remove `cmd/vipscheck`
 - [ ] Port image processing: orientation, JPEG output, and 1200px previews
@@ -184,6 +184,7 @@ the required formatting, lint, and Svelte checks.
 ## Phase 4: Articles
 
 - [ ] Decide the merged site's URL scheme and domains
+- [ ] Reorganize `internal/server` before adding article pages: group the page handlers, by feature or in packages
 - [ ] Add article fields: type, language, summary, last-updated date, table of contents and comments flags
 - [ ] Import the Hugo posts: front matter, `fig`/`relref`/`center` shortcodes, raw HTML (`<sup>`, `<video>`)
 - [ ] Upload the blog's images and videos to S3, with WebP versions

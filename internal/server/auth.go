@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -18,8 +19,8 @@ const (
 	sessionLifetime = 60 * 24 * time.Hour
 	// The server updates a session's last activity at most once per activityInterval.
 	activityInterval = time.Minute
-	// parseForm rejects form bodies larger than formSizeLimit.
-	formSizeLimit = 64 << 10
+	// loginSizeLimit is the largest login form body the server reads.
+	loginSizeLimit = 64 << 10
 )
 
 type contextKey int
@@ -100,11 +101,22 @@ func requireLogin(h handlerFunc) handlerFunc {
 	}
 }
 
-// parseForm parses the form body. It returns errBadRequest if the body is
-// invalid or too large.
-func parseForm(w http.ResponseWriter, r *http.Request) error {
-	r.Body = http.MaxBytesReader(w, r.Body, formSizeLimit)
-	if err := r.ParseForm(); err != nil {
+// parseForm parses a URL-encoded or multipart form body into r.PostForm. It
+// returns errTooLarge for bodies over limit bytes, and errBadRequest for
+// invalid ones.
+func parseForm(w http.ResponseWriter, r *http.Request, limit int64) error {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
+	// ParseMultipartForm would hide ParseForm's errors for URL-encoded bodies
+	err := r.ParseForm()
+	if err == nil {
+		if err = r.ParseMultipartForm(limit); errors.Is(err, http.ErrNotMultipart) {
+			err = nil
+		}
+	}
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		return errTooLarge
+	}
+	if err != nil {
 		return errBadRequest
 	}
 	return nil
@@ -118,7 +130,7 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) error {
 //
 // TODO: after the migration, limit failed login attempts.
 func (s *Server) login(w http.ResponseWriter, r *http.Request) error {
-	if err := parseForm(w, r); err != nil {
+	if err := parseForm(w, r, loginSizeLimit); err != nil {
 		return err
 	}
 	username, password := r.PostForm.Get("username"), r.PostForm.Get("password")

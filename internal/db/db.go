@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,8 +21,16 @@ const (
 )
 
 type DB struct {
-	pool    *pgxpool.Pool
+	pool *pgxpool.Pool
+	// conn runs queries and starts transactions. It's the pool, except in tests,
+	// which use a transaction they roll back at the end.
+	conn    conn
 	queries *Queries
+}
+
+type conn interface {
+	DBTX
+	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
 // Open connects to the database and fails if it can't be reached.
@@ -46,7 +55,7 @@ func Open(ctx context.Context, url string) (*DB, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	return &DB{pool: pool, queries: New(pool)}, nil
+	return &DB{pool: pool, conn: pool, queries: New(pool)}, nil
 }
 
 func (db *DB) Close() {

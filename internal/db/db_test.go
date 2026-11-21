@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// openTestDB connects to TEST_DATABASE_URL, or skips the test. The tests only
-// read, so they can run against a copy of production data.
+// openTestDB connects to TEST_DATABASE_URL, or skips the test. Tests that
+// write use openTestTx, so the tests can run against a copy of production data.
 func openTestDB(t *testing.T) *DB {
 	t.Helper()
 
@@ -22,6 +22,20 @@ func openTestDB(t *testing.T) *DB {
 	}
 	t.Cleanup(db.Close)
 	return db
+}
+
+// openTestTx is openTestDB inside a transaction that's rolled back when the
+// test ends, so the test can write.
+func openTestTx(t *testing.T) *DB {
+	t.Helper()
+
+	db := openTestDB(t)
+	tx, err := db.pool.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { tx.Rollback(context.Background()) })
+	return &DB{pool: db.pool, conn: tx, queries: New(tx)}
 }
 
 // TestPostsAndCountAgree checks that Posts and CountPosts, whose WHERE clauses

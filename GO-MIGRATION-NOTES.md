@@ -86,8 +86,9 @@ don't show; remove notes that stop being true.
 - Prisma 7's `@prisma/adapter-pg` replaces the offset of every `timestamptz` it reads with `+00:00`, so times are
   only right when the session time zone is UTC. Go reads them correctly.
 - Archive months use `EXTRACT` in the database session's time zone, not Rome's; Go keeps the same SQL (TODO).
-- Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns,
-  in practice the order saved from the editor. Kept as is on purpose.
+- Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns.
+  Locally that's the order saved from the editor; on the production copy, Postgres reads them through the
+  `(postId, tagName)` index, so they come sorted by name. Both apps showed the same order. Kept as is on purpose.
 - Theme: mode-watcher stores the preference in localStorage `mode-watcher-mode` (`system`/`light`/`dark`); dark mode
   is a `.dark` class. Go applies it with an inline head script (`themeInit` in `layout.templ`) and handles the
   select in `web/assets/site.ts`.
@@ -133,6 +134,26 @@ don't show; remove notes that stop being true.
 - TODOs: expire sessions in the database, and limit failed logins. SvelteKit does neither.
 - Tested by hand against the local database: login, the drafts list (same text as SvelteKit), creating and
   deleting a draft, a cross-site POST, and logout.
+
+## Editor endpoints
+
+- `POST /{number}/edit` saves the form (multipart `FormData` or URL-encoded). Fields as in SvelteKit: `intent`
+  (`save`, `publish`, `unpublish`), `number`, `category`, `title`, `slug`, `hideTitle` (`true` or `on`), `body`,
+  `tags` (comma-separated). It answers `{"post": {...}}`, or 400 with `{"errors": {"field": "message"}}`.
+- `POST /{number}/edit/preview` takes `{"body": "..."}` and answers `{"html": "..."}`, like SvelteKit.
+- Both use `handleAPI`: errors are JSON (`{"error": "Not Found"}`), and logged-out requests get 401, not a redirect.
+  Bodies over 1 MB get 413.
+- Same as SvelteKit: publishing sets `publishedAt` to now even if the post was published; every save sets
+  `updatedAt`; the body revision goes up only when the body changes; tags without posts stay in `tags`.
+- Changed on purpose: an unknown `intent` is a 400 (SvelteKit saved without changing publication); a number
+  that another post has is a field error (SvelteKit: 500).
+- `db.SavePost` locks the post's row (`FOR UPDATE`), then updates the post, its cached HTML, and its tags in
+  one transaction. The server renders the HTML before the transaction starts.
+- `pgx` returns times in the Go process's time zone, so the JSON has `+01:00` offsets locally. The instants are right.
+- Database tests that write use `openTestTx`, a transaction rolled back at the end, so they're safe on the
+  production copy.
+- Pitfall: `ParseMultipartForm` hides `ParseForm`'s errors for URL-encoded bodies, so `parseForm` calls
+  `ParseForm` first.
 
 ## Public pages (`scripts/parity.py`)
 

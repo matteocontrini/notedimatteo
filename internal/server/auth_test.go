@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,21 +12,31 @@ import (
 	"github.com/matteocontrini/notedimatteo/internal/db"
 )
 
-// send makes a request. A non-nil form becomes the body, and a non-empty
-// token becomes the session cookie.
+// send makes a request. A non-nil form becomes a URL-encoded body, and a
+// non-empty token becomes the session cookie.
 func send(t *testing.T, store Store, method, path string, form url.Values, token string) *httptest.ResponseRecorder {
 	t.Helper()
 
-	var r *http.Request
-	if form != nil {
-		r = httptest.NewRequest(method, path, strings.NewReader(form.Encode()))
-		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	} else {
-		r = httptest.NewRequest(method, path, nil)
+	if form == nil {
+		return serve(t, store, newRequest(method, path, nil, token))
 	}
+	r := newRequest(method, path, strings.NewReader(form.Encode()), token)
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return serve(t, store, r)
+}
+
+// newRequest returns a request with the session cookie if token isn't empty.
+func newRequest(method, path string, body io.Reader, token string) *http.Request {
+	r := httptest.NewRequest(method, path, body)
 	if token != "" {
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 	}
+	return r
+}
+
+// serve sends r to a test handler using store.
+func serve(t *testing.T, store Store, r *http.Request) *httptest.ResponseRecorder {
+	t.Helper()
 
 	rec := httptest.NewRecorder()
 	newTestHandler(t, store).ServeHTTP(rec, r)

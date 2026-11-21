@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -22,16 +21,29 @@ func (s *Server) handle(h handlerFunc) http.HandlerFunc {
 		if err == nil {
 			err = h(w, r)
 		}
-		if err == nil {
-			return
+		if err != nil {
+			s.renderError(w, r, errorStatus(r, err))
 		}
+	}
+}
 
-		var status statusError
-		if !errors.As(err, &status) {
-			slog.Error("request failed", "method", r.Method, "path", r.URL.Path, "error", err)
-			status = http.StatusInternalServerError
+// handleAPI is handle for the editor's JSON endpoints. It returns 401 for
+// logged-out requests, and writes errors as JSON, like {"error": "Not Found"}.
+func (s *Server) handleAPI(h handlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r, err := s.loadSession(w, r)
+		if err == nil && !isLoggedIn(r) {
+			err = errUnauthorized
 		}
-		s.renderError(w, r, int(status))
+		if err == nil {
+			err = h(w, r)
+		}
+		if err != nil {
+			status := errorStatus(r, err)
+			if err := writeJSON(w, status, map[string]string{"error": http.StatusText(status)}); err != nil {
+				slog.Error("writing JSON error failed", "path", r.URL.Path, "error", err)
+			}
+		}
 	}
 }
 

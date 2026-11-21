@@ -34,6 +34,8 @@ type Store interface {
 	CountDrafts(ctx context.Context) (int, error)
 	CreateDraft(ctx context.Context) (int, error)
 	DeleteDraft(ctx context.Context, number int) (bool, error)
+
+	SavePost(ctx context.Context, number int, edit db.PostEdit) (*db.EditablePost, error)
 }
 
 type Options struct {
@@ -115,6 +117,8 @@ func New(store Store, opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /unpublished", s.handle(requireLogin(s.unpublished)))
 	mux.HandleFunc("POST /unpublished/new", s.handle(requireLogin(s.newDraft)))
 	mux.HandleFunc("POST /{number}/delete", s.handle(requireLogin(s.deleteDraft)))
+	mux.HandleFunc("POST /{number}/edit", s.handleAPI(s.savePost))
+	mux.HandleFunc("POST /{number}/edit/preview", s.handleAPI(s.preview))
 	mux.HandleFunc("GET /healthz", s.handle(s.healthz))
 	mux.Handle("GET /assets/{file}", hashedAssets(opts.Dist))
 	mux.HandleFunc("GET /favicon.png", favicon(opts.Dist))

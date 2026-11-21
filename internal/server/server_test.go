@@ -38,6 +38,10 @@ type fakeStore struct {
 	drafts        []db.Post
 	createdDraft  int
 	deletedDrafts []int
+
+	// savedEdit records the last SavePost call, which fails with savePostErr
+	savedEdit   *db.PostEdit
+	savePostErr error
 }
 
 func (f *fakeStore) Ping(context.Context) error {
@@ -122,6 +126,14 @@ func (f *fakeStore) DeleteDraft(_ context.Context, number int) (bool, error) {
 		}
 	}
 	return false, f.err
+}
+
+func (f *fakeStore) SavePost(_ context.Context, number int, edit db.PostEdit) (*db.EditablePost, error) {
+	f.savedEdit = &edit
+	if f.savePostErr != nil || f.post == nil || f.post.Number != number {
+		return nil, f.savePostErr
+	}
+	return &db.EditablePost{Number: edit.Number, Body: edit.Body, Tags: edit.Tags}, nil
 }
 
 func testRenderer(t *testing.T) *markdown.Renderer {
