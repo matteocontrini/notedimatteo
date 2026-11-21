@@ -90,6 +90,13 @@
 			"groupName": "Go"
 		},
 		{
+			"description": "Go publishes its release notes on go.dev, not on GitHub",
+			"matchPackageNames": ["go"],
+			"prBodyNotes": [
+				"{{#if isMinor}}[Go {{newMajor}}.{{newMinor}} release notes](https://go.dev/doc/go{{newMajor}}.{{newMinor}}) · {{/if}}[Go {{newMajor}}.{{newMinor}}.x fixes](https://go.dev/doc/devel/release#go{{newMajor}}.{{newMinor}}.minor)"
+			]
+		},
+		{
 			"description": "GitHub Actions (Renovate regenerates actions.lock) and the gh-actions-lock extension used to verify it, in a single PR",
 			"matchManagers": ["github-actions"],
 			"groupName": "GitHub Actions"
