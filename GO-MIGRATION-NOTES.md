@@ -122,6 +122,9 @@ don't show; remove notes that stop being true.
 - Adding goose raised pgx to 5.12.0 (then upgraded to 5.13.0, the latest) and some of sqlc's and templ's modules (grpc, protobuf, x/tools),
   through goose's own requirements.
 - The first start of the server on a database (production, local ones) adds `goose_db_version` and records version 1.
+- `00002_drop_prisma_migrations.sql` drops `_prisma_migrations` (2026-11-21). Checked on a copy of `notedimatteo_prod`:
+  both migrations apply, the 670 posts stay. A SvelteKit rollback still runs (`npm start` never ran Prisma's
+  migrations), but would need the table back before any `prisma migrate deploy`.
 
 ## Browser tests (`tests/e2e`)
 

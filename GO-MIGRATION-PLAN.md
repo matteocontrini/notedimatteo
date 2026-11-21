@@ -182,7 +182,7 @@ Railway service: the Go server replaces SvelteKit on the same one.
 
 - [x] Deploy the Go server to the existing Railway service (2026-11-21); Railway's previous deployment is the rollback
 - [x] Watch logs and Railway's memory graph after the switch
-- [ ] Once a rollback is no longer needed, drop `_prisma_migrations` in a goose migration
+- [x] Drop `_prisma_migrations` in a goose migration (`00002`)
 - [x] Run the migrations at server start; remove `cmd/migrate`, `npm run migrate`, and the e2e `migrate` binary
 
 Completion means feature parity, preserved URLs/data, reviewed Markdown and image
