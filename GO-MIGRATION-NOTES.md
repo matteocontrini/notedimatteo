@@ -73,7 +73,8 @@ don't show; remove notes that stop being true.
 
 ## Docker and deployment
 
-- CI: the `docker` job runs both `docker build`s in parallel with `check` and `test`. A GitHub layer cache (`type=gha`,
+- CI: the `docker` job runs both `docker build`s in parallel with `check` and `test`. `test` is a matrix that runs
+  `test:js`, `test:go`, and `test:e2e` on three runners: in one job they took 110 s in a row, a minute more than in parallel. A GitHub layer cache (`type=gha`,
   `mode=max`) was tried and removed: its first export took 188 s, more than the installs it saves (`npm ci` 39 s,
   `go mod download` 13 s), and every lockfile change would upload the big layers again.
 - Stages: `assets` (Node, also writes `.libvips`) → `build` (Go, with `node_modules/@img` and `.libvips` at the same

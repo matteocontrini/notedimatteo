@@ -176,7 +176,7 @@ Railway service: the Go server replaces SvelteKit on the same one.
 
 - [x] One npm script per purpose: `generate`, `format`, `check`, `test`; `dev`, `check`, and the Go and browser tests generate first
 - [x] Write `.libvips` in `postinstall`
-- [x] CI jobs `check`, `test`, and `docker` run the same scripts
+- [x] CI jobs `check`, `test` (a matrix over `test:js`, `test:go`, `test:e2e`), and `docker` run the same scripts
 
 ### Step 9: Cutover
 

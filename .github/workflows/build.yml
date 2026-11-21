@@ -30,6 +30,12 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # Runs each part of npm test in parallel
+    strategy:
+      fail-fast: false
+      matrix:
+        script: ['test:js', 'test:go', 'test:e2e']
+    name: '${{ matrix.script }}'
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node.js
@@ -44,13 +50,14 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
       - name: Install Playwright browsers
+        if: matrix.script == 'test:e2e'
         run: npx playwright install --with-deps chromium
       # The Go and browser tests start Postgres and rclone's S3 server with
       # testcontainers, through the runner's Docker
       - name: Run tests
-        run: npm test
+        run: npm run ${{ matrix.script }}
       - name: Upload Playwright report
-        if: failure()
+        if: failure() && matrix.script == 'test:e2e'
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
