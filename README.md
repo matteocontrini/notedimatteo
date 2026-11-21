@@ -26,11 +26,17 @@ npm run dev
 
 There's no hot reload: restart the server after changing templates, CSS, or scripts.
 
+The database schema lives in [goose](https://github.com/pressly/goose) migrations in `internal/db/migrations`. Apply migrations with:
+
+```sh
+npm run migrate
+```
+
 After editing templates or SQL queries, regenerate the code:
 
 ```sh
 go tool templ generate   # internal/views/*.templ
-go tool sqlc generate    # internal/db/queries/*.sql
+go tool sqlc generate    # internal/db/queries/*.sql and internal/db/migrations/*.sql
 ```
 
 ## Tests

@@ -8,6 +8,7 @@
 	},
 	"scripts": {
 		"dev": "go tool templ generate && npm run assets && npm run libvips && set -a && . ./.env && set +a && PKG_CONFIG_LIBDIR=\"$PWD/.libvips\" go run ./cmd/server",
+		"migrate": "set -a && . ./.env && set +a && go run ./cmd/migrate",
 		"assets": "vite build",
 		"libvips": "node scripts/libvips.mjs",
 		"test": "vitest run",

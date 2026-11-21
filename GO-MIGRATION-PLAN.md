@@ -161,9 +161,9 @@ Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 7: Goose
 
-- [ ] Add `goose` with the existing schema as the baseline migration
-- [ ] Point `sqlc.yaml` at the goose migrations
-- [ ] Keep `_prisma_migrations`, and don't run migrations at server start, so a rollback still works
+- [x] Add `goose` with the existing schema as the baseline migration
+- [x] Point `sqlc.yaml` at the goose migrations
+- [x] Keep `_prisma_migrations`, and don't run migrations at server start, so a rollback still works
 
 ### Step 8: Browser tests
 

@@ -35,7 +35,7 @@ don't show; remove notes that stop being true.
   catches missing fields and wrong arguments, so there are no tests that only check a field reaches the page.
 - sqlc is pinned like templ: `go tool sqlc generate` after editing `internal/db/queries/*.sql`; CI runs
   `go tool sqlc diff`. Its first build compiles Postgres's C parser (about 25 s). `sqlc.yaml` reads the schema
-  from `internal/db/schema/`, copies of Prisma's migration files, listed one by one. Overrides map `int4`/`serial` to `int` and
+  from the goose migrations in `internal/db/migrations/`. Overrides map `int4`/`serial` to `int` and
   `timestamptz` to `time.Time`, each twice (plain and nullable, which sqlc matches separately). Cast integer
   parameters and results to `::int`, not `::bigint`, or they need `int8` overrides too.
 - Filters are optional parameters (`sqlc.narg(x) IS NULL OR ...`), so query text never changes. `Posts` and
@@ -96,6 +96,22 @@ don't show; remove notes that stop being true.
   `golang` image together; give templ and sqlc their own group, because their PRs need a manual regenerate
   (CI checks the generated code); keep `@img/sharp-libvips-*` in one group; majors of Svelte, Vite, Tailwind,
   and ESLint wait for Dependency Dashboard approval.
+
+## Goose
+
+- `internal/db/migrations/00001_baseline.sql` is the schema Prisma's three migrations created, with `IF NOT EXISTS`
+  everywhere and the foreign keys inside `CREATE TABLE` (Postgres has no `ADD CONSTRAINT IF NOT EXISTS`). On an
+  existing database it changes nothing, and goose records version 1. It has no Down.
+- `db.Migrate` runs goose's library (`goose.NewProvider`) on the embedded files, through pgx's `database/sql`
+  driver; goose's CLI would pull in MySQL, SQLite, and ClickHouse drivers. `npm run migrate` (`cmd/migrate`) runs
+  it against `DATABASE_URL`. The server doesn't run it yet (see "Rest of phase 1").
+- Checked 2026-11-21 with `pg_dump --schema-only` on two scratch databases: an empty one after the migration, and a
+  copy of `notedimatteo_prod` after it, both match the production schema exactly (column order, defaults,
+  sequences, constraints). The copy kept its data and `_prisma_migrations`. A second run applies nothing.
+- goose ignores files without a numeric prefix silently; `TestMigrationsLoad` catches duplicate versions.
+- Adding goose raised pgx to 5.12.0 (then upgraded to 5.13.0, the latest) and some of sqlc's and templ's modules (grpc, protobuf, x/tools),
+  through goose's own requirements.
+- Neither local database has been migrated: `npm run migrate` adds `goose_db_version` to the one in `.env`.
 
 ## govips and libvips
 

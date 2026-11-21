@@ -1,11 +1,8 @@
 version: '2'
 sql:
   - engine: postgresql
-    # The database schema, until goose migrations replace these files
-    schema:
-      - internal/db/schema/20250920184819_create_posts_tags.sql
-      - internal/db/schema/20250926094725_create_sessions.sql
-      - internal/db/schema/20260628214406_add_post_html_cache.sql
+    # sqlc applies the goose migrations' Up sections in order to learn the schema
+    schema: internal/db/migrations
     queries: internal/db/queries
     gen:
       go:
