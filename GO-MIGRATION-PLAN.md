@@ -192,7 +192,8 @@ the required formatting, lint, and Svelte checks.
 
 ### After cutover
 
-- [ ] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions
+- [x] Pin GitHub Actions to exact versions with `actions.lock` (`gh actions-lock`), and add `.nvmrc`
+- [x] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions; enabling the Renovate app is left
 - [ ] Move the lasting facts from `GO-MIGRATION-NOTES.md` into a README architecture section; delete the migration notes and plan's phase 1
 
 ## Phase 2: Revisions

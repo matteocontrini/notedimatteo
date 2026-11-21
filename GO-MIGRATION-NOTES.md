@@ -101,10 +101,15 @@ don't show; remove notes that stop being true.
   locally and in CI, and nobody needs rclone installed. A GitHub Actions service would also work: services take
   `command` and `entrypoint`. Distro packages are too old for `serve s3` (1.65+).
 - The SDK reaches the bucket at `uploads.localhost:<port>`: macOS and the GitHub Actions runner both resolve it.
-- Renovate, from certs-email's config: add the gomod manager; keep the `go` directive and the Dockerfile's
-  `golang` image together; give templ and sqlc their own group, because their PRs need a manual regenerate
-  (CI checks the generated code); keep `@img/sharp-libvips-*` in one group; majors of Svelte, Vite, Tailwind,
-  and ESLint wait for Dependency Dashboard approval.
+- Renovate (`renovate.json`, 2026-11-21), from certs-email's config: server packages (Go modules, Go version, libvips)
+  weekly on Wednesdays; build and browser tooling monthly on the 15th (the 1st is a busy day); no vulnerability
+  PRs, as in certs-email. gomod with
+  `go mod tidy`; the `go` directive and the `golang` image in one group; templ and sqlc in their own group,
+  because their PRs need `npm run generate` pushed by hand (CI checks the generated code); sqlc is `// indirect`
+  in `go.mod`, which Renovate skips unless a rule enables it; `@img/sharp-libvips-*` in one group; rclone's image
+  through a regex manager, `postgres:18` by hand (production's major). Validated with `renovate-config-validator`.
+- GitHub Actions use exact versions, locked in `.github/workflows/actions.lock` by `gh actions-lock` (v0.4.1,
+  like certs-email); the `verify-lockfile` job checks it. After editing a workflow's `uses:`, run `gh actions-lock`.
 
 ## Goose
 
