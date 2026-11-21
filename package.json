@@ -10,7 +10,6 @@
 		"postinstall": "node scripts/libvips.mjs",
 		"generate": "go tool templ generate && go tool sqlc generate && vite build",
 		"dev": "npm run generate && set -a && . ./.env && set +a && PKG_CONFIG_LIBDIR=\"$PWD/.libvips\" go run ./cmd/server",
-		"migrate": "set -a && . ./.env && set +a && go run ./cmd/migrate",
 		"format": "prettier --write . && gofmt -w cmd internal web && go tool templ fmt -prettier-required internal/views",
 		"check": "npm run generate && npm run check:js && npm run check:go",
 		"check:js": "prettier --check . && eslint . && svelte-check --tsconfig ./tsconfig.json",
@@ -18,7 +17,7 @@
 		"test": "npm run test:js && npm run test:go && npm run test:e2e",
 		"test:js": "vitest run",
 		"test:go": "npm run generate && PKG_CONFIG_LIBDIR=\"$PWD/.libvips\" go test ./...",
-		"test:e2e": "npm run generate && PKG_CONFIG_LIBDIR=\"$PWD/.libvips\" go build -o .e2e/server ./cmd/server && go build -o .e2e/migrate ./cmd/migrate && playwright test",
+		"test:e2e": "npm run generate && PKG_CONFIG_LIBDIR=\"$PWD/.libvips\" go build -o .e2e/server ./cmd/server && playwright test",
 		"check-updates": "npx npm-check-updates -i --format group,repo --cooldown 1d"
 	},
 	"devDependencies": {

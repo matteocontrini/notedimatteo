@@ -83,8 +83,8 @@ don't show; remove notes that stop being true.
 - `docker build --target libvips-test .` runs the image processing tests inside the runtime image.
 - Image is about 146 MB (242 MB with Debian's libvips), runs as `nobody`; `.dockerignore` keeps `.env` and `node_modules` out.
 - Railway probably builds a root `Dockerfile` automatically (unverified): don't merge `go-migration` into `main` before cutover.
-- SvelteKit in production started through `npm start`, whose launcher process alone used 55.5 MiB: compare
-  Railway's memory graph against that after cutover.
+- Memory on Railway: SvelteKit used 500 MB or more (its `npm start` launcher alone used 55.5 MiB). After cutover
+  (2026-11-21), the Go server uses about 16 MB.
 
 ## Rest of phase 1
 
@@ -93,8 +93,8 @@ don't show; remove notes that stop being true.
   tests behind it.
 - Goose: the baseline is the current schema (`internal/db/schema/`), so production's schema doesn't change.
   Keep `_prisma_migrations` until a rollback is no longer needed: if anything ran `prisma migrate deploy` on
-  a rolled-back SvelteKit, Prisma would try to apply its migrations again. Don't run goose at server start
-  before cutover, so the cutover changes nothing in the database.
+  a rolled-back SvelteKit, Prisma would try to apply its migrations again. goose didn't run at server start
+  before cutover, so the cutover changed nothing in the database.
 - Browser tests follow `../dmw/certs-email`: Playwright, a global setup that starts the app, testcontainers,
   a few long flows with `test.step`, and the report uploaded on failure.
 - rclone's S3 runs from the `rclone/rclone` image through testcontainers, so the tests start it the same way
@@ -112,21 +112,22 @@ don't show; remove notes that stop being true.
   everywhere and the foreign keys inside `CREATE TABLE` (Postgres has no `ADD CONSTRAINT IF NOT EXISTS`). On an
   existing database it changes nothing, and goose records version 1. It has no Down.
 - `db.Migrate` runs goose's library (`goose.NewProvider`) on the embedded files, through pgx's `database/sql`
-  driver; goose's CLI would pull in MySQL, SQLite, and ClickHouse drivers. `npm run migrate` (`cmd/migrate`) runs
-  it against `DATABASE_URL`. The server doesn't run it yet (see "Rest of phase 1").
+  driver; goose's CLI would pull in MySQL, SQLite, and ClickHouse drivers. The server runs it at
+  startup, before opening its pool (since 2026-11-21, after cutover); `cmd/migrate` and `npm run migrate` are gone.
+  No session lock: Railway runs one instance, and the old one never migrates.
 - Checked 2026-11-21 with `pg_dump --schema-only` on two scratch databases: an empty one after the migration, and a
   copy of `notedimatteo_prod` after it, both match the production schema exactly (column order, defaults,
   sequences, constraints). The copy kept its data and `_prisma_migrations`. A second run applies nothing.
 - goose ignores files without a numeric prefix silently; `TestMigrationsLoad` catches duplicate versions.
 - Adding goose raised pgx to 5.12.0 (then upgraded to 5.13.0, the latest) and some of sqlc's and templ's modules (grpc, protobuf, x/tools),
   through goose's own requirements.
-- Neither local database has been migrated: `npm run migrate` adds `goose_db_version` to the one in `.env`.
+- The first start of the server on a database (production, local ones) adds `goose_db_version` and records version 1.
 
 ## Browser tests (`tests/e2e`)
 
-- `npm run test:e2e` runs `generate`, builds `.e2e/server` and `.e2e/migrate`, then runs Playwright. The global setup starts
-  `postgres:18` and `rclone/rclone:1.74.4` with testcontainers, applies the goose migrations, loads the seed from
-  `data.ts` with `psql` inside the Postgres container, and starts the server on port 6210.
+- `npm run test:e2e` runs `generate`, builds `.e2e/server`, then runs Playwright. The global setup starts
+  `postgres:18` and `rclone/rclone:1.74.4` with testcontainers, starts the server on port 6210 (which applies the
+  migrations), then loads the seed from `data.ts` with `psql` inside the Postgres container.
 - rclone serves one directory twice: S3 on 9000 (the bucket is a subdirectory, so no bucket creation) and plain
   HTTP on 8080 for the bucket, which is `STORAGE_PUBLIC_BASE_URL`, so uploaded images load in the browser.
 - `SITE_URL` is `https://notedimatteo.it`, so the page turns GoatCounter off; the fixture also aborts requests to

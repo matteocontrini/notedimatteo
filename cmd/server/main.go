@@ -42,6 +42,10 @@ func run() error {
 		return err
 	}
 
+	if err := db.Migrate(ctx, cfg.DatabaseURL); err != nil {
+		return err
+	}
+
 	database, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err

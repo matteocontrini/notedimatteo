@@ -28,7 +28,7 @@ and G1–G3 (editor).
 | URLs           | Built only in `internal/urls`; site address from config; the merged site's URL scheme is decided in phase 4                                                       |
 | Templates      | templ components in `internal/views` with typed parameters; generated `_templ.go` files are committed, and CI checks formatting and generation                    |
 | Database       | `pgx/v5` with sqlc: SQL in `internal/db/queries`, typed Go code generated and checked against the schema; small pool                                              |
-| Migrations     | `goose` from phase 1 step 7, with the existing schema as baseline; not run at server start until after cutover                                                                                       |
+| Migrations     | `goose` from phase 1 step 7, with the existing schema as baseline; run at server start since cutover                                                                                       |
 | Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
 | Images         | `govips` (cgo) against sharp's prebuilt libvips from npm, with mozjpeg; libvips caching turned off                                                               |
 | Sessions       | Keep the existing table and cookie name                                                                                                                           |
@@ -78,7 +78,7 @@ authorization, CSRF protection, and input validation in Go.
 
 ## Phase 1: Go migration
 
-SvelteKit keeps serving production until step 9, so nothing partial reaches visitors. There's no second
+Go has served production since 2026-11-21 (step 9); SvelteKit served it until then, so nothing partial reached visitors. There's no second
 Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 1: Skeleton
@@ -180,10 +180,10 @@ Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 9: Cutover
 
-- [ ] Deploy the Go server to the existing Railway service; Railway's previous deployment is the rollback
-- [ ] Watch logs and Railway's memory graph after the switch
+- [x] Deploy the Go server to the existing Railway service (2026-11-21); Railway's previous deployment is the rollback
+- [x] Watch logs and Railway's memory graph after the switch
 - [ ] Once a rollback is no longer needed, drop `_prisma_migrations` in a goose migration
-- [ ] Run the migrations at server start; remove `cmd/migrate`, `npm run migrate`, and the e2e `migrate` binary
+- [x] Run the migrations at server start; remove `cmd/migrate`, `npm run migrate`, and the e2e `migrate` binary
 
 Completion means feature parity, preserved URLs/data, reviewed Markdown and image
 output, working editor errors and save/publish flows, and a production artifact

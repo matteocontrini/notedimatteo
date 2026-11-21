@@ -1,40 +1,23 @@
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { existsSync } from 'node:fs';
-import { promisify } from 'node:util';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { GenericContainer, Wait } from 'testcontainers';
 import { E2E_PORT } from '../../playwright.config.ts';
 import { ADMIN_PASSWORD, ADMIN_USERNAME, BUCKET, seedSQL } from './data.ts';
 
-const run = promisify(execFile);
-
 /**
  * Runs the server built by `npm run test:e2e` against a throwaway Postgres
- * and an in-memory S3 server, with the seed data from data.ts.
+ * and an in-memory S3 server. The server applies the migrations when it
+ * starts; the seed data from data.ts goes in after that.
  */
 export default async function globalSetup() {
-	for (const binary of ['.e2e/server', '.e2e/migrate']) {
-		if (!existsSync(binary)) {
-			throw new Error(`${binary} is missing: run the tests with npm run test:e2e`);
-		}
+	if (!existsSync('.e2e/server')) {
+		throw new Error('.e2e/server is missing: run the tests with npm run test:e2e');
 	}
 
 	const [postgres, s3] = await Promise.all([startPostgres(), startS3()]);
 	const databaseURL = postgres.getConnectionUri();
-
-	await run('.e2e/migrate', { env: { DATABASE_URL: databaseURL } });
-	await postgres.exec([
-		'psql',
-		'-v',
-		'ON_ERROR_STOP=1',
-		'-U',
-		postgres.getUsername(),
-		'-d',
-		postgres.getDatabase(),
-		'-c',
-		seedSQL(),
-	]);
 
 	// rclone serves the bucket over plain HTTP too, as the public address of the
 	// uploaded images
@@ -70,7 +53,18 @@ export default async function globalSetup() {
 	});
 	await Promise.race([waitForServer(`http://localhost:${E2E_PORT}/healthz`), exited]);
 
-	return async () => {
+	const seed = await postgres.exec([
+		'psql',
+		'-v',
+		'ON_ERROR_STOP=1',
+		'-U',
+		postgres.getUsername(),
+		'-d',
+		postgres.getDatabase(),
+		'-c',
+		seedSQL(),
+	]);
+	const stop = async () => {
 		server.removeAllListeners('exit');
 		exited.catch(() => {});
 		server.kill();
@@ -78,6 +72,12 @@ export default async function globalSetup() {
 
 		if (process.env.E2E_SERVER_LOGS) console.log(output);
 	};
+
+	if (seed.exitCode !== 0) {
+		await stop();
+		throw new Error(`The seed failed:\n${seed.output}`);
+	}
+	return stop;
 }
 
 function startPostgres() {
