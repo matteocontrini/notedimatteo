@@ -173,7 +173,7 @@
 			"groupName": "Node major"
 		},
 		{
-			"description": "Keep the Node version as a major-only range (24.x in engines, 24 in .nvmrc) instead of bumping it to the exact latest version",
+			"description": "Keep the Node version as a major-only range (26.x in engines, 26 in .nvmrc) instead of bumping it to the exact latest version",
 			"matchPackageNames": ["node"],
 			"rangeStrategy": "replace"
 		},

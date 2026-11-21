@@ -1,4 +1,4 @@
-FROM node:24-trixie-slim AS assets
+FROM node:26-trixie-slim AS assets
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 # The postinstall script runs below, once its file is copied; no other package
