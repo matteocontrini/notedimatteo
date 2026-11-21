@@ -155,6 +155,9 @@ don't show; remove notes that stop being true.
   color to Display P3 with libvips's built-in `"p3"` profile and checks that the output has the sRGB values again.
 - Install with `go get github.com/davidbyttow/govips/v2/vips@v2.20.0`. Asking for `.../govips/v2` resolves to a stale 2020 root-module version.
 - `vips.Startup(&vips.Config{})` turns caching off: values ≥ 0 are applied. `Startup(nil)` uses govips defaults, with caching.
+- Rejected (2026-11-21): Homebrew's `vips` (8.18.7 with mozjpeg, but 28 dependencies, ImageMagick and Poppler
+  included), and development inside Docker (the image would need sharp's libvips anyway, and testcontainers,
+  Playwright's server, and GoLand's cgo insight would all get harder).
 - Why not Debian's libvips: trixie ships 8.16.1 without mozjpeg, and files came out 14% (main) and 19% (preview)
   bigger. No Go binding bundles libvips, and building it from source in Docker costs minutes per uncached build.
 
