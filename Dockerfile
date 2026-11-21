@@ -14,7 +14,7 @@ COPY internal/views internal/views
 COPY web web
 RUN npx vite build
 
-FROM golang:1.26-trixie AS build
+FROM golang:1.27-trixie AS build
 RUN apt-get update && apt-get install -y --no-install-recommends pkg-config
 WORKDIR /app
 # Same paths as in the assets stage, which the pkg-config file refers to
