@@ -116,8 +116,8 @@ type PostsRow struct {
 
 // Posts and CountPosts take the same optional filters: a NULL parameter
 // doesn't filter. Keep their WHERE clauses identical.
-// Published posts, newest first. Tags have no ORDER BY, like the SvelteKit
-// app: they come in whatever order Postgres returns them.
+// Published posts, newest first. Tags have no ORDER BY: they come in whatever
+// order Postgres returns them.
 // No cached HTML if it's from another body revision or renderer version
 // LIMIT NULL returns every row
 func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error) {

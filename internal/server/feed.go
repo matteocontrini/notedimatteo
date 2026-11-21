@@ -17,8 +17,7 @@ const (
 var xmlText = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 var xmlAttribute = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;")
 
-// feed serves the RSS feed of the latest posts, with the same elements and
-// layout as the SvelteKit app's.
+// feed serves the RSS feed of the latest posts.
 func (s *Server) feed(w http.ResponseWriter, r *http.Request) error {
 	posts, err := s.store.Posts(r.Context(), db.PostFilter{}, feedItems, 0)
 	if err != nil {

@@ -3,7 +3,6 @@
 
 type Mode = 'system' | 'light' | 'dark';
 
-// mode-watcher's key, so preferences saved by the SvelteKit app still apply
 const modeStorageKey = 'mode-watcher-mode';
 const prefersLight = window.matchMedia('(prefers-color-scheme: light)');
 

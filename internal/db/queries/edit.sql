@@ -26,8 +26,7 @@ WHERE number = @number
 FOR UPDATE;
 
 -- name: UpdatePost :exec
--- Saves the editor's fields. An empty title or slug becomes NULL, like in the
--- SvelteKit app.
+-- Saves the editor's fields. An empty title or slug becomes NULL.
 UPDATE posts
 SET number         = @number,
     category       = @category,

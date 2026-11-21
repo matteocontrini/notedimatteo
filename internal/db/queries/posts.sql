@@ -2,8 +2,8 @@
 -- doesn't filter. Keep their WHERE clauses identical.
 
 -- name: Posts :many
--- Published posts, newest first. Tags have no ORDER BY, like the SvelteKit
--- app: they come in whatever order Postgres returns them.
+-- Published posts, newest first. Tags have no ORDER BY: they come in whatever
+-- order Postgres returns them.
 SELECT p.id,
        p.number,
        p.category,

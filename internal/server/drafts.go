@@ -24,8 +24,8 @@ func (s *Server) unpublished(w http.ResponseWriter, r *http.Request) error {
 	return s.render(w, r, http.StatusOK, views.Unpublished(page, items))
 }
 
-// newDraft creates an empty draft and redirects to its editor. SvelteKit used
-// a GET link; this is a POST, so other sites can't create drafts.
+// newDraft creates an empty draft and redirects to its editor. It takes only
+// POST requests, so other sites can't create drafts with a link.
 func (s *Server) newDraft(w http.ResponseWriter, r *http.Request) error {
 	number, err := s.store.CreateDraft(r.Context())
 	if err != nil {

@@ -16,7 +16,7 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-// The [img] markup and its output match the SvelteKit app's rehype plugin:
+// The editor writes [img] markup for uploaded images:
 //
 //	[img width=1200 height=800 alt="…" link=https://…]2025/09/abc.jpg[/img]
 //
@@ -86,9 +86,9 @@ func (t *imageTransformer) Transform(doc *ast.Document, reader text.Reader, _ pa
 }
 
 // transformChildren looks for [img] markup in each run of adjacent text nodes.
-// remark merges adjacent text into one node where goldmark splits it, for
-// example around a bracket that doesn't start a link, so runs are matched as a
-// whole. A hard line break ends a run, like remark's break element.
+// goldmark splits text into several nodes, for example around a bracket that
+// doesn't start a link, so it matches each run as a whole. A hard line break
+// ends a run.
 func (t *imageTransformer) transformChildren(parent ast.Node, source []byte) {
 	var run []*ast.Text
 	flush := func() {

@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	// SvelteKit uses the same cookie name, so users stay logged in after the switch.
 	sessionCookie   = "notedimatteo_session"
 	sessionLifetime = 60 * 24 * time.Hour
 	// The server updates a session's last activity at most once per activityInterval.
@@ -37,8 +36,8 @@ func isLoggedIn(r *http.Request) bool {
 // session exists, it returns the request marked as logged in. If not, it
 // deletes the cookie.
 //
-// TODO: after the migration, expire old sessions in the database too. Today
-// only the browser drops the cookie, after 60 days.
+// TODO: expire old sessions in the database too. Today only the browser drops
+// the cookie, after 60 days.
 func (s *Server) loadSession(w http.ResponseWriter, r *http.Request) (*http.Request, error) {
 	cookie, err := r.Cookie(sessionCookie)
 	if err != nil {
@@ -128,7 +127,7 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) error {
 
 // login checks the credentials and starts a session.
 //
-// TODO: after the migration, limit failed login attempts.
+// TODO: limit failed login attempts.
 func (s *Server) login(w http.ResponseWriter, r *http.Request) error {
 	if err := parseForm(w, r, loginSizeLimit); err != nil {
 		return err
@@ -167,8 +166,8 @@ func (s *Server) renderLogin(w http.ResponseWriter, r *http.Request, status int,
 	return s.render(w, r, status, views.Login(page, username, message))
 }
 
-// logout deletes the session. SvelteKit used a GET link; this is a POST, so
-// other sites can't log the user out.
+// logout deletes the session. It takes only POST requests, so other sites
+// can't log the user out with a link.
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) error {
 	if cookie, err := r.Cookie(sessionCookie); err == nil {
 		if err := s.store.DeleteSession(r.Context(), cookie.Value); err != nil {

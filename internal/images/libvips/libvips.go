@@ -36,7 +36,7 @@ func Start() (stop func(), err error) {
 	return vips.Shutdown, nil
 }
 
-// Processor makes the JPEGs the SvelteKit app made with sharp.
+// Processor create the two JPEGs from an uploaded image with libvips.
 type Processor struct{}
 
 // Process rotates the image as its EXIF orientation says, converts it to sRGB,
@@ -52,7 +52,7 @@ func (Processor) Process(data []byte) (images.Processed, error) {
 	if err := img.AutoRotate(); err != nil {
 		return images.Processed{}, fmt.Errorf("rotate: %w", err)
 	}
-	// Like sharp: convert with the embedded color profile, then drop it
+	// Convert the pixels with the embedded color profile, the export then drops it
 	if img.HasICCProfile() {
 		if err := img.TransformICCProfile(vips.SRGBIEC6196621ICCProfilePath); err != nil {
 			return images.Processed{}, fmt.Errorf("convert to sRGB: %w", err)
@@ -84,7 +84,7 @@ func (Processor) Process(data []byte) (images.Processed, error) {
 	}, nil
 }
 
-// jpegParams returns sharp's settings with its mozjpeg option.
+// jpegParams returns the settings of sharp's mozjpeg preset.
 func jpegParams(quality int) *vips.JpegExportParams {
 	return &vips.JpegExportParams{
 		StripMetadata:      true,

@@ -121,7 +121,7 @@ func (s *Server) tag(w http.ResponseWriter, r *http.Request) error {
 // month serves /archivio/{year}/{month}, with the month written with two
 // digits; /archivio/2026/4 redirects to /archivio/2026/04.
 //
-// TODO: after the migration, select the month in Europe/Rome rather than UTC.
+// TODO: select the month in Europe/Rome rather than UTC.
 func (s *Server) month(w http.ResponseWriter, r *http.Request) error {
 	yearText, monthText := r.PathValue("year"), r.PathValue("month")
 	year, yearErr := strconv.Atoi(yearText)

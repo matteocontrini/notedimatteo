@@ -115,8 +115,6 @@ func New(store Store, opts Options) (http.Handler, error) {
 		uploader:      opts.Uploader,
 	}
 
-	// The URLs match the SvelteKit app's routes. The router redirects paths with
-	// empty or dot segments to their clean version.
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handle(s.home))
 	mux.HandleFunc("GET /about", s.handle(s.about))

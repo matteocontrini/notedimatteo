@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// These cases differ from the SvelteKit app's renderer on purpose.
+// TestImageMarkup covers [img] markup: paths, links, sizes, and where it stays text.
 func TestImageMarkup(t *testing.T) {
 	r, err := New(Options{StorageBaseURL: "https://storage.example.com/"})
 	if err != nil {

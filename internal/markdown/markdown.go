@@ -16,8 +16,7 @@ import (
 
 // Version identifies the renderer's output, and is stored with cached HTML.
 // Bump it whenever the output changes, so cached posts are rendered again.
-// The SvelteKit app's renderer is version 1: its HTML has the same structure,
-// but escapes some characters differently and has no final newline.
+// Version 1 was the site's previous renderer.
 const Version = 2
 
 type Options struct {
@@ -29,8 +28,8 @@ type Renderer struct {
 	md goldmark.Markdown
 }
 
-// New returns a renderer with the behavior of the SvelteKit app's notes:
-// CommonMark with strikethrough, raw HTML dropped, and [img] markup.
+// New returns the notes' renderer: CommonMark with strikethrough, raw HTML
+// dropped, and [img] markup.
 func New(opts Options) (*Renderer, error) {
 	if opts.StorageBaseURL == "" {
 		return nil, errors.New("markdown: StorageBaseURL is required")

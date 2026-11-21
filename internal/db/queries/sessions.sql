@@ -4,7 +4,7 @@ FROM sessions
 WHERE token = @token;
 
 -- name: CreateSession :exec
--- lastActivityAt has no database default, because Prisma set it in the app.
+-- lastActivityAt has no database default, so the insert sets it.
 INSERT INTO sessions (token, "lastActivityAt")
 VALUES (@token, CURRENT_TIMESTAMP);
 

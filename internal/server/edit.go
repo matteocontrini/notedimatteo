@@ -175,8 +175,8 @@ func (s *Server) savePost(w http.ResponseWriter, r *http.Request) error {
 	return writeJSON(w, http.StatusOK, saveResponse{Post: &saved})
 }
 
-// parsePostForm reads the editor's fields and checks them like the SvelteKit
-// app's schema. It returns the errors by field name. An unknown intent is
+// parsePostForm reads and checks the editor's fields. It returns the errors by
+// field name. An unknown intent is
 // errBadRequest, because the editor only sends known ones.
 func parsePostForm(form url.Values) (db.PostEdit, map[string]string, error) {
 	intent, ok := intents[form.Get("intent")]

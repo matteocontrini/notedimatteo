@@ -11,13 +11,15 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-// Must match storageBaseUrl in testdata/generate.mjs
+// storageBaseURL is the storage address in the expected HTML in testdata/compat.
 const storageBaseURL = "https://storage.example.com"
 
-// TestCompatibility compares the output with the SvelteKit app's renderer,
-// saved by testdata/generate.mjs. MARKDOWN_COMPAT_DIR can point to another
-// directory of .md and .html pairs, for example exported posts with their
-// cached HTML, and MARKDOWN_COMPAT_STORAGE_URL sets the storage URL they used.
+// TestCompatibility renders each .md file in testdata/compat and compares the
+// output with the .html file next to it. The expected HTML comes from the
+// site's previous renderer, so the test compares structure, not bytes.
+// MARKDOWN_COMPAT_DIR can point to another directory of .md and .html pairs,
+// for example exported posts with their cached HTML, and
+// MARKDOWN_COMPAT_STORAGE_URL sets the storage URL they used.
 func TestCompatibility(t *testing.T) {
 	dir := os.Getenv("MARKDOWN_COMPAT_DIR")
 	if dir == "" {
@@ -60,7 +62,7 @@ func TestCompatibility(t *testing.T) {
 
 			want := canonical(t, string(expected))
 			if have := canonical(t, got); have != want {
-				t.Errorf("output differs from the SvelteKit renderer\n--- want\n%s\n--- got\n%s\n--- raw output\n%s", want, have, got)
+				t.Errorf("output differs from the expected HTML\n--- want\n%s\n--- got\n%s\n--- raw output\n%s", want, have, got)
 			}
 		})
 	}

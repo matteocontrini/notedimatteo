@@ -757,7 +757,7 @@ func Editor(page Page, data any, script string) templ.Component {
 	})
 }
 
-// ErrorPage shows an error inside the site layout, like SvelteKit's built-in error page.
+// ErrorPage shows an error inside the site layout.
 func ErrorPage(page Page, status int, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

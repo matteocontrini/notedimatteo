@@ -8,8 +8,8 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// nodeRenderer drops raw HTML, like remark-rehype without allowDangerousHtml,
-// and renders the nodes added by imageTransformer.
+// nodeRenderer drops raw HTML tags, keeping the text between them, and renders
+// the nodes added by imageTransformer.
 type nodeRenderer struct{}
 
 func (r *nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {

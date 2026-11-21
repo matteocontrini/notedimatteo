@@ -81,7 +81,7 @@ func TestNewPagination(t *testing.T) {
 		{1, 3, views.Pagination{Current: 1, Total: 3, Next: "/note?page=2"}},
 		{2, 3, views.Pagination{Current: 2, Total: 3, Previous: "/note", Next: "/note?page=3"}},
 		{3, 3, views.Pagination{Current: 3, Total: 3, Previous: "/note?page=2"}},
-		// Past the last page, like the SvelteKit app
+		// Past the last page
 		{5, 3, views.Pagination{Current: 5, Total: 3, Previous: "/note?page=4"}},
 	}
 

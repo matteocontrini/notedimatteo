@@ -81,8 +81,8 @@ func (w *startWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
 }
 
-// trimTrailingSlash redirects /path/ to /path, like the SvelteKit app, so old
-// links with a trailing slash keep working.
+// trimTrailingSlash redirects /path/ to /path, so links with a trailing slash
+// keep working.
 func trimTrailingSlash(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.EscapedPath()

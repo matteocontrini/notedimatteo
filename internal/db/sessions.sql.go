@@ -15,7 +15,7 @@ INSERT INTO sessions (token, "lastActivityAt")
 VALUES ($1, CURRENT_TIMESTAMP)
 `
 
-// lastActivityAt has no database default, because Prisma set it in the app.
+// lastActivityAt has no database default, so the insert sets it.
 func (q *Queries) CreateSession(ctx context.Context, token string) error {
 	_, err := q.db.Exec(ctx, createSession, token)
 	return err

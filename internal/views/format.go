@@ -55,8 +55,8 @@ var timeUnits = []struct {
 	{"year", 0},
 }
 
-// relativeTime says how long before now t was, in English, with the wording of
-// the timeago.js package: "just now", "10 seconds ago", "1 week ago".
+// relativeTime says how long before now t was, in English: "just now",
+// "10 seconds ago", "1 week ago".
 func relativeTime(t, now time.Time) string {
 	amount := max(now.Sub(t).Seconds(), 0)
 	unit := 0
@@ -130,7 +130,7 @@ func IsCategory(slug string) bool {
 }
 
 // CategoryLabel returns a category's display name. Unknown categories are
-// title-cased like in the SvelteKit app: "foo-bar" becomes "Foo Bar".
+// title-cased: "foo-bar" becomes "Foo Bar".
 func CategoryLabel(slug string) string {
 	if label, ok := categoryLabels[slug]; ok {
 		return label
@@ -149,7 +149,7 @@ func CategoryLabel(slug string) string {
 	return b.String()
 }
 
-// isASCIIWord matches JavaScript's \w.
+// isASCIIWord determines whether r is an ASCII letter, digit, or underscore (\w).
 func isASCIIWord(r rune) bool {
 	return r == '_' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
 }

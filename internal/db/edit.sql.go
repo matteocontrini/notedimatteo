@@ -155,8 +155,7 @@ type UpdatePostParams struct {
 	ID           int
 }
 
-// Saves the editor's fields. An empty title or slug becomes NULL, like in the
-// SvelteKit app.
+// Saves the editor's fields. An empty title or slug becomes NULL.
 func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
 	_, err := q.db.Exec(ctx, updatePost,
 		arg.Number,

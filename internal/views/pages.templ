@@ -201,7 +201,7 @@ templ Editor(page Page, data any, script string) {
 	}
 }
 
-// ErrorPage shows an error inside the site layout, like SvelteKit's built-in error page.
+// ErrorPage shows an error inside the site layout.
 templ ErrorPage(page Page, status int, message string) {
 	@layout(page) {
 		<h1>{ strconv.Itoa(status) }</h1>

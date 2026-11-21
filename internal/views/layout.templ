@@ -46,9 +46,8 @@ templ meta(page Page) {
 	<link rel="canonical" href={ page.Canonical }/>
 }
 
-// themeInit applies the saved theme before the first paint. The key and values
-// match mode-watcher's, so preferences saved by the SvelteKit app still apply.
-// The theme select is handled in web/assets/site.ts.
+// themeInit applies the saved theme before the first paint. It reads the same
+// localStorage key as web/assets/site.ts, which handles the theme select.
 templ themeInit() {
 	<script>
 		(function () {

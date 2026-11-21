@@ -26,8 +26,8 @@ type ArchiveRow struct {
 }
 
 // Published posts per month, newest first, in the database session's time zone.
-// TODO: after the migration, group by month in Europe/Rome, like the dates
-// shown on posts, whatever the session's time zone is.
+// TODO: group by month in Europe/Rome, like the dates shown on posts, whatever
+// the session's time zone is.
 func (q *Queries) Archive(ctx context.Context) ([]ArchiveRow, error) {
 	rows, err := q.db.Query(ctx, archive)
 	if err != nil {

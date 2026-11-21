@@ -10,8 +10,6 @@ import (
 	"github.com/matteocontrini/notedimatteo/internal/images"
 )
 
-// uploadSizeLimit matches BODY_SIZE_LIMIT in the SvelteKit app's production
-// environment.
 const uploadSizeLimit = 20 << 20
 
 // upload stores the image in the form's file field, and answers its keys and
