@@ -59,20 +59,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
       - name: Test image processing in the Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          target: libvips-test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: docker build --target libvips-test .
       - name: Build the Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: docker build .
 
   e2e:
     runs-on: ubuntu-latest

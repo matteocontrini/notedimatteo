@@ -70,10 +70,9 @@ don't show; remove notes that stop being true.
 
 ## Docker and deployment
 
-- CI: the `docker` job builds both targets with `docker/build-push-action` and GitHub's build cache (`type=gha`,
-  `mode=max`), in parallel with the `go` job. The image installs npm and Go dependencies again inside; the cache
-  skips that when the lockfiles don't change.
-
+- CI: the `docker` job runs both `docker build`s in parallel with the `go` job. A GitHub layer cache (`type=gha`,
+  `mode=max`) was tried and removed: its first export took 188 s, more than the installs it saves (`npm ci` 39 s,
+  `go mod download` 13 s), and every lockfile change would upload the big layers again.
 - Stages: `assets` (Node, also writes `.libvips`) → `build` (Go, with `node_modules/@img` and `.libvips` at the same
   paths) → `runtime` (Debian trixie + sharp's `libvips-cpp.so`) → `server` (last, the default).
   The `assets` stage copies `internal/views` so Tailwind can scan the components; `build` uses the committed `_templ.go` files.
