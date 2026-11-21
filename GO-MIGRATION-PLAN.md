@@ -172,11 +172,18 @@ Railway service: the Go server replaces SvelteKit on the same one.
 - [x] Test the main flows: reading, login and logout, writing a note with an upload, and editor errors
 - [x] Run them in CI, keeping the Playwright report when they fail
 
+### Scripts review (after step 8)
+
+- [x] One npm script per purpose: `generate`, `format`, `check`, `test`; `dev`, `check`, and the Go and browser tests generate first
+- [x] Write `.libvips` in `postinstall`
+- [x] CI jobs `check`, `test`, and `docker` run the same scripts
+
 ### Step 9: Cutover
 
 - [ ] Deploy the Go server to the existing Railway service; Railway's previous deployment is the rollback
 - [ ] Watch logs and Railway's memory graph after the switch
 - [ ] Once a rollback is no longer needed, drop `_prisma_migrations` in a goose migration
+- [ ] Run the migrations at server start; remove `cmd/migrate`, `npm run migrate`, and the e2e `migrate` binary
 
 Completion means feature parity, preserved URLs/data, reviewed Markdown and image
 output, working editor errors and save/publish flows, and a production artifact
@@ -186,6 +193,7 @@ the required formatting, lint, and Svelte checks.
 ### After cutover
 
 - [ ] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions
+- [ ] Move the lasting facts from `GO-MIGRATION-NOTES.md` into a README architecture section; delete the migration notes and plan's phase 1
 
 ## Phase 2: Revisions
 

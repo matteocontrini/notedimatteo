@@ -26,7 +26,8 @@ templ layout(page Page) {
 			<hr class="mt-16"/>
 			@footer()
 			<script>
-				if (window.location.host !== {{ page.SiteHost }}) window.goatcounter = { no_onload: true };
+				if (window.location.host !== {{ page.SiteHost }})
+					window.goatcounter = { no_onload: true };
 			</script>
 			<script defer src="https://gc.zgo.at/count.js" data-goatcounter="https://notedimatteo.goatcounter.com/count"></script>
 		</body>

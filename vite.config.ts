@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 // Builds the assets that the Go server embeds and serves: the CSS, the site script, and the editor.
 export default defineConfig({
 	root: 'web',
+	// Paths here are relative to the root: keep Vite's cache out of web
+	cacheDir: '../node_modules/.vite',
 	plugins: [tailwindcss(), svelte()],
 	build: {
 		outDir: 'dist',

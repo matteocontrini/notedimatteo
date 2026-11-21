@@ -32,41 +32,19 @@ The database schema lives in [goose](https://github.com/pressly/goose) migration
 npm run migrate
 ```
 
-After editing templates or SQL queries, regenerate the code:
+## Scripts
 
 ```sh
-go tool templ generate   # internal/views/*.templ
-go tool sqlc generate    # internal/db/queries/*.sql and internal/db/migrations/*.sql
+npm run generate   # generates the templ and sqlc code, and builds the assets
+npm run format     # formats with Prettier, gofmt, and templ fmt
+npm run check      # checks formatting, runs ESLint, svelte-check, and go vet
+npm test           # runs the editor's tests (Vitest), the Go tests, and the browser tests (Playwright)
 ```
 
-## Tests
+`dev`, `check`, and the Go and browser tests run `generate` first. Generated files are committed. `npm test` runs `test:js`, `test:go`, and `test:e2e`, which also run on their own.
 
-```sh
-npm test           # the editor's tests (Vitest)
-npm run test:go    # the Go tests
-npm run test:e2e   # the browser tests (Playwright)
-```
+`npm install` writes `.libvips/vips.pc`, which points the Go build at the libvips in `node_modules`. Go commands that compile the image processing need `PKG_CONFIG_LIBDIR="$PWD/.libvips"`: the scripts set it, and the editor's Go settings need it too.
 
-The Go database tests start a throwaway PostgreSQL with Docker, through [Testcontainers](https://testcontainers.com), so Docker must be running; `go test -short ./...` skips them. To run them against another database as it is, such as a copy of production data, set `TEST_DATABASE_URL`: the tests that write roll back their changes.
+The Go and browser tests start a throwaway PostgreSQL (and an S3 server for the browser tests) with Docker, through [Testcontainers](https://testcontainers.com), so Docker must be running; `go test -short ./...` skips the database tests. To run them against another database as it is, such as a copy of production data, set `TEST_DATABASE_URL`: the tests that write roll back their changes.
 
-## Formatting and linting
-
-Code formatting is handled by [Prettier](https://prettier.io/) and `gofmt`. To format the JavaScript, Svelte, and CSS files:
-
-```sh
-npm run format
-```
-
-To check formatting and run [ESLint](https://eslint.org/) together:
-
-```sh
-npm run lint
-```
-
-TypeScript, accessibility, and Svelte compiler errors are caught by [`svelte-check`](https://www.npmjs.com/package/svelte-check):
-
-```sh
-npm run check
-```
-
-Editor configuration is committed for both VS Code (`.vscode/`) and WebStorm (`.idea/`), so Prettier and ESLint run without manual setup. Both need a custom file pattern because the IDE defaults omit `.svelte`.
+Editor configuration is committed for both VS Code (`.vscode/`) and WebStorm (`.idea/`), so Prettier and ESLint run without manual setup.

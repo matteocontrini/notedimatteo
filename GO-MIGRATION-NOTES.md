@@ -20,13 +20,16 @@ don't show; remove notes that stop being true.
 
 ## Local development
 
-- `npm run dev`: port 6200 (generates templ, builds assets, sources `.env`, `go run`). SvelteKit was removed in step 6;
-  the scripts lost their `go:` prefix (`assets`, `libvips`, `test:go`).
+- `npm run dev`: port 6200 (runs `generate`, sources `.env`, `go run`).
+- Scripts by purpose (2026-11-21): `generate` (templ, sqlc, Vite: about 6 s), `format`, `check` (`check:js`, `check:go`),
+  `test` (`test:js`, `test:go`, `test:e2e`). `dev`, `check`, `test:go`, and `test:e2e` run `generate` first, so nobody
+  has to remember it. CI's `check` job fails when `generate` leaves changes.
 - No hot reload: restart `npm run dev` after template or CSS changes.
 - templ is pinned with the `tool` directive in `go.mod`: run it as `go tool templ` (`generate`, `fmt`, `lsp` for editors).
   Generated `*_templ.go` files are committed; after editing a `.templ` file, run `go tool templ generate` and `templ fmt`.
-- `templ fmt` also formats `<script>` blocks with Prettier when `prettier` is on `PATH`; it isn't here or in CI,
-  so formatting stays consistent. Installing Prettier globally would change `templ fmt`'s output.
+- `templ fmt` formats `<script>` blocks with Prettier when `prettier` is on `PATH`. npm scripts have
+  `node_modules/.bin` on `PATH`, so `format` and `check` pass `-prettier-required`: a direct `go tool templ fmt`
+  without Prettier would format differently.
 - Packages: `internal/server` loads data and builds `views.Page`; `internal/views` renders it and holds date formatting;
   `internal/urls` builds every URL. Views never query the database.
 - templ writes void elements without a trailing slash (`<meta ...>`); tests match attributes, not whole tags.
@@ -47,12 +50,12 @@ don't show; remove notes that stop being true.
   another database as it is, without migrations or seed: the production copy works, and writes roll back.
   testcontainers-go added many modules to `go.mod` (Docker client, OpenTelemetry); only test binaries compile them.
 - `web/assets/main.css` holds what was `src/app.css`.
-- `web/dist` is gitignored and embedded: run `npm run assets` before `go build`, `go test`, or `go vet`.
+- `web/dist` is gitignored and embedded: run `npm run generate` before a bare `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
 - libvips comes from npm, not the system (see "govips and libvips"). Go commands that compile `internal/images/libvips`
   or `cmd/server` need `PKG_CONFIG_LIBDIR=$PWD/.libvips` (absolute: cgo runs `pkg-config` in each package's folder).
-  `npm run dev` and `npm run test:go` set it; set it in the editor's Go settings so gopls can compile cgo.
+  The npm scripts that run `go` set it; set it in the editor's Go settings so gopls can compile cgo.
   Other packages, including `internal/server`, compile without it.
 - cgo still needs the `pkg-config` command (Homebrew `pkgconf` on the Mac; the Dockerfile installs it).
 - End-to-end checks: build the server to the scratchpad, run it on 6201 against the local `notedimatteo` database,
@@ -70,7 +73,7 @@ don't show; remove notes that stop being true.
 
 ## Docker and deployment
 
-- CI: the `docker` job runs both `docker build`s in parallel with the `go` job. A GitHub layer cache (`type=gha`,
+- CI: the `docker` job runs both `docker build`s in parallel with `check` and `test`. A GitHub layer cache (`type=gha`,
   `mode=max`) was tried and removed: its first export took 188 s, more than the installs it saves (`npm ci` 39 s,
   `go mod download` 13 s), and every lockfile change would upload the big layers again.
 - Stages: `assets` (Node, also writes `.libvips`) → `build` (Go, with `node_modules/@img` and `.libvips` at the same
@@ -120,7 +123,7 @@ don't show; remove notes that stop being true.
 
 ## Browser tests (`tests/e2e`)
 
-- `npm run test:e2e` builds the assets, `.e2e/server`, and `.e2e/migrate`, then runs Playwright. The global setup starts
+- `npm run test:e2e` runs `generate`, builds `.e2e/server` and `.e2e/migrate`, then runs Playwright. The global setup starts
   `postgres:18` and `rclone/rclone:1.74.4` with testcontainers, applies the goose migrations, loads the seed from
   `data.ts` with `psql` inside the Postgres container, and starts the server on port 6210.
 - rclone serves one directory twice: S3 on 9000 (the bucket is a subdirectory, so no bucket creation) and plain
@@ -139,7 +142,7 @@ don't show; remove notes that stop being true.
 
 - libvips is sharp's prebuilt build from npm, 8.18.7 with mozjpeg: `@img/sharp-libvips-dev` (headers, dev dependency)
   and `@img/sharp-libvips-<os>-<arch>` (one library with every dependency built in; optional dependencies, so npm
-  installs only the current platform's). `scripts/libvips.mjs` (`npm run libvips`) writes `.libvips/vips.pc`.
+  installs only the current platform's). `scripts/libvips.mjs` (`postinstall`) writes `.libvips/vips.pc`.
   The same version runs in development and production. Add a platform to `optionalDependencies` to build on it.
 - `internal/images/libvips/magick.c` stubs `vips_magickload_buffer`: sharp's build has no ImageMagick, and govips calls
   it for formats like BMP, which now fail to load. The stub declares what it uses instead of including `vips.h`, or
@@ -279,7 +282,7 @@ don't show; remove notes that stop being true.
   (SvelteKit reloaded the layout's data after every save). Left as is: the redesign may drop the count.
 - `assetResolver` refuses manifest entries with `css` or `imports`: pages load each entry with one tag.
   The editor's components have no `<style>`, so the bundle is one 84 KB file (31 KB gzipped).
-- `npm test` (vitest) runs the editor's tests; CI now runs it too.
+- `npm run test:js` (Vitest) runs the editor's tests.
 - A headless Chrome script (since deleted; Playwright tests will replace it) checked login, the drafts page, and the
   editor.
 - 2026-11-21: all 30 checks pass on the local database and on the production copy. Real posts (#1, #670, and

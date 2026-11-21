@@ -1,7 +1,8 @@
 FROM node:24-trixie-slim AS assets
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
-# No package needs its install scripts for this build
+# The postinstall script runs below, once its file is copied; no other package
+# needs its install scripts for this build
 RUN npm ci --ignore-scripts
 # npm installs sharp's prebuilt libvips for this architecture; the script
 # writes the pkg-config file that points the Go build at it
@@ -11,7 +12,7 @@ COPY vite.config.ts ./
 # Tailwind scans the templ components for class names
 COPY internal/views internal/views
 COPY web web
-RUN npm run assets
+RUN npx vite build
 
 FROM golang:1.26-trixie AS build
 RUN apt-get update && apt-get install -y --no-install-recommends pkg-config

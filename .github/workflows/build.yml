@@ -7,25 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  node:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: 'package.json'
-          cache: 'npm'
-      - name: Install npm dependencies
-        run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Run Svelte checks
-        run: npm run check
-      - name: Run JavaScript tests
-        run: npm test
-
-  go:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -39,32 +21,14 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install npm dependencies
-        run: npm ci --ignore-scripts
-      - name: Build assets
-        run: npm run assets
-      - name: Point pkg-config at the libvips in node_modules
-        run: npm run libvips && echo "PKG_CONFIG_LIBDIR=$PWD/.libvips" >> "$GITHUB_ENV"
-      - name: Check formatting
-        run: test -z "$(gofmt -l cmd internal web)" && go tool templ fmt -fail internal/views
-      - name: Check generated templ files are up to date
-        run: go tool templ generate && test -z "$(git status --porcelain internal/views)"
-      - name: Check generated sqlc files are up to date
-        run: go tool sqlc diff
-      - name: Vet
-        run: go vet ./...
-      - name: Test
-        run: go test ./...
+        run: npm ci
+      - name: Check formatting, lint, types, and vet
+        run: npm run check
+      # npm run check regenerates the templ and sqlc code
+      - name: Check generated files are committed
+        run: git status --porcelain && test -z "$(git status --porcelain)"
 
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Test image processing in the Docker image
-        run: docker build --target libvips-test .
-      - name: Build the Docker image
-        run: docker build .
-
-  e2e:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -81,9 +45,10 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      # Starts Postgres and rclone's S3 server with testcontainers, through the runner's Docker
-      - name: Run browser tests
-        run: npm run test:e2e
+      # The Go and browser tests start Postgres and rclone's S3 server with
+      # testcontainers, through the runner's Docker
+      - name: Run tests
+        run: npm test
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
@@ -93,3 +58,12 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test image processing in the Docker image
+        run: docker build --target libvips-test .
+      - name: Build the Docker image
+        run: docker build .

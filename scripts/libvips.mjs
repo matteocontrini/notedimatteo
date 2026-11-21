@@ -1,7 +1,7 @@
 // Writes .libvips/vips.pc, so that pkg-config finds the libvips that npm
 // installs from sharp's prebuilt packages instead of a system install.
-// Commands that compile govips need PKG_CONFIG_LIBDIR=.libvips: the dev and
-// test:go scripts in package.json set it.
+// npm runs it after every install. Commands that compile govips need
+// PKG_CONFIG_LIBDIR=$PWD/.libvips: the scripts in package.json that run go set it.
 //
 // @img/sharp-libvips-dev has the headers. @img/sharp-libvips-<os>-<arch> has a
 // single library with libvips and all its dependencies built in, and npm

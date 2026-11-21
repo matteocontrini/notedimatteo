@@ -7,7 +7,7 @@ node_modules
 /test-results
 /playwright-report
 /blob-report
-# pkg-config file for the libvips in node_modules: npm run libvips
+# pkg-config file for the libvips in node_modules, written after npm install
 /.libvips
 
 # OS
