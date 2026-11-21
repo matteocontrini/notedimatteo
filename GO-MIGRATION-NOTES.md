@@ -108,6 +108,10 @@ don't show; remove notes that stop being true.
   because their PRs need `npm run generate` pushed by hand (CI checks the generated code); sqlc is `// indirect`
   in `go.mod`, which Renovate skips unless a rule enables it; `@img/sharp-libvips-*` in one group; rclone's image
   through a regex manager, `postgres:18` by hand (production's major). Validated with `renovate-config-validator`.
+- Lockfile maintenance: npm enforces the age (`min-release-age=3` in `.npmrc`, like dmw-frontend). Renovate can't
+  date the packages a refresh changes, so its `renovate/stability-days` check stays pending, unless
+  `minimumReleaseAgePackageManagerSync` (experimental) is on, `.npmrc`'s age is at least `minimumReleaseAge`, and
+  the npm constraint is within `>=11.10.0` (hence `^11.10.0`). All three are set.
 - GitHub Actions use exact versions, locked in `.github/workflows/actions.lock` by `gh actions-lock` (v0.4.1,
   like certs-email); the `verify-lockfile` job checks it. After editing a workflow's `uses:`, run `gh actions-lock`.
 
