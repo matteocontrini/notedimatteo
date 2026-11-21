@@ -16,8 +16,9 @@
 
 <section class="grid gap-4">
 	<label class="block">
-		<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Created at</span
-		>
+		<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+			Created at
+		</span>
 		<input
 			class="h-9 w-full"
 			type="datetime-local"
@@ -29,9 +30,9 @@
 
 	{#if post.updatedAt != null}
 		<label class="block">
-			<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-				>Updated at</span
-			>
+			<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+				Updated at
+			</span>
 			<input
 				class="h-9 w-full"
 				type="datetime-local"
@@ -44,9 +45,9 @@
 
 	{#if post.publishedAt !== null}
 		<label class="block">
-			<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-				>Published at</span
-			>
+			<span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+				Published at
+			</span>
 			<input
 				class="h-9 w-full"
 				type="datetime-local"
