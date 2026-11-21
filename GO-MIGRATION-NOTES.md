@@ -42,7 +42,10 @@ don't show; remove notes that stop being true.
   `CountPosts` repeat the same `WHERE`: keep them identical; `db_test.go` checks they agree.
 - `db.Post` and the other row types are aliases of sqlc's generated structs (`PostsRow`, …). `PostFilter.Number` is a
   pointer because 0 is a valid post number (a zero value once made `/0` show the newest post).
-- Database tests read only and run when `TEST_DATABASE_URL` is set, for example the production copy.
+- Database tests: `TestMain` in `internal/db` starts `postgres:18` with testcontainers-go, applies the migrations, and
+  loads `testSeed` (4 published posts, 1 draft, 2 tags, 2 months). `-short` skips them. `TEST_DATABASE_URL` uses
+  another database as it is, without migrations or seed: the production copy works, and writes roll back.
+  testcontainers-go added many modules to `go.mod` (Docker client, OpenTelemetry); only test binaries compile them.
 - `web/assets/main.css` holds what was `src/app.css`.
 - `web/dist` is gitignored and embedded: run `npm run assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
@@ -67,6 +70,10 @@ don't show; remove notes that stop being true.
 
 ## Docker and deployment
 
+- CI: the `docker` job builds both targets with `docker/build-push-action` and GitHub's build cache (`type=gha`,
+  `mode=max`), in parallel with the `go` job. The image installs npm and Go dependencies again inside; the cache
+  skips that when the lockfiles don't change.
+
 - Stages: `assets` (Node, also writes `.libvips`) → `build` (Go, with `node_modules/@img` and `.libvips` at the same
   paths) → `runtime` (Debian trixie + sharp's `libvips-cpp.so`) → `server` (last, the default).
   The `assets` stage copies `internal/views` so Tailwind can scan the components; `build` uses the committed `_templ.go` files.
@@ -90,8 +97,7 @@ don't show; remove notes that stop being true.
 - rclone's S3 runs from the `rclone/rclone` image through testcontainers, so the tests start it the same way
   locally and in CI, and nobody needs rclone installed. A GitHub Actions service would also work: services take
   `command` and `entrypoint`. Distro packages are too old for `serve s3` (1.65+).
-- To check: the SDK reaches the bucket at `uploads.localhost:<port>`, which worked on the Mac. If Linux CI
-  doesn't resolve `*.localhost`, the storage config needs a path-style option.
+- The SDK reaches the bucket at `uploads.localhost:<port>`: macOS and the GitHub Actions runner both resolve it.
 - Renovate, from certs-email's config: add the gomod manager; keep the `go` directive and the Dockerfile's
   `golang` image together; give templ and sqlc their own group, because their PRs need a manual regenerate
   (CI checks the generated code); keep `@img/sharp-libvips-*` in one group; majors of Svelte, Vite, Tailwind,
@@ -128,7 +134,7 @@ don't show; remove notes that stop being true.
 - The editor's "Preview" and "Back to editing" buttons are inside the Body `<label>`, so their accessible name
   is "Body"; the test matches them by text. Markup kept as it was.
 - Postgres 18 because local is 18.6; production's version isn't in the backup dump.
-- Not run on GitHub yet: the CI job also answers whether Linux resolves `uploads.localhost` (see above).
+- Pass on GitHub Actions (2026-11-21), so Linux resolves `uploads.localhost` too.
 
 ## govips and libvips
 

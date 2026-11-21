@@ -47,7 +47,7 @@ npm run test:go    # the Go tests
 npm run test:e2e   # the browser tests (Playwright)
 ```
 
-The database tests run only when `TEST_DATABASE_URL` points at a database with the schema; they roll back what they write.
+The Go database tests start a throwaway PostgreSQL with Docker, through [Testcontainers](https://testcontainers.com), so Docker must be running; `go test -short ./...` skips them. To run them against another database as it is, such as a copy of production data, set `TEST_DATABASE_URL`: the tests that write roll back their changes.
 
 ## Formatting and linting
 

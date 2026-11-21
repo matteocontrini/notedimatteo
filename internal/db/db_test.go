@@ -2,21 +2,97 @@ package db
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-// openTestDB connects to TEST_DATABASE_URL, or skips the test. Tests that
-// write use openTestTx, so the tests can run against a copy of production data.
+// testDatabaseURL is the database the tests use, or "" with -short, which
+// skips them.
+var testDatabaseURL string
+
+// testSeed is the data in the test database: published posts in two categories,
+// two months, and with tags, plus a draft.
+const testSeed = `
+INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt", "publishedAt", "updatedAt") VALUES
+	(1, 'note', NULL, NULL, FALSE, 'Prima nota', '2026-09-10 10:00Z', '2026-09-10 10:00Z', NULL),
+	(2, 'til', 'Un titolo', 'un-titolo', FALSE, 'Seconda nota, con un titolo', '2026-09-20 10:00Z', '2026-09-20 10:00Z', NULL),
+	(3, 'note', NULL, NULL, FALSE, 'Terza nota', '2026-10-05 10:00Z', '2026-10-05 10:00Z', NULL),
+	(4, 'note', NULL, NULL, FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
+	(5, 'note', NULL, NULL, FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
+INSERT INTO tags (name) VALUES ('go'), ('svelte');
+INSERT INTO posts_tags ("postId", "tagName")
+SELECT id, 'go' FROM posts WHERE number IN (1, 3, 5)
+UNION ALL
+SELECT id, 'svelte' FROM posts WHERE number = 2;
+`
+
+// TestMain starts a Postgres container with the migrations and testSeed.
+// TEST_DATABASE_URL replaces it with another database, as it is, for example a
+// copy of production data.
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(runTests(m))
+}
+
+func runTests(m *testing.M) int {
+	if testing.Short() {
+		return m.Run()
+	}
+	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
+		testDatabaseURL = url
+		return m.Run()
+	}
+
+	ctx := context.Background()
+	container, err := postgres.Run(ctx, "postgres:18",
+		postgres.WithDatabase("notedimatteo"),
+		postgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "start Postgres (run with -short to skip the database tests):", err)
+		return 1
+	}
+	defer container.Terminate(ctx)
+
+	testDatabaseURL, err = container.ConnectionString(ctx, "sslmode=disable")
+	if err == nil {
+		err = Migrate(ctx, testDatabaseURL)
+	}
+	if err == nil {
+		err = seed(ctx, testDatabaseURL)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "prepare the test database:", err)
+		return 1
+	}
+	return m.Run()
+}
+
+func seed(ctx context.Context, url string) error {
+	db, err := Open(ctx, url)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.pool.Exec(ctx, testSeed)
+	return err
+}
+
+// openTestDB connects to the test database, or skips the test with -short.
+// Tests that write use openTestTx, so the tests can run against a copy of
+// production data.
 func openTestDB(t *testing.T) *DB {
 	t.Helper()
 
-	url := os.Getenv("TEST_DATABASE_URL")
-	if url == "" {
-		t.Skip("TEST_DATABASE_URL isn't set")
+	if testDatabaseURL == "" {
+		t.Skip("database tests are skipped with -short")
 	}
-	db, err := Open(context.Background(), url)
+	db, err := Open(context.Background(), testDatabaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}
