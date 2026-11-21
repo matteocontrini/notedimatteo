@@ -20,8 +20,9 @@ don't show; remove notes that stop being true.
 
 ## Local development
 
-- SvelteKit: `npm run dev`, port 6100. Go: `npm run go:dev`, port 6200 (builds assets, sources `.env`, `go run`).
-- No hot reload: restart `go:dev` after template or CSS changes. `go:dev` runs `go tool templ generate` first.
+- `npm run dev`: port 6200 (generates templ, builds assets, sources `.env`, `go run`). SvelteKit was removed in step 6;
+  the scripts lost their `go:` prefix (`assets`, `libvips`, `test:go`).
+- No hot reload: restart `npm run dev` after template or CSS changes.
 - templ is pinned with the `tool` directive in `go.mod`: run it as `go tool templ` (`generate`, `fmt`, `lsp` for editors).
   Generated `*_templ.go` files are committed; after editing a `.templ` file, run `go tool templ generate` and `templ fmt`.
 - `templ fmt` also formats `<script>` blocks with Prettier when `prettier` is on `PATH`; it isn't here or in CI,
@@ -42,14 +43,13 @@ don't show; remove notes that stop being true.
 - `db.Post` and the other row types are aliases of sqlc's generated structs (`PostsRow`, …). `PostFilter.Number` is a
   pointer because 0 is a valid post number (a zero value once made `/0` show the newest post).
 - Database tests read only and run when `TEST_DATABASE_URL` is set, for example the production copy.
-- The Go build uses nothing in `src/`: `web/assets/main.css` holds a copy of `src/app.css`, and `internal/db/schema/`
-  copies of the migrations.
-- `web/dist` is gitignored and embedded: run `npm run go:assets` before `go build`, `go test`, or `go vet`.
+- `web/assets/main.css` holds what was `src/app.css`.
+- `web/dist` is gitignored and embedded: run `npm run assets` before `go build`, `go test`, or `go vet`.
 - `go.mod` has `ignore ./node_modules`: the `flatted` npm package ships a Go package that `./...` would otherwise pick up.
 - Check gofmt with `gofmt -l cmd internal web`, not `.` (avoids `node_modules`).
 - libvips comes from npm, not the system (see "govips and libvips"). Go commands that compile `internal/images/libvips`
   or `cmd/server` need `PKG_CONFIG_LIBDIR=$PWD/.libvips` (absolute: cgo runs `pkg-config` in each package's folder).
-  `npm run go:dev` and `npm run go:test` set it; set it in the editor's Go settings so gopls can compile cgo.
+  `npm run dev` and `npm run test:go` set it; set it in the editor's Go settings so gopls can compile cgo.
   Other packages, including `internal/server`, compile without it.
 - cgo still needs the `pkg-config` command (Homebrew `pkgconf` on the Mac; the Dockerfile installs it).
 - End-to-end checks: build the server to the scratchpad, run it on 6201 against the local `notedimatteo` database,
@@ -60,16 +60,10 @@ don't show; remove notes that stop being true.
   Posts 1–5 share one `publishedAt` (seed data); queries order by `publishedAt DESC, number DESC`.
 - Local Postgres runs with `TimeZone = Europe/Rome`.
 - Running test servers next to the user's:
-  - The user may have `go:dev` running on 6200: run test servers on 6201, built to the scratchpad and started
+  - The user may have `npm run dev` running on 6200: run test servers on 6201, built to the scratchpad and started
     directly, and stop them only by their own PIDs. Never `pkill -f` patterns that match the user's servers.
-  - Start SvelteKit with `node node_modules/vite/bin/vite.js dev` so its PID is the server's, and use a
-    `trap ... EXIT` so a failing command doesn't leave it running.
-  - Add `options=-c%20TimeZone%3DUTC` to both apps' `DATABASE_URL`, or SvelteKit shows wrong times locally.
   - Quote URLs containing `?` in zsh, or it treats them as globs and the command fails.
-  - Headless Chrome on a DevTools port that a Chrome left running already holds connects the script to the old
-    one: check the port is free first, and stop leftover Chromes by PID.
-  - Headless Chrome over the DevTools protocol (Node's built-in `WebSocket`, `--remote-debugging-port`) can
-    compare `document.body.innerText`, emulate `prefers-color-scheme`, click controls, and take screenshots.
+  - A headless Chrome left running keeps its DevTools port: check the port is free, and stop leftovers by PID.
 
 ## Docker and deployment
 
@@ -79,13 +73,35 @@ don't show; remove notes that stop being true.
 - `docker build --target libvips-test .` runs the image processing tests inside the runtime image.
 - Image is about 146 MB (242 MB with Debian's libvips), runs as `nobody`; `.dockerignore` keeps `.env` and `node_modules` out.
 - Railway probably builds a root `Dockerfile` automatically (unverified): don't merge `go-migration` into `main` before cutover.
-- Production currently starts through `npm start`, whose launcher process used 55.5 MiB.
+- SvelteKit in production started through `npm start`, whose launcher process alone used 55.5 MiB: compare
+  Railway's memory graph against that after cutover.
+
+## Rest of phase 1
+
+- Order (decided 2026-11-21): remove SvelteKit and update CI → goose → browser tests → deploy → watch →
+  drop `_prisma_migrations` → Renovate. There's no second Railway service. The first Go deploy has the browser
+  tests behind it.
+- Goose: the baseline is the current schema (`internal/db/schema/`), so production's schema doesn't change.
+  Keep `_prisma_migrations` until a rollback is no longer needed: if anything ran `prisma migrate deploy` on
+  a rolled-back SvelteKit, Prisma would try to apply its migrations again. Don't run goose at server start
+  before cutover, so the cutover changes nothing in the database.
+- Browser tests follow `../dmw/certs-email`: Playwright, a global setup that starts the app, testcontainers,
+  a few long flows with `test.step`, and the report uploaded on failure.
+- rclone's S3 runs from the `rclone/rclone` image through testcontainers, so the tests start it the same way
+  locally and in CI, and nobody needs rclone installed. A GitHub Actions service would also work: services take
+  `command` and `entrypoint`. Distro packages are too old for `serve s3` (1.65+).
+- To check: the SDK reaches the bucket at `uploads.localhost:<port>`, which worked on the Mac. If Linux CI
+  doesn't resolve `*.localhost`, the storage config needs a path-style option.
+- Renovate, from certs-email's config: add the gomod manager; keep the `go` directive and the Dockerfile's
+  `golang` image together; give templ and sqlc their own group, because their PRs need a manual regenerate
+  (CI checks the generated code); keep `@img/sharp-libvips-*` in one group; majors of Svelte, Vite, Tailwind,
+  and ESLint wait for Dependency Dashboard approval.
 
 ## govips and libvips
 
 - libvips is sharp's prebuilt build from npm, 8.18.7 with mozjpeg: `@img/sharp-libvips-dev` (headers, dev dependency)
   and `@img/sharp-libvips-<os>-<arch>` (one library with every dependency built in; optional dependencies, so npm
-  installs only the current platform's). `scripts/libvips.mjs` (`npm run go:libvips`) writes `.libvips/vips.pc`.
+  installs only the current platform's). `scripts/libvips.mjs` (`npm run libvips`) writes `.libvips/vips.pc`.
   The same version runs in development and production. Add a platform to `optionalDependencies` to build on it.
 - `internal/images/libvips/magick.c` stubs `vips_magickload_buffer`: sharp's build has no ImageMagick, and govips calls
   it for formats like BMP, which now fail to load. The stub declares what it uses instead of including `vips.h`, or
@@ -122,7 +138,7 @@ don't show; remove notes that stop being true.
 
 ## SvelteKit behavior
 
-- Production `BODY_SIZE_LIMIT` is `20M`: the Go upload limit must match.
+- Production `BODY_SIZE_LIMIT` was `20M`, so the Go upload limit is 20 MB.
 - Uploads: keys `YYYY/MM/<12 hex>.jpg` and `…_preview.jpg` (server-local month); main JPEG q85, preview 1200 px
   wide q80, both mozjpeg with auto-orientation; the response carries the preview's dimensions; S3 metadata `original`.
 - Sessions: cookie `notedimatteo_session`, 60 days, `httpOnly`, `sameSite=lax`, `secure` outside dev;
@@ -159,10 +175,9 @@ don't show; remove notes that stop being true.
 - Cache: posts without an up-to-date entry are rendered and saved with an `ON CONFLICT` upsert. Unlike SvelteKit, a
   failed cache write is logged and the page is still shown.
 - `STORAGE_PUBLIC_BASE_URL` is required by the Go server.
-- Compatibility test: `testdata/compat/*.md` with the HTML the SvelteKit renderer produces, compared by parsed
-  structure (decoded text, sorted attributes, CRLF normalized). Regenerate expected files with
-  `node internal/markdown/testdata/generate.mjs`, which imports the app's own plugins; it stops working once
-  SvelteKit is removed, and the fixtures stay as they are.
+- Compatibility test: `testdata/compat/*.md` with the HTML the SvelteKit renderer produced, compared by parsed
+  structure (decoded text, sorted attributes, CRLF normalized). The script that generated them was deleted with
+  SvelteKit, so the fixtures stay as they are; new cases go in `image_test.go` or similar.
 - Against production: export each post's body as `.md` and its cached HTML as `.html` (that cache is SvelteKit's
   actual output), then run `MARKDOWN_COMPAT_DIR=<dir> MARKDOWN_COMPAT_STORAGE_URL=https://uploads.notedimatteo.it
   go test ./internal/markdown`. All 670 posts match (backup of 2026-11-20).
@@ -212,8 +227,7 @@ don't show; remove notes that stop being true.
 - `GET /{number}/edit` (login required) renders the layout, the editor's data in `<script id="editor-data"
   type="application/json">` (`templ.JSONScript`, which escapes `<`), and the `editor/main.ts` bundle.
   `postWithSlug` serves it: a `GET /{number}/edit` pattern would conflict with `GET /archivio/{tag}`.
-- The editor is a copy of SvelteKit's components and helpers, with no imports from `src`. SvelteKit's copy is
-  frozen until step 6 deletes it.
+- The editor started as a copy of SvelteKit's components and helpers; SvelteKit's copy was deleted in step 6.
 - Each post in the JSON carries its URLs (`post`, `edit`, `preview`, `upload`), built by `internal/urls`.
   After a save that changes the number, the editor uses the new ones and `history.replaceState`s the address.
   SvelteKit showed a 404 there, because it reloaded the old number.
@@ -229,20 +243,17 @@ don't show; remove notes that stop being true.
 - `assetResolver` refuses manifest entries with `css` or `imports`: pages load each entry with one tag.
   The editor's components have no `<style>`, so the bundle is one 84 KB file (31 KB gzipped).
 - `npm test` (vitest) runs the editor's tests; CI now runs it too.
-- `scripts/editor-check.mjs` drives login, the drafts page, and the editor in headless Chrome, and prints
-  PASS/FAIL lines. It creates a draft, deletes it through the drafts page, and logs out, so it leaves no
-  draft or session. Run the server with rclone's S3 for the upload checks.
+- A headless Chrome script (since deleted; Playwright tests will replace it) checked login, the drafts page, and the
+  editor.
 - 2026-11-21: all 30 checks pass on the local database and on the production copy. Real posts (#1, #670, and
   #152 with 4 images) load in the editor with the same body and tags as the database. The run re-rendered
   20 cached posts on the production copy; restoring the cache fixed them.
 
-## Public pages (`scripts/parity.py`)
+## Public pages
 
-- Compares SvelteKit (6100) and Go (6201) for a list of paths: status, `Location`, title, meta, canonical,
-  JSON-LD, link `href`s (resolved and decoded), visible text, and the feed as parsed XML.
-  `python3 -I scripts/parity.py http://localhost:6100 http://localhost:6201 <paths file> <report file>`.
-- Run both apps on `notedimatteo_prod` with `options=-c%20TimeZone%3DUTC` and
-  `STORAGE_PUBLIC_BASE_URL=https://uploads.notedimatteo.it` for both, or SvelteKit caches HTML with the dev R2 URL.
+- `scripts/parity.py` (deleted in step 6) compared SvelteKit and Go on the production copy for a list of paths:
+  status, `Location`, title, meta, canonical, JSON-LD, link `href`s (resolved and decoded), visible text, and the
+  feed as parsed XML.
 - Paths used (905): every post's canonical URL, stale slugs, every tag, category, and month, home pages, search
   terms, errors, redirects, and unusual paths. Normalized on purpose: SvelteKit's relative links and redirect
   locations, sidebar tags with equal counts (ordered by name in Go), feed `content:encoded` as decoded HTML.
@@ -275,7 +286,7 @@ don't show; remove notes that stop being true.
 - The local clone `../notedimatteo-backups` stops at 2025-11-09. The 2026-11-20 backup (commit `73cc0e2`) is in
   the session scratchpad, under `prod-backup-73cc0e2`, which a reboot can clear: fetch it again if it's gone.
   The 2026-11-20 backup is imported locally as `notedimatteo_prod`; the original `notedimatteo` is unchanged.
-- To use it, point `DATABASE_URL` in `.env` at `notedimatteo_prod`: `go:dev` sources `.env`, which overrides
+- To use it, point `DATABASE_URL` in `.env` at `notedimatteo_prod`: `npm run dev` sources `.env`, which overrides
   a `DATABASE_URL` set on the command line.
 - 2026-11-20: 670 posts (#1–#670), all published, no drafts; 99 tags; 1,095 post–tag links; all cached at
   renderer version 1. 189 posts use `[img]`, 43 contain backticks, 10 contain `<`, none have CRLF line endings,
@@ -283,7 +294,7 @@ don't show; remove notes that stop being true.
 - Images are served from `https://uploads.notedimatteo.it`.
 - Production Postgres runs with `TimeZone = Etc/UTC`, so the Prisma 7 time zone bug doesn't affect the live site,
   and archive months are grouped in UTC. Local comparisons force a UTC session to match.
-- After a comparison run, restore the production copy's cache, which both apps overwrite: extract the
+- After a run against the production copy, restore its cache, which the server overwrites: extract the
   `post_html_cache` `COPY` block from `data.sql`, then `TRUNCATE post_html_cache` and load it in one transaction.
 - `sessions` holds 11 production login tokens: treat the local copy like the backup repo.
 

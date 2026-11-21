@@ -1,11 +1,19 @@
 {
-	"extends": "$app/tsconfig",
-	"include": ["src", "web", "*"],
-	"exclude": ["src/service-worker", "web/dist"],
+	"include": ["web", "scripts", "*.ts", "*.js"],
+	"exclude": ["web/dist"],
 	"compilerOptions": {
-		"sourceMap": true,
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["esnext", "DOM", "DOM.Iterable"],
+		"types": ["node"],
 		"strict": true,
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"allowJs": true,
+		"checkJs": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"sourceMap": true
 	}
 }

@@ -19,9 +19,7 @@ jobs:
           node-version-file: 'package.json'
           cache: 'npm'
       - name: Install npm dependencies
-        run: npm install
-      - name: Set up environment
-        run: cp .env.example .env
+        run: npm ci
       - name: Lint
         run: npm run lint
       - name: Run Svelte checks
@@ -45,9 +43,9 @@ jobs:
       - name: Install npm dependencies
         run: npm ci --ignore-scripts
       - name: Build assets
-        run: npm run go:assets
+        run: npm run assets
       - name: Point pkg-config at the libvips in node_modules
-        run: npm run go:libvips && echo "PKG_CONFIG_LIBDIR=$PWD/.libvips" >> "$GITHUB_ENV"
+        run: npm run libvips && echo "PKG_CONFIG_LIBDIR=$PWD/.libvips" >> "$GITHUB_ENV"
       - name: Check formatting
         run: test -z "$(gofmt -l cmd internal web)" && go tool templ fmt -fail internal/views
       - name: Check generated templ files are up to date

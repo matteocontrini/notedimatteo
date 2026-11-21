@@ -3,10 +3,8 @@
 .idea
 .vscode
 .codex
-.svelte-kit
 .env
 .env.*
-build
 node_modules
 web/dist
 .libvips

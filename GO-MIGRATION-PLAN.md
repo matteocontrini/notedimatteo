@@ -28,7 +28,7 @@ and G1–G3 (editor).
 | URLs           | Built only in `internal/urls`; site address from config; the merged site's URL scheme is decided in phase 4                                                       |
 | Templates      | templ components in `internal/views` with typed parameters; generated `_templ.go` files are committed, and CI checks formatting and generation                    |
 | Database       | `pgx/v5` with sqlc: SQL in `internal/db/queries`, typed Go code generated and checked against the schema; small pool                                              |
-| Migrations     | None in phase 1; `goose` from phase 2, with the existing schema as baseline                                                                                       |
+| Migrations     | `goose` from phase 1 step 7, with the existing schema as baseline; not run at server start until after cutover                                                                                       |
 | Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
 | Images         | `govips` (cgo) against sharp's prebuilt libvips from npm, with mozjpeg; libvips caching turned off                                                               |
 | Sessions       | Keep the existing table and cookie name                                                                                                                           |
@@ -78,7 +78,7 @@ authorization, CSRF protection, and input validation in Go.
 
 ## Phase 1: Go migration
 
-SvelteKit keeps serving production until step 6, so nothing partial reaches visitors. There's no second
+SvelteKit keeps serving production until step 9, so nothing partial reaches visitors. There's no second
 Railway service: the Go server replaces SvelteKit on the same one.
 
 ### Step 1: Skeleton
@@ -150,25 +150,45 @@ Railway service: the Go server replaces SvelteKit on the same one.
 - [x] Copy the editor helpers and their tests into `web/editor`, so it imports nothing from `src`
 - [x] Check every editor feature in the browser against the Go endpoints
 
-### Step 6: Cutover and cleanup
+### Step 6: Removal
 
 - [x] Review real posts for Markdown differences and fix the ones that matter
 - [x] Check URLs, RSS, login, and an upload against a copy of production data
 - [x] Review the Go code against SvelteKit's, file by file, for behavior lost by accident
-- [ ] Remove SvelteKit, Prisma, OpenTelemetry, and unused Node dependencies
-- [ ] Update CI, `package.json`, `README.md`, and `AGENTS.md`
+- [x] Remove SvelteKit, Prisma, OpenTelemetry, and unused Node dependencies
+- [x] Update CI, `package.json`, `README.md`, and `AGENTS.md`
+- [x] Remove mentions of SvelteKit from Go, TypeScript, and template comments ("like the SvelteKit app"): keep only what still explains the code
+
+### Step 7: Goose
+
+- [ ] Add `goose` with the existing schema as the baseline migration
+- [ ] Point `sqlc.yaml` at the goose migrations
+- [ ] Keep `_prisma_migrations`, and don't run migrations at server start, so a rollback still works
+
+### Step 8: Browser tests
+
+- [ ] Add Playwright, with a global setup that builds and starts the Go server
+- [ ] Start Postgres and rclone's S3 with testcontainers; apply the goose migrations and a small seed
+- [ ] Test the main flows: reading, login and logout, writing a note with an upload, and editor errors
+- [ ] Run them in CI, keeping the Playwright report when they fail
+
+### Step 9: Cutover
+
 - [ ] Deploy the Go server to the existing Railway service; Railway's previous deployment is the rollback
 - [ ] Watch logs and Railway's memory graph after the switch
+- [ ] Once a rollback is no longer needed, drop `_prisma_migrations` in a goose migration
 
 Completion means feature parity, preserved URLs/data, reviewed Markdown and image
 output, working editor errors and save/publish flows, and a production artifact
 that needs no Node server. Run focused Go tests, existing editor helper tests, and
 the required formatting, lint, and Svelte checks.
 
+### After cutover
+
+- [ ] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions
+
 ## Phase 2: Revisions
 
-- [ ] Add `goose` with the existing schema as baseline, and drop `_prisma_migrations`
-- [ ] Point `sqlc.yaml` at the goose migrations instead of Prisma's
 - [ ] Add a revisions table keyed by post and `bodyRevision`
 - [ ] Save a revision in the save transaction whenever the body changes
 - [ ] List revisions on the edit page and restore one

@@ -1,7 +1,7 @@
 version: '2'
 sql:
   - engine: postgresql
-    # Copies of Prisma's migrations, until phase 2 replaces them with goose migrations
+    # The database schema, until goose migrations replace these files
     schema:
       - internal/db/schema/20250920184819_create_posts_tags.sql
       - internal/db/schema/20250926094725_create_sessions.sql

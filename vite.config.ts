@@ -1,19 +1,19 @@
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
-import adapter from '@sveltejs/adapter-node';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 
+// Builds the assets that the Go server embeds and serves: the CSS, the site script, and the editor.
 export default defineConfig({
-	server: {
-		port: 6100,
+	root: 'web',
+	plugins: [tailwindcss(), svelte()],
+	build: {
+		outDir: 'dist',
+		emptyOutDir: true,
+		manifest: true,
+		rollupOptions: {
+			// Rollup names each output file after its key here. The manifest still
+			// lists the entries by source path, which the Go server looks up.
+			input: { main: 'assets/main.css', site: 'assets/site.ts', editor: 'editor/main.ts' },
+		},
 	},
-	plugins: [
-		tailwindcss(),
-		sveltekit({
-			adapter: adapter(),
-			preprocess: vitePreprocess(),
-			tracing: { server: true },
-		}),
-	],
 });

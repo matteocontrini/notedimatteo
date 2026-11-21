@@ -1,6 +1,6 @@
 // Package web embeds the assets built by Vite.
 //
-// The dist directory must exist before compiling: run `npm run go:assets` first.
+// The dist directory must exist before compiling: run `npm run assets` first.
 package web
 
 import (

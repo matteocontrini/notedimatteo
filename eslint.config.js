@@ -36,14 +36,6 @@ export default defineConfig(
 	{
 		rules: {
 			'@typescript-eslint/no-unused-vars': ['warn'],
-			'svelte/no-navigation-without-resolve': ['warn'],
-		},
-	},
-	{
-		// Go builds the Go-served pages' URLs, so SvelteKit's resolve() doesn't apply
-		files: ['web/**'],
-		rules: {
-			'svelte/no-navigation-without-resolve': 'off',
 		},
 	},
 );
