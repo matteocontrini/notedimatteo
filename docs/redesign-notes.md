@@ -75,6 +75,16 @@ before resuming. Record what the code and git history don't show; remove notes t
     opening) with the cursor on the empty line between; if text follows, a blank line keeps it out of the block
     (`closeFence` in `blocks.ts`, in the Enter chain before the indenting line break).
   - `testing.ts` marks cursors with `|` and selections with `«` and `»`.
+- Paste (`paste.ts`, 2026-11-22): an image file uploads; inside a code block, plain text; HTML with formatting
+  (links, emphasis, code, lists, quotes, headings, or Google Docs' bold and italic styles) becomes Markdown with
+  Turndown 7.2.5 (11 KB minified, 4 KB gzipped; its browser build uses the browser's parser, not `domino`);
+  anything else is CodeMirror's plain-text paste. Paste as plain text (⌘⇧V) sends no HTML, so it stays plain.
+  Custom rules: code blocks keep their lines (highlighters put each line in a `<div>` ending with `<br>`, which
+  Turndown's `textContent` drops) and the `language-` class; lists get one space after the marker (Turndown puts
+  three); images are dropped (they would load from the other site); Google Docs wraps the copy in a
+  `<b style="font-weight:normal">` that Turndown would make bold. Turndown escapes Markdown characters in text
+  (`file\_name`): correct, and renders the same. Checked on a Firefox copy of the imgproxy docs (links and a
+  highlighted code block).
   - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
     `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.
   - An image inserted at the end of the text gets a paragraph after it, where the cursor goes.

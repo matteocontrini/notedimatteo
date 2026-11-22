@@ -108,10 +108,11 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   (`templ.JSONScript`) and the editor bundle. The data includes each post's URLs, built by `internal/urls`,
   and the public address of uploaded images.
 - The body field is CodeMirror 6 with the CommonMark parser and strikethrough, in `web/editor/body`: one module
-  per part (`language`, `theme`, `formatting`, `blocks` for quotes and code, `paragraphs`, `images`,
+  per part (`language`, `theme`, `formatting`, `blocks` for quotes and code, `paragraphs`, `paste`, `images`,
   `upload-placeholders`), assembled in `index.ts`, each with its tests. The text stays plain Markdown: the editor
   styles it like a published post, dims the markers, shows each `[img]` image below its line, and hides the
-  blank lines between blocks, showing the space between paragraphs instead; Enter starts a paragraph. Colors
+  blank lines between blocks, showing the space between paragraphs instead; Enter starts a paragraph. Pasted
+  formatted text becomes Markdown (Turndown). Colors
   come from `--editor-*` variables in `web/assets/main.css`, light and dark.
 - The editor saves with `fetch` and `FormData` to `POST /{number}/edit`, which validates in Go and answers
   `{"post": …}` or 400 with `{"errors": {"field": "message"}}`. Validation lives only in Go. Browsers send

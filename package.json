@@ -29,6 +29,7 @@
 		"@tailwindcss/vite": "^4.3.5",
 		"@testcontainers/postgresql": "^12.2.2",
 		"@types/node": "^26.6.6",
+		"@types/turndown": "^5.0.6",
 		"eslint": "^10.15.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.24.1",
@@ -54,7 +55,8 @@
 		"@fontsource-variable/inter": "^5.3.0",
 		"@lezer/highlight": "^1.2.5",
 		"@lezer/markdown": "^1.8.1",
-		"fuse.js": "^7.5.0"
+		"fuse.js": "^7.5.0",
+		"turndown": "^7.2.5"
 	},
 	"optionalDependencies": {
 		"@img/sharp-libvips-darwin-arm64": "1.3.4",

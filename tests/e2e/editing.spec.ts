@@ -89,6 +89,30 @@ test('the body editor hides blank lines and keeps paragraphs with Enter', async 
 		});
 	});
 
+	await test.step('pasted formatted text becomes Markdown', async () => {
+		await body.press('ControlOrMeta+End');
+		await body.press('Enter');
+		await body.evaluate((editor) => {
+			const data = new DataTransfer();
+			data.setData(
+				'text/html',
+				'<p>Un <a href="https://example.com/">collegamento</a> e <b>grassetto</b></p>',
+			);
+			data.setData('text/plain', 'Un collegamento e grassetto');
+			editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }));
+		});
+		await expect(body.locator('.cm-line').last()).toHaveText(
+			'Un [collegamento](https://example.com/) e **grassetto**',
+		);
+
+		await preview(page, async (content) => {
+			await expect(content.getByRole('link', { name: 'collegamento' })).toHaveAttribute(
+				'href',
+				'https://example.com/',
+			);
+		});
+	});
+
 	await test.step('Enter closes a code block, and Tab and Shift+Tab indent in it but move the focus elsewhere', async () => {
 		await body.press('ControlOrMeta+End');
 		await body.press('Enter');

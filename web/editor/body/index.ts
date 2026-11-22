@@ -1,7 +1,7 @@
 // The post body editor: CodeMirror 6 with the Markdown parser. The text stays
 // plain Markdown; the editor styles it like a published post, dims the syntax
-// markers, and hides the blank lines between paragraphs. Each module adds one
-// part of that.
+// markers, hides the blank lines between paragraphs, and turns pasted
+// formatted text into Markdown. Each module adds one part of that.
 
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { EditorSelection, EditorState } from '@codemirror/state';
@@ -11,6 +11,7 @@ import { formattingShortcuts } from './formatting';
 import { images } from './images';
 import { markdownLanguage } from './language';
 import { paragraphs } from './paragraphs';
+import { paste } from './paste';
 import { theme } from './theme';
 import { uploadPlaceholders } from './upload-placeholders';
 
@@ -55,17 +56,7 @@ export const createBodyEditor = (options: BodyEditorOptions) => {
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) options.onChange(update.state.doc.toString());
 				}),
-				EditorView.domEventHandlers({
-					paste(event) {
-						const file = Array.from(event.clipboardData?.items ?? [])
-							.find((item) => item.type.startsWith('image/'))
-							?.getAsFile();
-						if (!file) return false;
-						event.preventDefault();
-						options.onPasteImage(file);
-						return true;
-					},
-				}),
+				paste(options.onPasteImage),
 			],
 		}),
 	});
