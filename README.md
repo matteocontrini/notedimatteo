@@ -4,11 +4,11 @@ This repository contains the source code for the website [notedimatteo.it](https
 
 ## Project architecture
 
-- A Go server renders the pages with [templ](https://templ.guide), with posts stored in PostgreSQL.
-- The post editor is a Svelte 5 app that Go mounts on the edit page.
-- Vite builds the CSS (Tailwind) and the scripts, and the Go binary embeds them.
+Following the migration from SvelteKit, this project is now a Go application. A Go server renders the pages with [templ](https://templ.guide), reading and writing posts from a PostgreSQL instance. 
 
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) describes how the pieces work together.
+The post editor is a Svelte 5 app (no SvelteKit) that the HTML template mounts on the edit page. CSS and scripts are bundled by Vite and embedded in the Go binary.
+
+Architecture details are described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Configuration
 
@@ -28,7 +28,9 @@ npm run dev
 
 There's no hot reload: restart the server after changing templates, CSS, or scripts.
 
-The database schema lives in [goose](https://github.com/pressly/goose) migrations in `internal/db/migrations`. The server applies new migrations when it starts.
+The database schema is managed with [goose](https://github.com/pressly/goose) migrations in `internal/db/migrations`. Migrations are applied by the Go server at startup.
+
+Editor configuration is committed for both VS Code (`.vscode/`) and JetBrains IDEs (`.idea/`), so Prettier and ESLint should work without manual setup.
 
 ## Scripts
 
@@ -39,10 +41,7 @@ npm run check      # checks formatting, runs ESLint, svelte-check, and go vet
 npm test           # runs the editor's tests (Vitest), the Go tests, and the browser tests (Playwright)
 ```
 
-`dev`, `check`, and the Go and browser tests run `generate` first. Generated files are committed. `npm test` runs `test:js`, `test:go`, and `test:e2e`, which also run on their own.
-
-`npm install` writes `.libvips/vips.pc`, which points the Go build at the libvips in `node_modules`. Go commands that compile the image processing need `PKG_CONFIG_LIBDIR="$PWD/.libvips"`: the scripts set it, and the editor's Go settings need it too.
-
-The Go and browser tests start a throwaway PostgreSQL (and an S3 server for the browser tests) with Docker, through [Testcontainers](https://testcontainers.com), so Docker must be running; `go test -short ./...` skips the database tests. To run them against another database as it is, such as a copy of production data, set `TEST_DATABASE_URL`: the tests that write roll back their changes.
-
-Editor configuration is committed for both VS Code (`.vscode/`) and WebStorm (`.idea/`), so Prettier and ESLint run without manual setup.
+Additional facts:
+- The scripts `dev`, `check`, and `test` also run `generate` first.
+- Image processing is handled by libvips, installed with npm. When you run `npm install`, the file `.libvips/vips.pc` is written and it points the Go build at the libvips in `node_modules`. Go commands that compile the image processing thefore need `PKG_CONFIG_LIBDIR="$PWD/.libvips"` (already included in the scripts).
+- Docker is needed to run the tests with Testcontainers.
