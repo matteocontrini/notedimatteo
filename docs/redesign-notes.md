@@ -12,8 +12,24 @@ before resuming. Record what the code and git history don't show; remove notes t
 
 ## Open questions
 
-- Merged site's URL scheme and domains (phase 3). Affects routes, redirects, and giscus threads.
+- Merged site's URL scheme and domains (phase 5). Affects routes, redirects, and giscus threads.
 - English home: a variant of board E3, not designed yet. Italian home: E2 or E4.
+
+## Image proxy (phase 4)
+
+- Uploads store only the original; imgproxy (libvips-based, its own Railway service) resizes and encodes on
+  request, and a CDN caches each version. imgproxy has no cache of its own.
+- URLs carry an HMAC signature with a key that only Go and imgproxy share, so nobody else can request
+  arbitrary sizes.
+- Upload still needs width and height for `[img]`: `image.DecodeConfig` reads them without decoding pixels;
+  phone photos also need the EXIF orientation, which can swap them. imgproxy's info endpoint is probably paid.
+- Existing posts (about 190 use `[img]`): their `.jpg` files are already re-encoded originals and can be
+  imgproxy's sources; keep the `_preview.jpg` files for feed readers that cached them.
+- Formats by `Accept` need the CDN to cache one copy per format; naming the format in the URL with `<picture>`
+  avoids that.
+- To check: imgproxy's official image is probably built with mozjpeg; compare its output with today's files.
+- Libvips memory spikes move from the Go server to imgproxy: give that service a memory budget.
+- Alternatives without a service to run: Bunny Optimizer, Cloudflare Images (monthly fee).
 
 ## Blog (`../blog`)
 
