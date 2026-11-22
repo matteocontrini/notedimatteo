@@ -51,6 +51,28 @@ test('the body editor hides blank lines and keeps paragraphs with Enter', async 
 		});
 	});
 
+	await test.step('Enter at the start of a paragraph adds an empty one above it', async () => {
+		await body.locator('.cm-line').nth(1).click();
+		await body.press('Home');
+		await body.press('Enter');
+		await expect(body.locator('.cm-line')).toHaveText(['Primo!', '', 'SecondoTerzo']);
+
+		// The cursor stays with the paragraph
+		await body.pressSequentially('X');
+		await expect(body.locator('.cm-line')).toHaveText(['Primo!', '', 'XSecondoTerzo']);
+		await body.press('Backspace');
+
+		// The empty paragraph stays when the cursor moves away, and takes text
+		await body.locator('.cm-line').first().click();
+		await expect(body.locator('.cm-line')).toHaveText(['Primo!', '', 'SecondoTerzo']);
+		await body.locator('.cm-line').nth(1).click();
+		await body.pressSequentially('Nuovo');
+
+		await preview(page, async (content) => {
+			await expect(content.locator('p')).toHaveText(['Primo!', 'Nuovo', 'SecondoTerzo']);
+		});
+	});
+
 	await test.step('Enter on an empty list item leaves the list', async () => {
 		await body.press('ControlOrMeta+End');
 		await body.press('Enter');

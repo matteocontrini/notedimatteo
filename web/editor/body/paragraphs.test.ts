@@ -1,6 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { continueMarkup, hiddenBlankLines, insertParagraph } from './paragraphs';
+import { continueMarkup, hiddenBlankLines, hiddenLinesOfRun, insertParagraph } from './paragraphs';
 import { run, stateOf } from './testing';
+
+// shown writes a run of blank lines as S for shown and h for hidden
+const shown = (length: number, blockBefore: boolean, blockAfter: boolean) =>
+	hiddenLinesOfRun(length, blockBefore, blockAfter)
+		.map((hide) => (hide ? 'h' : 'S'))
+		.join('');
+
+describe('a run of blank lines', () => {
+	it('between blocks is the space between them, plus an empty paragraph for each extra pair', () => {
+		expect(shown(1, true, true)).toBe('h');
+		expect(shown(2, true, true)).toBe('hh');
+		expect(shown(3, true, true)).toBe('hSh');
+		expect(shown(5, true, true)).toBe('hShSh');
+	});
+
+	it('after the last block ends with an empty paragraph when it has two lines', () => {
+		expect(shown(1, true, false)).toBe('h');
+		expect(shown(2, true, false)).toBe('hS');
+		expect(shown(4, true, false)).toBe('hShS');
+	});
+
+	it('before the first block starts with an empty paragraph when it has two lines', () => {
+		expect(shown(1, false, true)).toBe('h');
+		expect(shown(2, false, true)).toBe('Sh');
+	});
+
+	it('without blocks is empty paragraphs', () => {
+		expect(shown(1, false, false)).toBe('S');
+		expect(shown(3, false, false)).toBe('ShS');
+	});
+});
 
 describe('hidden blank lines', () => {
 	it('are the blank lines between blocks', () => {
@@ -10,20 +41,23 @@ describe('hidden blank lines', () => {
 		]);
 	});
 
-	it('include lines with only spaces, and the ones at the start and end', () => {
-		expect(hiddenBlankLines(stateOf('\n|A\n  \nB\n'))).toEqual([
-			{ first: 1, last: 1 },
-			{ first: 3, last: 3 },
-			{ first: 5, last: 5 },
-		]);
-	});
-
-	it("don't include a blank line with a cursor", () => {
-		expect(hiddenBlankLines(stateOf('A\n\n|'))).toEqual([{ first: 2, last: 2 }]);
-		expect(hiddenBlankLines(stateOf('A\n\n|\n\nB'))).toEqual([
+	it("don't depend on the cursor", () => {
+		expect(hiddenBlankLines(stateOf('A\n\n\n\nB|'))).toEqual([
 			{ first: 2, last: 2 },
 			{ first: 4, last: 4 },
 		]);
+		expect(hiddenBlankLines(stateOf('|A\n\n\n\nB'))).toEqual([
+			{ first: 2, last: 2 },
+			{ first: 4, last: 4 },
+		]);
+	});
+
+	it('include lines with only spaces', () => {
+		expect(hiddenBlankLines(stateOf('A\n  \nB|'))).toEqual([{ first: 2, last: 2 }]);
+	});
+
+	it("don't include a blank line with a cursor, which only odd texts allow", () => {
+		expect(hiddenBlankLines(stateOf('A\n|'))).toEqual([]);
 	});
 
 	it("don't include blank lines inside code blocks", () => {
@@ -41,10 +75,23 @@ describe('Enter', () => {
 		expect(run(insertParagraph, '# Title|')).toBe('# Title\n\n|');
 	});
 
-	it('on a blank line only separates it from the block above', () => {
+	it('at the start of a paragraph moves it down, with an empty paragraph above', () => {
+		// Three blank lines between A and B: an empty paragraph shows between them
+		expect(run(insertParagraph, 'A\n\n|B')).toBe('A\n\n\n\n|B');
+		expect(run(insertParagraph, '|A')).toBe('\n\n|A');
+	});
+
+	it('at the start of a line inside a paragraph splits the paragraph there', () => {
+		expect(run(insertParagraph, 'A\n|B')).toBe('A\n\n\n|B');
+	});
+
+	it('on an empty paragraph adds another one', () => {
+		expect(run(insertParagraph, 'A\n\n|')).toBe('A\n\n\n\n|');
+		expect(run(insertParagraph, '|')).toBe('\n\n|');
+	});
+
+	it('on a blank line right below a block only adds the blank line between them', () => {
 		expect(run(insertParagraph, 'A\n|')).toBe('A\n\n|');
-		expect(run(insertParagraph, 'A\n\n|')).toBe('A\n\n|');
-		expect(run(insertParagraph, '|')).toBe('|');
 	});
 
 	it('leaves code blocks to the plain line break, except after the closing fence', () => {

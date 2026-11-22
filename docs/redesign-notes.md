@@ -49,14 +49,22 @@ before resuming. Record what the code and git history don't show; remove notes t
   styles, and the site never adds them back), paragraph spacing, list bullets, and single line breaks, which are
   what plain-text editing looks like. Phase 3 changes the published page: restyle the editor with it.
 - Paragraphs (2026-11-22, a first step towards G2, where blocks are separated by space and no blank lines show):
-  - `hiddenBlankLines` hides every blank line except those in code blocks and those with a cursor, so the cursor
-    never sits in hidden text. A state field replaces each run with a block widget (10 px between blocks, 0 at
-    the start and end) and makes the run plus the line breaks around it atomic: the arrows cross a paragraph
-    break in one step, and Backspace and Delete there join the paragraphs (word-processor style: "AB").
+  - Which blank lines hide depends only on the text (decided 2026-11-22, after a cursor-based rule made empty
+    paragraphs vanish when the cursor left them): in a run of blank lines, the lines next to a block are the space
+    between blocks, and the lines in between alternate between an empty paragraph (shown as an empty line) and the
+    space after it (`hiddenLinesOfRun`). One or two blank lines between blocks are a paragraph break; three are an
+    empty paragraph. Blank lines in code blocks always show; a blank line with a cursor shows only as a fallback
+    for odd texts like a body ending in `A\n`.
+  - A state field replaces each hidden run with a block widget (10 px between blocks, 0 at the start and end) and
+    makes the run plus the line breaks around it atomic: the arrows cross a paragraph break in one step, and
+    Backspace and Delete there join the paragraphs (word-processor style: "AB") or remove an empty paragraph.
   - Enter: lists and quotes go through lang-markdown's `insertNewlineContinueMarkupCommand({nonTightLists: false})`
     (its default turns a two-item list loose instead of leaving it); leaving a list adds the blank line, or the
     next text would join the last item. Elsewhere Enter inserts `\n\n`; on a blank line it only adds a missing
     separation; in code blocks it falls through to the plain line break. Shift+Enter inserts one line break.
+  - Enter always inserts `\n\n` and moves the cursor after it, as in a word processor: at the start of a paragraph
+    the paragraph moves down and an empty one appears above; on an empty paragraph it adds another. On a blank line
+    right below a block it only adds the missing blank line.
   - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
     `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.
   - An image inserted at the end of the text gets a paragraph after it, where the cursor goes.

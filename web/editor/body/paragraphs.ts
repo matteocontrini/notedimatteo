@@ -2,6 +2,12 @@
 // The editor hides them and shows the space between blocks instead, as in
 // published posts, and Enter inserts the blank line that starts a new
 // paragraph. The text stays the same Markdown.
+//
+// Markdown has no empty paragraphs, but an editor needs them: Enter at the
+// start of a paragraph adds one above it. Each pair of extra blank lines is
+// an empty paragraph: one shows as an empty line, the other as the space
+// after it. What shows depends only on the text, so moving the cursor changes
+// nothing.
 
 import { insertNewline } from '@codemirror/commands';
 import { insertNewlineContinueMarkupCommand } from '@codemirror/lang-markdown';
@@ -56,22 +62,46 @@ const insideCodeBlock = (state: EditorState, pos: number) => {
 // A BlankRun is a run of blank lines to hide, by line number.
 export type BlankRun = { first: number; last: number };
 
-// hiddenBlankLines returns the runs of blank lines that the editor hides. It
-// shows blank lines inside code blocks, and blank lines with a cursor, so the
-// cursor never sits in hidden text.
+// hiddenLinesOfRun returns which lines of a run of blank lines to hide, by
+// position in the run. The lines next to a block are the space between
+// blocks; the lines in between alternate between an empty paragraph and the
+// space after it. So one blank line, or two, between blocks is a plain
+// paragraph break; three are an empty paragraph between two spaces.
+export const hiddenLinesOfRun = (length: number, blockBefore: boolean, blockAfter: boolean) =>
+	Array.from(
+		{ length },
+		(_, index) =>
+			(blockBefore && index === 0) ||
+			(blockAfter && index === length - 1) ||
+			(index - (blockBefore ? 0 : 1)) % 2 === 0,
+	);
+
+// hiddenBlankLines returns the runs of blank lines that the editor hides.
+// Blank lines inside code blocks are part of the code and always show. A
+// blank line with a cursor shows too, so the cursor never sits in hidden text;
+// Enter never puts it there, but text like "A\n" at the end of a body can.
 export const hiddenBlankLines = (state: EditorState): BlankRun[] => {
-	const shown = codeBlockLines(state);
-	for (const range of state.selection.ranges) shown.add(state.doc.lineAt(range.head).number);
+	const { doc } = state;
+	const code = codeBlockLines(state);
+	const cursors = new Set(state.selection.ranges.map((range) => doc.lineAt(range.head).number));
+	const blank = (number: number) => !code.has(number) && isBlank(doc.line(number).text);
+
+	const hidden: number[] = [];
+	for (let first = 1; first <= doc.lines; first++) {
+		if (!blank(first)) continue;
+		let last = first;
+		while (last < doc.lines && blank(last + 1)) last++;
+		hiddenLinesOfRun(last - first + 1, first > 1, last < doc.lines).forEach((hide, index) => {
+			if (hide && !cursors.has(first + index)) hidden.push(first + index);
+		});
+		first = last;
+	}
 
 	const runs: BlankRun[] = [];
-	let run: BlankRun | undefined;
-	for (let number = 1; number <= state.doc.lines; number++) {
-		if (!shown.has(number) && isBlank(state.doc.line(number).text)) {
-			if (run) run.last = number;
-			else runs.push((run = { first: number, last: number }));
-		} else {
-			run = undefined;
-		}
+	for (const number of hidden) {
+		const run = runs.at(-1);
+		if (run && run.last === number - 1) run.last = number;
+		else runs.push({ first: number, last: number });
 	}
 	return runs;
 };
@@ -143,6 +173,11 @@ const paragraphLayout = StateField.define<Layout>({
 	],
 });
 
+// belowBlock reports whether the line is right below a block, with no blank
+// line between them.
+const belowBlock = (state: EditorState, number: number) =>
+	number > 1 && !isBlank(state.doc.line(number - 1).text);
+
 // separateFromBlockAbove makes a blank line with the cursor, right below a
 // block, the start of a new paragraph: it adds the blank line between them.
 // Without it, text typed there would continue the block above, like a list's
@@ -150,8 +185,7 @@ const paragraphLayout = StateField.define<Layout>({
 const separateFromBlockAbove = (state: EditorState) =>
 	state.changeByRange((range) => {
 		const line = state.doc.lineAt(range.head);
-		const above = line.number > 1 ? state.doc.line(line.number - 1) : undefined;
-		if (!range.empty || !isBlank(line.text) || !above || isBlank(above.text)) return { range };
+		if (!range.empty || !isBlank(line.text) || !belowBlock(state, line.number)) return { range };
 		return {
 			changes: { from: line.from, insert: '\n' },
 			range: EditorSelection.cursor(range.head + 1),
@@ -159,21 +193,27 @@ const separateFromBlockAbove = (state: EditorState) =>
 	});
 
 // insertParagraph ends the paragraph at the cursor and starts a new one,
-// inserting the blank line between them. On a blank line it only adds the
-// blank line that separates it from the block above, if missing. In code
-// blocks it does nothing, so Enter inserts a plain line break.
+// inserting the blank line between them, and moves the cursor to the new one.
+// At the start of a paragraph, the paragraph moves down with the cursor and
+// an empty one appears above. On a blank line right below a block, it only
+// adds the missing blank line between them. In code blocks it does nothing, so
+// Enter inserts a plain line break.
 export const insertParagraph: StateCommand = ({ state, dispatch }) => {
 	if (state.selection.ranges.some((range) => insideCodeBlock(state, range.head))) return false;
 
-	const onBlankLine = state.selection.ranges.every(
-		(range) => range.empty && isBlank(state.doc.lineAt(range.head).text),
-	);
-	const changes = onBlankLine
-		? separateFromBlockAbove(state)
-		: state.changeByRange((range) => ({
-				changes: { from: range.from, to: range.to, insert: '\n\n' },
-				range: EditorSelection.cursor(range.from + 2),
-			}));
+	const changes = state.changeByRange((range) => {
+		const line = state.doc.lineAt(range.head);
+		if (range.empty && isBlank(line.text) && belowBlock(state, line.number)) {
+			return {
+				changes: { from: line.from, insert: '\n' },
+				range: EditorSelection.cursor(range.head + 1),
+			};
+		}
+		return {
+			changes: { from: range.from, to: range.to, insert: '\n\n' },
+			range: EditorSelection.cursor(range.from + 2),
+		};
+	});
 	dispatch(state.update(changes, { scrollIntoView: true, userEvent: 'input' }));
 	return true;
 };
