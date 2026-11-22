@@ -85,6 +85,10 @@ before resuming. Record what the code and git history don't show; remove notes t
   `<b style="font-weight:normal">` that Turndown would make bold. Turndown escapes Markdown characters in text
   (`file\_name`): correct, and renders the same. Checked on a Firefox copy of the imgproxy docs (links and a
   highlighted code block).
+  - Inside a quote, every pasted line after the first gets the quote's markers (`> `, `> > `; `>` on blank lines),
+    for formatted and plain text alike (`textToPaste`); otherwise the rest of a pasted list left the quote.
+  - Lists stay tight unless an item has several blocks: many sites wrap each item's text in a `<p>`, which
+    Turndown makes a loose list, and Turndown also indented the blank lines between items.
   - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
     `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.
   - An image inserted at the end of the text gets a paragraph after it, where the cursor goes.

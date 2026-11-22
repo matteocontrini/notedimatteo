@@ -9,7 +9,7 @@ async function preview(page: Page, check: (content: Locator) => Promise<void>) {
 	await page.getByRole('button').filter({ hasText: 'Back to editing' }).click();
 }
 
-test('the body editor hides blank lines and keeps paragraphs with Enter', async ({ page }) => {
+test('editing the body: paragraphs, lists, code blocks, and pasting', async ({ page }) => {
 	const body = page.getByRole('textbox', { name: 'Body' });
 
 	await logIn(page);
@@ -131,5 +131,19 @@ test('the body editor hides blank lines and keeps paragraphs with Enter', async 
 		await body.locator('.cm-line').first().click();
 		await body.press('Tab');
 		await expect(body).not.toBeFocused();
+	});
+	await test.step('text pasted in a quote stays in it', async () => {
+		await body.press('ControlOrMeta+End');
+		await body.press('Enter');
+		await body.pressSequentially('> ');
+		await body.evaluate((editor) => {
+			const data = new DataTransfer();
+			data.setData('text/html', '<ol><li><p>primo</p></li><li><p>secondo</p></li></ol>');
+			editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }));
+		});
+
+		await preview(page, async (content) => {
+			await expect(content.locator('blockquote li')).toHaveText(['primo', 'secondo']);
+		});
 	});
 });

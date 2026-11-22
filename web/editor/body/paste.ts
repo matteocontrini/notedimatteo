@@ -1,8 +1,9 @@
 // Pasting. An image file uploads. Formatted text, as copied from a web page,
 // becomes Markdown, keeping links, emphasis, code, lists, quotes, and
 // headings. Anything else, and anything pasted inside a code block, pastes as
-// plain text.
+// plain text. Inside a quote, every pasted line gets the quote's markers.
 
+import type { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import TurndownService from 'turndown';
 import { insideCodeBlock } from './blocks';
@@ -40,7 +41,9 @@ turndown.addRule('italicSpan', {
 	replacement: (content) => (content.trim() ? `*${content}*` : content),
 });
 
-// Turndown's own list items put three spaces after the marker
+// Turndown's own list items put three spaces after the marker, indent blank
+// lines, and make an item with a single <p> a paragraph, which loosens the
+// whole list
 turndown.addRule('listItem', {
 	filter: 'li',
 	replacement: (content, node) => {
@@ -51,10 +54,13 @@ turndown.addRule('listItem', {
 			const start = Number(list.getAttribute('start') ?? 1);
 			prefix = `${start + Array.prototype.indexOf.call(list.children, item)}. `;
 		}
-		const paragraph = /\n$/.test(content);
-		const text = content.replace(/^\n+|\n+$/g, '') + (paragraph ? '\n' : '');
-		const indented = text.replace(/\n/g, '\n' + ' '.repeat(prefix.length));
-		return prefix + indented + (item.nextSibling ? '\n' : '');
+		const text = content.replace(/^\n+|\n+$/g, '');
+		const blocks = text.includes('\n\n');
+		const indented = text
+			.split('\n')
+			.map((line, index) => (index === 0 || line === '' ? line : ' '.repeat(prefix.length) + line))
+			.join('\n');
+		return prefix + indented + (blocks ? '\n' : '') + (item.nextSibling ? '\n' : '');
 	},
 });
 
@@ -90,6 +96,34 @@ export const htmlToMarkdown = (html: string) => {
 	return markdown === '' ? null : markdown;
 };
 
+// quoteMarkers returns the quote markers at the start of pos's line, like "> "
+// or "> > ", or "" when pos isn't after them.
+const quoteMarkers = (state: EditorState, pos: number) => {
+	const line = state.doc.lineAt(pos);
+	const markers = /^(?: {0,3}> ?)+/.exec(line.text)?.[0] ?? '';
+	return pos - line.from >= markers.length ? markers : '';
+};
+
+// textToPaste returns the text to paste at the cursor, from the clipboard's
+// HTML and plain text, or null to leave the paste to CodeMirror. Inside a
+// quote, every line after the first gets the quote's markers, so the pasted
+// text stays in the quote; blank lines get them without the trailing space.
+export const textToPaste = (state: EditorState, html: string, plain: string) => {
+	const pos = state.selection.main.from;
+	if (insideCodeBlock(state, pos)) return null;
+
+	const markers = quoteMarkers(state, pos);
+	const text = htmlToMarkdown(html) ?? (markers ? plain.replace(/\r\n?/g, '\n') : null);
+	if (text === null || !markers) return text;
+	return text
+		.split('\n')
+		.map((line, index) => {
+			if (index === 0) return line;
+			return line.trim() === '' ? markers.trimEnd() : markers + line;
+		})
+		.join('\n');
+};
+
 // paste handles pasting in the editor. onImage receives a pasted image file.
 export const paste = (onImage: (file: File) => void) =>
 	EditorView.domEventHandlers({
@@ -104,11 +138,14 @@ export const paste = (onImage: (file: File) => void) =>
 				return true;
 			}
 
-			if (insideCodeBlock(view.state, view.state.selection.main.head)) return false;
-			const markdown = htmlToMarkdown(data?.getData('text/html') ?? '');
-			if (markdown === null) return false;
+			const text = textToPaste(
+				view.state,
+				data?.getData('text/html') ?? '',
+				data?.getData('text/plain') ?? '',
+			);
+			if (text === null) return false;
 			event.preventDefault();
-			view.dispatch(view.state.replaceSelection(markdown), {
+			view.dispatch(view.state.replaceSelection(text), {
 				scrollIntoView: true,
 				userEvent: 'input.paste',
 			});

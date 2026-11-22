@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { htmlToMarkdown } from './paste';
+import { htmlToMarkdown, textToPaste } from './paste';
+import { stateOf } from './testing';
 
 describe('pasted HTML', () => {
 	it('keeps links, as copied from a page in Firefox', () => {
@@ -36,6 +37,16 @@ describe('pasted HTML', () => {
 		expect(htmlToMarkdown(html)).toBe('- one **two**\n- three\n  - nested\n\n3. a\n4. b');
 	});
 
+	it('keeps lists tight when each item is a single paragraph', () => {
+		const html = '<ol><li><p><strong>One</strong> first</p></li><li><p>Two</p></li></ol>';
+		expect(htmlToMarkdown(html)).toBe('1. **One** first\n2. Two');
+	});
+
+	it('separates the items of a list with several paragraphs in an item', () => {
+		const html = '<ul><li><p>One</p><p>More</p></li><li><p>Two</p></li></ul>';
+		expect(htmlToMarkdown(html)).toBe('- One\n\n  More\n\n- Two');
+	});
+
 	it('keeps the bold and italic text of Google Docs, which marks them with styles', () => {
 		const html =
 			'<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-1">' +
@@ -63,5 +74,26 @@ describe('pasted HTML', () => {
 		expect(htmlToMarkdown('<span>Just text</span>')).toBeNull();
 		expect(htmlToMarkdown('<p>Text <img src="https://x/y.png"></p>')).toBeNull();
 		expect(htmlToMarkdown('')).toBeNull();
+	});
+});
+
+describe('pasting', () => {
+	const list = '<ul><li>one</li><li>two</li></ul>';
+
+	it('inside a quote keeps every line in it', () => {
+		expect(textToPaste(stateOf('> |'), list, 'one\ntwo')).toBe('- one\n> - two');
+		expect(textToPaste(stateOf('> > |'), list, '')).toBe('- one\n> > - two');
+		expect(textToPaste(stateOf('> |'), '', 'one\r\n\r\ntwo')).toBe('one\n>\n> two');
+	});
+
+	it('outside a quote leaves plain text to CodeMirror', () => {
+		expect(textToPaste(stateOf('|'), list, 'one\ntwo')).toBe('- one\n- two');
+		expect(textToPaste(stateOf('|'), '', 'one\ntwo')).toBeNull();
+		// Before the quote markers isn't inside the quote
+		expect(textToPaste(stateOf('|> a'), '', 'one\ntwo')).toBeNull();
+	});
+
+	it('inside a code block leaves everything to CodeMirror', () => {
+		expect(textToPaste(stateOf('```\n|\n```'), list, 'one\ntwo')).toBeNull();
 	});
 });
