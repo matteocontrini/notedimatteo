@@ -32,10 +32,17 @@ and G1–G3 (editor).
 
 Only the body field changes; the rest of the edit page stays as it is.
 
-- [ ] Replace the body textarea with CodeMirror 6 live preview, still storing plain Markdown
-- [ ] Keep today's shortcuts: ⌘B, ⌘I, ⌘⇧' (quote), ⌘K (link), ⌘P (preview), ⌘S (save), ⌘⇧S (publish)
-- [ ] Keep the height following the content, image paste uploads, and the upload button inserting at the cursor
-- [ ] Update the browser tests, which type into `textarea[name=body]`
+- [x] Replace the body textarea with CodeMirror 6, still storing plain Markdown; keep focus on load, the height
+  following the content, line wrapping, spellcheck, and the undo history across ⌘P
+- [x] Turn the Markdown helpers into CodeMirror commands for today's shortcuts: ⌘B, ⌘I, ⌘⇧' (quote), ⌘K (link);
+  ⌘P, ⌘S, and ⌘⇧S stay on the window
+- [x] Upload pasted images and the upload button's file at the cursor, through a placeholder the upload replaces
+- [x] Style the Markdown: emphasis, links, headings, quotes, code; markers stay visible but dimmed
+- [x] Show uploaded images under their `[img]` line, at their size
+- [x] Theme it with the site's font and colors, light and dark
+- [x] Update the browser tests, which type into `textarea[name=body]`
+- [x] Store bodies with `\n` line breaks, and convert the ones saved with `\r\n` since cutover (`00003`)
+- [ ] Check it by hand on Chrome and Firefox for Android
 
 ## Phase 2: Revisions
 

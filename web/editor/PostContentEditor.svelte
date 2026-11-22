@@ -1,47 +1,37 @@
 <script lang="ts">
-	import { autoResize } from './auto-resize';
-	import { tick } from 'svelte';
-	import {
-		insertMarkdownLink,
-		toggleMarkdownBold,
-		toggleMarkdownItalic,
-		toggleMarkdownQuote,
-		type TextEdit,
-	} from './markdown';
-	import { getImageMarkup, insertImageMarkup, uploadImage } from './uploads';
+	import type { EditorView } from '@codemirror/view';
+	import { onMount, tick } from 'svelte';
+	import { createBodyEditor, finishUpload, startUpload } from './codemirror';
 	import type { EditorURLs, FieldErrors, PostForm } from './form';
+	import { getImageMarkup, uploadImage } from './uploads';
 
 	let {
 		form = $bindable(),
 		errors,
 		urls,
-	}: { form: PostForm; errors: FieldErrors; urls: EditorURLs } = $props();
-	let bodyTextarea: HTMLTextAreaElement;
+		imageBaseURL,
+	}: { form: PostForm; errors: FieldErrors; urls: EditorURLs; imageBaseURL: string } = $props();
+	let editorParent: HTMLDivElement;
+	let view: EditorView | undefined;
 	let fileInput: HTMLInputElement;
 	let showPreview = $state(false);
 	let previewLoading = $state(false);
 	let previewHtml = $state('');
 	let previewError = $state<string | null>(null);
-	let uploadLoading = $state(false);
+	let uploads = $state(0);
 
-	const restoreSelection = async (
-		textarea: HTMLTextAreaElement,
-		selectionStart: number,
-		selectionEnd = selectionStart,
-	) => {
-		await tick();
-		textarea.setSelectionRange(selectionStart, selectionEnd);
-		textarea.focus();
-	};
-
-	const applyTextEdit = (
-		textarea: HTMLTextAreaElement,
-		transform: (value: string, selectionStart: number, selectionEnd: number) => TextEdit,
-	) => {
-		const edit = transform(textarea.value, textarea.selectionStart, textarea.selectionEnd);
-		form.body = edit.value;
-		void restoreSelection(textarea, edit.selectionStart, edit.selectionEnd);
-	};
+	onMount(() => {
+		view = createBodyEditor({
+			parent: editorParent,
+			doc: form.body,
+			imageBaseURL,
+			onChange: (body) => (form.body = body),
+			onPasteImage: (file) => void uploadFile(file),
+		});
+		// The user opens the editor to write the body, so the body gets the focus
+		view.focus();
+		return () => view?.destroy();
+	});
 
 	const loadPreview = async () => {
 		previewLoading = true;
@@ -71,34 +61,28 @@
 	const closePreview = () => {
 		showPreview = false;
 		previewError = null;
-		// Focus the textarea when returning to edit mode
-		void tick().then(() => bodyTextarea?.focus());
+		// The editor stays in the page while hidden, so it keeps its undo history
+		void tick().then(() => view?.focus());
 	};
 
-	const uploadFile = async (
-		file: File,
-		cursorPosition?: number,
-		textarea?: HTMLTextAreaElement,
-	) => {
-		uploadLoading = true;
+	// uploadFile uploads an image and puts its markup where the cursor was when
+	// the upload started.
+	const uploadFile = async (file: File) => {
+		if (!view) return false;
+		const id = startUpload(view);
+		uploads++;
 
 		try {
 			const image = await uploadImage(urls.upload, file);
-			const insertion = insertImageMarkup(form.body, getImageMarkup(image), cursorPosition);
-			form.body = insertion.body;
-
-			if (textarea && insertion.cursorPosition !== undefined) {
-				// Restore cursor position after state update
-				void restoreSelection(textarea, insertion.cursorPosition);
-			}
-
+			finishUpload(view, id, getImageMarkup(image));
 			return true;
 		} catch (error) {
+			finishUpload(view, id);
 			console.error('Upload error:', error);
 			alert('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
 			return false;
 		} finally {
-			uploadLoading = false;
+			uploads--;
 		}
 	};
 
@@ -113,53 +97,13 @@
 		if (await uploadFile(file)) fileInput.value = '';
 	};
 
-	const handlePaste = async (event: ClipboardEvent) => {
-		// Look for image files in the clipboard
-		const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) =>
-			item.type.startsWith('image/'),
-		);
-		const file = imageItem?.getAsFile();
-
-		if (!file) return;
+	// The editor handles the formatting shortcuts; Cmd+P works anywhere on the page
+	const handleKeydown = (event: KeyboardEvent) => {
+		if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'p') return;
 
 		event.preventDefault();
-		const textarea = event.currentTarget as HTMLTextAreaElement;
-		// Capture cursor position before upload
-		await uploadFile(file, textarea.selectionStart, textarea);
-	};
-
-	const handleKeydown = (event: KeyboardEvent) => {
-		const hasCommandModifier = event.metaKey || event.ctrlKey;
-		if (!hasCommandModifier) return;
-
-		if (event.key.toLowerCase() === 'p') {
-			// Cmd+P: Toggle preview
-			event.preventDefault();
-			if (showPreview) closePreview();
-			else void loadPreview();
-			return;
-		}
-
-		const textarea = event.target as HTMLTextAreaElement;
-		if (textarea.tagName !== 'TEXTAREA') return;
-
-		if (event.key.toLowerCase() === 'k') {
-			// Cmd+K: Insert markdown link
-			event.preventDefault();
-			applyTextEdit(textarea, insertMarkdownLink);
-		} else if (event.key.toLowerCase() === 'b') {
-			// Cmd+B: Toggle bold
-			event.preventDefault();
-			applyTextEdit(textarea, toggleMarkdownBold);
-		} else if (event.key.toLowerCase() === 'i') {
-			// Cmd+I: Toggle italic
-			event.preventDefault();
-			applyTextEdit(textarea, toggleMarkdownItalic);
-		} else if (event.shiftKey && event.key === "'") {
-			// Cmd+Shift+': Toggle quote
-			event.preventDefault();
-			applyTextEdit(textarea, toggleMarkdownQuote);
-		}
+		if (showPreview) closePreview();
+		else void loadPreview();
 	};
 </script>
 
@@ -192,18 +136,7 @@
 		</span>
 	</label>
 
-	<!-- The user opens the editor to write the body, so the body gets the focus -->
-	<!-- svelte-ignore a11y_autofocus -->
-	<textarea
-		class="w-full resize-none overflow-hidden"
-		class:hidden={showPreview}
-		use:autoResize={form.body}
-		name="body"
-		rows="16"
-		bind:value={form.body}
-		bind:this={bodyTextarea}
-		onpaste={handlePaste}
-		autofocus></textarea>
+	<div class:hidden={showPreview} bind:this={editorParent}></div>
 
 	{#if showPreview}
 		<div class="w-full border border-slate-300 px-3 py-2 dark:border-slate-500">
@@ -231,8 +164,8 @@
 			<input class="w-full px-2 py-1" type="file" accept="image/*" bind:this={fileInput} />
 		</label>
 
-		<button type="button" class="mt-2" onclick={uploadSelectedFile} disabled={uploadLoading}>
-			{uploadLoading ? 'Uploading...' : 'Upload file'}
+		<button type="button" class="mt-2" onclick={uploadSelectedFile} disabled={uploads > 0}>
+			{uploads > 0 ? 'Uploading...' : 'Upload file'}
 		</button>
 	</div>
 </div>

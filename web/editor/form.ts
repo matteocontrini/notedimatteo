@@ -33,6 +33,8 @@ export type EditorData = {
 	// tags are the names the tags field suggests
 	tags: string[];
 	categories: Category[];
+	// imageBaseURL is the public address of uploaded images
+	imageBaseURL: string;
 };
 
 // PostForm holds the fields as the inputs edit them. A number input that the

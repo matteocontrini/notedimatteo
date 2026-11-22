@@ -17,6 +17,31 @@
 }
 
 @layer base {
+	/* Colors of the post body editor, which web/editor/codemirror.ts reads */
+	:root {
+		--editor-border: var(--color-slate-300);
+		--editor-border-focused: var(--color-slate-700);
+		--editor-background: var(--color-white);
+		--editor-text: var(--color-slate-900);
+		--editor-mark: var(--color-slate-400);
+		--editor-link: var(--color-sky-700);
+		--editor-quote: var(--color-slate-600);
+		--editor-code: var(--color-slate-100);
+		--editor-selection: var(--color-sky-100);
+	}
+
+	.dark {
+		--editor-border: var(--color-slate-500);
+		--editor-border-focused: var(--color-slate-300);
+		--editor-background: var(--color-slate-700);
+		--editor-text: var(--color-white);
+		--editor-mark: var(--color-slate-400);
+		--editor-link: var(--color-sky-500);
+		--editor-quote: var(--color-slate-300);
+		--editor-code: var(--color-slate-800);
+		--editor-selection: var(--color-slate-500);
+	}
+
 	hr {
 		@apply border-t border-slate-300;
 

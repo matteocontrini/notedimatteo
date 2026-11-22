@@ -1,62 +1,131 @@
+import { EditorSelection, EditorState, Text, type StateCommand } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
-import {
-	insertMarkdownLink,
-	toggleMarkdownBold,
-	toggleMarkdownItalic,
-	toggleMarkdownQuote,
-} from './markdown';
+import { imageDecorations, previewURL } from './codemirror';
+import { insertLink, quoteLines, wrapBold, wrapItalic } from './markdown';
 import { normalizeSlug } from './slug';
 import { completeCurrentTag, getCurrentTag } from './tags';
-import { insertImageMarkup } from './uploads';
+import { imageInsertion } from './uploads';
 
-describe('post editor utilities', () => {
-	it('inserts Markdown links for empty, URL, and text selections', () => {
-		expect(insertMarkdownLink('hello', 5, 5)).toEqual({
-			value: 'hello[]()',
-			selectionStart: 6,
-			selectionEnd: 6,
+// run applies command to doc with the given selections, and returns the text
+// and the selections after it.
+const run = (command: StateCommand, doc: string, ...ranges: [number, number][]) => {
+	let state = EditorState.create({
+		doc,
+		selection: EditorSelection.create(
+			ranges.map(([anchor, head]) => EditorSelection.range(anchor, head)),
+		),
+		extensions: EditorState.allowMultipleSelections.of(true),
+	});
+	command({ state, dispatch: (transaction) => (state = transaction.state) });
+	return {
+		doc: state.doc.toString(),
+		selections: state.selection.ranges.map((range) => [range.anchor, range.head]),
+	};
+};
+
+describe('Markdown commands', () => {
+	it('insert links for empty, URL, and text selections', () => {
+		expect(run(insertLink, 'hello', [5, 5])).toEqual({ doc: 'hello[]()', selections: [[6, 6]] });
+		expect(run(insertLink, 'https://example.com', [0, 19])).toEqual({
+			doc: '[](https://example.com)',
+			selections: [[1, 1]],
 		});
-		expect(insertMarkdownLink('https://example.com', 0, 19).value).toBe('[](https://example.com)');
-		expect(insertMarkdownLink('hello', 0, 5).value).toBe('[hello]()');
+		expect(run(insertLink, 'hello', [0, 5])).toEqual({ doc: '[hello]()', selections: [[8, 8]] });
 	});
 
-	it('wraps Markdown bold and italic selections', () => {
-		expect(toggleMarkdownBold('hello', 0, 5)).toEqual({
-			value: '**hello**',
-			selectionStart: 2,
-			selectionEnd: 7,
-		});
-		expect(toggleMarkdownItalic('', 0, 0)).toEqual({
-			value: '**',
-			selectionStart: 1,
-			selectionEnd: 1,
+	it('wrap bold and italic selections', () => {
+		expect(run(wrapBold, 'hello', [0, 5])).toEqual({ doc: '**hello**', selections: [[2, 7]] });
+		expect(run(wrapItalic, '', [0, 0])).toEqual({ doc: '**', selections: [[1, 1]] });
+	});
+
+	it('wrap every selection', () => {
+		expect(run(wrapBold, 'one two', [0, 3], [4, 7])).toEqual({
+			doc: '**one** **two**',
+			selections: [
+				[2, 5],
+				[10, 13],
+			],
 		});
 	});
 
-	it('quotes every selected line', () => {
-		expect(toggleMarkdownQuote('one\ntwo', 0, 7)).toEqual({
-			value: '> one\n> two',
-			selectionStart: 2,
-			selectionEnd: 11,
+	it('quote every selected line, and blank lines too', () => {
+		expect(run(quoteLines, 'one\ntwo', [0, 7])).toEqual({
+			doc: '> one\n> two',
+			selections: [[2, 11]],
 		});
+		expect(run(quoteLines, 'one\n\ntwo', [1, 8])).toEqual({
+			doc: '> one\n>\n> two',
+			selections: [[3, 13]],
+		});
+		expect(run(quoteLines, 'one', [1, 1])).toEqual({ doc: 'o> ne', selections: [[3, 3]] });
+	});
+});
+
+describe('images', () => {
+	it('insert markup in its own paragraph', () => {
+		expect(imageInsertion('before', 'after', '[img]a.jpg[/img]')).toBe('\n\n[img]a.jpg[/img]\n\n');
+		expect(imageInsertion('e\n', '\n\na', 'X')).toBe('\nX');
+		expect(imageInsertion('', '', 'X')).toBe('X');
 	});
 
-	it('normalizes slugs', () => {
+	it('show the preview of each image markup, with its size, and dim its tags', () => {
+		const doc = Text.of([
+			'text',
+			'[img width=1200 height=675]2026/11/abc.jpg[/img] [img]b[/img]',
+			'[img width=wide]c.png[/img]',
+		]);
+		const found: { at: number; src: string; width?: string; height?: string }[] = [];
+		const dimmed: string[] = [];
+		imageDecorations(doc, 'https://storage.example.com').between(
+			0,
+			doc.length,
+			(from, to, deco) => {
+				if (!deco.spec.widget) {
+					dimmed.push(doc.sliceString(from, to));
+					return;
+				}
+				const { src, width, height } = deco.spec.widget;
+				found.push({ at: from, src, width, height });
+			},
+		);
+
+		const lineEnd = (number: number) => doc.line(number).to;
+		expect(found).toEqual([
+			{
+				at: lineEnd(2),
+				src: 'https://storage.example.com/2026/11/abc_preview.jpg',
+				width: '1200',
+				height: '675',
+			},
+			{ at: lineEnd(2), src: 'https://storage.example.com/b_preview' },
+			{ at: lineEnd(3), src: 'https://storage.example.com/c_preview.png' },
+		]);
+		expect(dimmed).toEqual([
+			'[img width=1200 height=675]',
+			'[/img]',
+			'[img]',
+			'[/img]',
+			'[img width=wide]',
+			'[/img]',
+		]);
+	});
+
+	it('put _preview before the extension of the file name', () => {
+		expect(previewURL('https://s', 'a.b/c')).toBe('https://s/a.b/c_preview');
+		expect(previewURL('https://s', 'x/y.jpeg')).toBe('https://s/x/y_preview.jpeg');
+	});
+});
+
+describe('post fields', () => {
+	it('normalize slugs', () => {
 		expect(normalizeSlug('È già  Un Titolo!')).toBe('e-gia-un-titolo');
 	});
 
-	it('finds and completes the tag at the cursor', () => {
+	it('find and complete the tag at the cursor', () => {
 		expect(getCurrentTag('one, tw, three', 6)).toBe('tw');
 		expect(completeCurrentTag('one, tw, three', 6, 'two')).toEqual({
 			value: 'one,two, three',
 			cursorPosition: 7,
-		});
-	});
-
-	it('inserts image markup with paragraph spacing', () => {
-		expect(insertImageMarkup('beforeafter', '[img]url[/img]', 6)).toEqual({
-			body: 'before\n\n[img]url[/img]\n\nafter',
-			cursorPosition: 24,
 		});
 	});
 });

@@ -32,6 +32,7 @@ func TestParsePostForm(t *testing.T) {
 	form.Set("title", "  Title ")
 	form.Set("hideTitle", "on")
 	form.Set("tags", "go, , svelte,go ,")
+	form.Set("body", "one\r\n\r\ntwo")
 	form.Set("intent", "publish")
 
 	edit, errs, err := parsePostForm(form)
@@ -43,6 +44,9 @@ func TestParsePostForm(t *testing.T) {
 	}
 	if !slices.Equal(edit.Tags, []string{"go", "svelte"}) {
 		t.Errorf("tags = %q", edit.Tags)
+	}
+	if edit.Body != "one\n\ntwo" {
+		t.Errorf("body = %q", edit.Body)
 	}
 
 	tests := []struct {
@@ -238,6 +242,9 @@ func TestEditPage(t *testing.T) {
 	}
 	if len(data.Categories) == 0 || data.Categories[0] != (editorCategory{"note", "Note"}) {
 		t.Errorf("categories = %v", data.Categories)
+	}
+	if data.ImageBaseURL != "https://storage.example.com" {
+		t.Errorf("image base URL = %q", data.ImageBaseURL)
 	}
 	assertContains(t, rec, `<script type="module" src="/assets/editor-789abc.js">`, "<title>Modifica #5</title>")
 }

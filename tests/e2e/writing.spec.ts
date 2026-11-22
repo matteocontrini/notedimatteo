@@ -23,7 +23,9 @@ function pngDataURL(page: Page, width: number, height: number) {
 
 test('write, publish, and delete a note', async ({ page, request }) => {
 	test.setTimeout(60_000);
-	const body = page.locator('textarea[name=body]');
+	// CodeMirror's editable element. The text shows every Markdown marker, so it
+	// matches the Markdown.
+	const body = page.getByRole('textbox', { name: 'Body' });
 	const saved = page.getByText('Saved!');
 
 	await logIn(page);
@@ -45,7 +47,7 @@ test('write, publish, and delete a note', async ({ page, request }) => {
 		await body.fill('Una nota di prova');
 		await body.press('ControlOrMeta+a');
 		await body.press('ControlOrMeta+b');
-		await expect(body).toHaveValue('**Una nota di prova**');
+		await expect(body).toHaveText('**Una nota di prova**');
 
 		await body.press('ControlOrMeta+s');
 		await expect(saved).toBeVisible();
@@ -70,17 +72,24 @@ test('write, publish, and delete a note', async ({ page, request }) => {
 
 	const pastedKey = await test.step('paste an image', async () => {
 		const dataURL = await pngDataURL(page, 1600, 900);
-		await body.evaluate(async (textarea: HTMLTextAreaElement, dataURL) => {
+		await body.press('ControlOrMeta+End');
+		await body.evaluate(async (editor, dataURL) => {
 			const blob = await (await fetch(dataURL)).blob();
 			const data = new DataTransfer();
 			data.items.add(new File([blob], 'incollata.png', { type: 'image/png' }));
-			textarea.focus();
-			textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-			textarea.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }));
+			editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }));
 		}, dataURL);
 
-		await expect(body).toHaveValue(imageMarkup(1200, 675), { timeout: 15_000 });
-		return (await body.inputValue()).match(imageMarkup(1200, 675))![1];
+		await expect(body).toHaveText(imageMarkup(1200, 675), { timeout: 15_000 });
+		const key = (await body.textContent())!.match(imageMarkup(1200, 675))![1];
+
+		// The editor shows the preview below the markup
+		const preview = body.locator('.cm-md-image img');
+		await expect(preview).toHaveAttribute('src', new RegExp(`/${key}_preview\\.jpg$`));
+		await expect
+			.poll(() => preview.evaluate((img: HTMLImageElement) => img.naturalWidth))
+			.toBe(1200);
+		return key;
 	});
 
 	await test.step('upload a chosen image', async () => {
@@ -91,7 +100,7 @@ test('write, publish, and delete a note', async ({ page, request }) => {
 			buffer: Buffer.from(dataURL.split(',')[1], 'base64'),
 		});
 		await page.getByRole('button', { name: 'Upload file' }).click();
-		await expect(body).toHaveValue(imageMarkup(300, 200), { timeout: 15_000 });
+		await expect(body).toHaveText(imageMarkup(300, 200), { timeout: 15_000 });
 	});
 
 	await test.step('the storage has both versions of the pasted image', async () => {

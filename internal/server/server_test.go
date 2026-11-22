@@ -168,11 +168,12 @@ func testDist() fstest.MapFS {
 
 func testOptions(t *testing.T) Options {
 	return Options{
-		SiteURL:       "https://example.com/",
-		Dist:          testDist(),
-		Markdown:      testRenderer(t),
-		AdminUsername: "admin",
-		AdminPassword: "secret",
+		SiteURL:        "https://example.com/",
+		Dist:           testDist(),
+		Markdown:       testRenderer(t),
+		StorageBaseURL: "https://storage.example.com",
+		AdminUsername:  "admin",
+		AdminPassword:  "secret",
 	}
 }
 

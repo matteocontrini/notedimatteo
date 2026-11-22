@@ -94,7 +94,7 @@ function startS3() {
 		.withEntrypoint(['sh', '-c'])
 		.withCommand([
 			`mkdir -p /data/${BUCKET} && ` +
-				`(rclone serve http /data/${BUCKET} --addr :8080 &) && ` +
+				`(rclone serve http /data/${BUCKET} --addr :8080 --dir-cache-time 0s &) && ` +
 				'exec rclone serve s3 /data --addr :9000 --auth-key test,test --force-path-style=false',
 		])
 		.withExposedPorts(9000, 8080)

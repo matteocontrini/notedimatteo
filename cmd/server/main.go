@@ -74,6 +74,8 @@ func run() error {
 		Dist:     web.Dist(),
 		Markdown: renderer,
 
+		StorageBaseURL: cfg.StoragePublicBaseURL,
+
 		AdminUsername: cfg.AdminUsername,
 		AdminPassword: cfg.AdminPassword,
 		Uploader:      uploader,

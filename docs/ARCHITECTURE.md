@@ -105,9 +105,14 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 ## Editor
 
 - `GET /{number}/edit` renders the layout with the editor's data in `<script type="application/json">`
-  (`templ.JSONScript`) and the editor bundle. The data includes each post's URLs, built by `internal/urls`.
+  (`templ.JSONScript`) and the editor bundle. The data includes each post's URLs, built by `internal/urls`,
+  and the public address of uploaded images.
+- The body field is CodeMirror 6 (`web/editor/codemirror.ts`) with the CommonMark parser and strikethrough. The
+  text stays plain Markdown: the editor styles it, dims the markers, and shows each `[img]` image below its line.
+  Colors come from `--editor-*` variables in `web/assets/main.css`, light and dark.
 - The editor saves with `fetch` and `FormData` to `POST /{number}/edit`, which validates in Go and answers
-  `{"post": …}` or 400 with `{"errors": {"field": "message"}}`. Validation lives only in Go.
+  `{"post": …}` or 400 with `{"errors": {"field": "message"}}`. Validation lives only in Go. Browsers send
+  form text with `\r\n` line breaks; the endpoint stores `\n`.
 - `POST /{number}/edit/preview` renders Markdown with the same renderer as published posts.
 - `form.ts` tracks unsaved changes against what the last successful save sent.
 - The save locks the post's row and updates the post, its cached HTML, and its tags in one transaction.

@@ -25,6 +25,8 @@ type editorData struct {
 	// Tags are the names the tags field suggests: the tags of published posts.
 	Tags       []string         `json:"tags"`
 	Categories []editorCategory `json:"categories"`
+	// ImageBaseURL is the public address of uploaded images.
+	ImageBaseURL string `json:"imageBaseURL"`
 }
 
 type editorCategory struct {
@@ -107,6 +109,8 @@ func (s *Server) editPage(w http.ResponseWriter, r *http.Request) error {
 		Post:       newEditorPost(*post),
 		Tags:       make([]string, 0, len(tags)),
 		Categories: make([]editorCategory, 0, len(views.Categories)),
+
+		ImageBaseURL: s.storageBaseURL,
 	}
 	for _, tag := range tags {
 		data.Tags = append(data.Tags, tag.Name)
@@ -189,9 +193,10 @@ func parsePostForm(form url.Values) (db.PostEdit, map[string]string, error) {
 		Title:     strings.TrimSpace(form.Get("title")),
 		Slug:      strings.TrimSpace(form.Get("slug")),
 		HideTitle: form.Get("hideTitle") == "true" || form.Get("hideTitle") == "on",
-		Body:      form.Get("body"),
-		Tags:      parseTags(form.Get("tags")),
-		Intent:    intent,
+		// Browsers send form text with \r\n line breaks, replace with \n
+		Body:   strings.ReplaceAll(form.Get("body"), "\r\n", "\n"),
+		Tags:   parseTags(form.Get("tags")),
+		Intent: intent,
 	}
 	errs := map[string]string{}
 

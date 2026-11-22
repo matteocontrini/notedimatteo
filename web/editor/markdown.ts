@@ -1,109 +1,61 @@
-export type TextEdit = {
-	value: string;
-	selectionStart: number;
-	selectionEnd: number;
-};
+import { EditorSelection, type StateCommand, type Text } from '@codemirror/state';
 
-const replaceSelection = (
-	value: string,
-	selectionStart: number,
-	selectionEnd: number,
-	replacement: string,
-): string => value.substring(0, selectionStart) + replacement + value.substring(selectionEnd);
+// An Edit replaces the text from `from` to `to` with `insert`, then selects
+// from `anchor` to `head`, in positions of the edited text.
+type Edit = { from: number; to: number; insert: string; anchor: number; head: number };
 
-export const insertMarkdownLink = (
-	value: string,
-	selectionStart: number,
-	selectionEnd: number,
-): TextEdit => {
-	const selectedText = value.substring(selectionStart, selectionEnd);
-
-	if (selectedText.length === 0) {
-		// Case 1: No selection - insert []() with cursor at link text position
-		return {
-			value: replaceSelection(value, selectionStart, selectionEnd, '[]()'),
-			selectionStart: selectionStart + 1,
-			selectionEnd: selectionStart + 1,
-		};
-	}
-
-	if (selectedText.startsWith('http://') || selectedText.startsWith('https://')) {
-		// Case 2: Selected text is URL - create [](url) with cursor at link text position
-		return {
-			value: replaceSelection(value, selectionStart, selectionEnd, `[](${selectedText})`),
-			selectionStart: selectionStart + 1,
-			selectionEnd: selectionStart + 1,
-		};
-	}
-
-	// Case 3: Selected text is regular text - create [text]() with cursor at URL position
-	const replacement = `[${selectedText}]()`;
-	const cursorPosition = selectionStart + selectedText.length + 3;
-
-	return {
-		value: replaceSelection(value, selectionStart, selectionEnd, replacement),
-		selectionStart: cursorPosition,
-		selectionEnd: cursorPosition,
+// editSelections makes a command that applies edit to each selected range.
+const editSelections =
+	(edit: (doc: Text, from: number, to: number) => Edit): StateCommand =>
+	({ state, dispatch }) => {
+		const changes = state.changeByRange((range) => {
+			const { from, to, insert, anchor, head } = edit(state.doc, range.from, range.to);
+			return { changes: { from, to, insert }, range: EditorSelection.range(anchor, head) };
+		});
+		dispatch(state.update(changes, { scrollIntoView: true, userEvent: 'input' }));
+		return true;
 	};
-};
 
-const wrapMarkdown = (
-	value: string,
-	selectionStart: number,
-	selectionEnd: number,
-	marker: string,
-): TextEdit => {
-	const selectedText = value.substring(selectionStart, selectionEnd);
-	// With no selection, insert paired markers with the cursor in the middle.
-	// Otherwise, wrap the selected text in the marker.
-	const replacement = `${marker}${selectedText}${marker}`;
-	const nextSelectionStart = selectionStart + marker.length;
-
-	return {
-		value: replaceSelection(value, selectionStart, selectionEnd, replacement),
-		selectionStart: nextSelectionStart,
-		selectionEnd: selectedText.length === 0 ? nextSelectionStart : selectionEnd + marker.length,
-	};
-};
-
-export const toggleMarkdownBold = (value: string, selectionStart: number, selectionEnd: number) =>
-	wrapMarkdown(value, selectionStart, selectionEnd, '**');
-
-export const toggleMarkdownItalic = (value: string, selectionStart: number, selectionEnd: number) =>
-	wrapMarkdown(value, selectionStart, selectionEnd, '*');
-
-export const toggleMarkdownQuote = (
-	value: string,
-	selectionStart: number,
-	selectionEnd: number,
-): TextEdit => {
-	if (selectionStart === selectionEnd) {
-		// No selection: insert "> " at cursor position
-		const nextCursorPosition = selectionStart + 2;
-
-		return {
-			value: replaceSelection(value, selectionStart, selectionEnd, '> '),
-			selectionStart: nextCursorPosition,
-			selectionEnd: nextCursorPosition,
-		};
+// insertLink inserts []() with the cursor between the brackets. A selected
+// URL becomes the link's address; other selected text becomes its text, with
+// the cursor where the address goes.
+export const insertLink = editSelections((doc, from, to) => {
+	const text = doc.sliceString(from, to);
+	if (text === '' || text.startsWith('http://') || text.startsWith('https://')) {
+		return { from, to, insert: `[](${text})`, anchor: from + 1, head: from + 1 };
 	}
+	const cursor = from + text.length + 3;
+	return { from, to, insert: `[${text}]()`, anchor: cursor, head: cursor };
+});
 
-	// Has selection: quote each line in the selection
-	// Find the line boundaries
-	const lineStartPosition = value.lastIndexOf('\n', selectionStart - 1) + 1;
-	const nextLineBreak = value.indexOf('\n', selectionEnd);
-	const lineEndPosition = nextLineBreak === -1 ? value.length : nextLineBreak;
-	const textToQuote = value.substring(lineStartPosition, lineEndPosition);
-	const lines = textToQuote.split('\n');
-	// Add "> " to each line, including blank lines to maintain quote block
-	const quotedText = lines.map((line) => (line.length > 0 ? `> ${line}` : '>')).join('\n');
-	// Calculate new cursor positions
-	const totalAdded = lines.reduce((sum, line) => sum + (line.length > 0 ? 2 : 1), 0);
-	const firstLineAdded = lines[0].length > 0 ? 2 : 1;
+// wrap puts marker on both sides of the selection and keeps the text
+// selected. Without a selection, the cursor goes between the two markers.
+const wrap = (marker: string) =>
+	editSelections((doc, from, to) => {
+		const text = doc.sliceString(from, to);
+		const start = from + marker.length;
+		return { from, to, insert: marker + text + marker, anchor: start, head: start + text.length };
+	});
 
+export const wrapBold = wrap('**');
+export const wrapItalic = wrap('*');
+
+// quoteLines inserts "> " at the cursor, or quotes every line the selection
+// touches. Blank lines get ">" so the quote stays one block.
+export const quoteLines = editSelections((doc, from, to) => {
+	if (from === to) return { from, to, insert: '> ', anchor: from + 2, head: from + 2 };
+
+	const start = doc.lineAt(from).from;
+	const end = doc.lineAt(to).to;
+	const lines = doc.sliceString(start, end).split('\n');
+	const quoted = lines.map((line) => (line === '' ? '>' : `> ${line}`));
+	const added = (line: string) => (line === '' ? 1 : 2);
+	const totalAdded = lines.reduce((sum, line) => sum + added(line), 0);
 	return {
-		value: replaceSelection(value, lineStartPosition, lineEndPosition, quotedText),
-		selectionStart: selectionStart + firstLineAdded,
-		selectionEnd: selectionEnd + totalAdded,
+		from: start,
+		to: end,
+		insert: quoted.join('\n'),
+		anchor: from + added(lines[0]),
+		head: to + totalAdded,
 	};
-};
+});

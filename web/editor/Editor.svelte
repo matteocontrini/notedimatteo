@@ -90,7 +90,7 @@
 <SaveStatus saving={slow} saved={showSaved} />
 
 <form class="grid gap-12 md:grid-cols-12" onsubmit={handleSubmit}>
-	<PostContentEditor bind:form {errors} urls={post.urls} />
+	<PostContentEditor bind:form {errors} urls={post.urls} imageBaseURL={initial.imageBaseURL} />
 
 	<aside class="space-y-6 md:col-span-5">
 		<PostMetadata

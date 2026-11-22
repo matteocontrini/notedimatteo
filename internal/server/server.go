@@ -47,6 +47,9 @@ type Options struct {
 	Dist fs.FS
 	// Markdown renders post bodies that have no up-to-date cached HTML.
 	Markdown *markdown.Renderer
+	// StorageBaseURL is the public address of uploaded images, which the
+	// editor shows below their markup.
+	StorageBaseURL string
 	// AdminUsername and AdminPassword are the only login credentials.
 	AdminUsername string
 	AdminPassword string
@@ -63,7 +66,8 @@ type Server struct {
 	stylesheet string
 	script     string
 	// editorScript is the URL of the Svelte editor, which only the edit page loads.
-	editorScript string
+	editorScript   string
+	storageBaseURL string
 
 	adminUsername string
 	adminPassword string
@@ -108,7 +112,8 @@ func New(store Store, opts Options) (http.Handler, error) {
 		stylesheet: stylesheet,
 		script:     script,
 
-		editorScript: editorScript,
+		editorScript:   editorScript,
+		storageBaseURL: opts.StorageBaseURL,
 
 		adminUsername: opts.AdminUsername,
 		adminPassword: opts.AdminPassword,
