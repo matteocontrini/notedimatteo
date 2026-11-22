@@ -2,33 +2,20 @@
 
 Replace the persistent SvelteKit/Node server with a Go server that renders HTML,
 while keeping the interactive editor in Svelte 5. The aim is lower, stable memory
-usage. Later phases merge the blog (matteosonoio.it, Hugo) into the same site.
+usage. Done: Go has served production since 2026-11-21. The redesign continues in
+`redesign-plan.md`.
 
-Working notes, gotchas, and open questions: `go-migration-notes.md`.
-
-## Phases
-
-Each phase reaches production on its own. Phases 3–5 can happen in any order.
-
-1. **Go migration:** same features and look as today, then cutover. Detailed below.
-2. **Revisions:** keep every body revision of a post.
-3. **New design:** the notes site in the new design, changing only templates and CSS.
-4. **Articles:** import the blog, bilingual pages, domains and redirects.
-5. **New editor:** CodeMirror 6 with live preview.
-
-Design reference: the [design canvas](https://claude.ai/artifact/DeA9bBLoajjHfTZfgk1uU2),
-boards E2/E4 (home), D2 (notes), D3 (article), D4 (article archive), F2 (projects),
-and G1–G3 (editor).
+Working notes and gotchas: `go-migration-notes.md`.
 
 ## Decisions
 
 | Area           | Choice                                                                                                                                                            |
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Routing        | `net/http` `ServeMux`; one `/{seg}` handler separates post numbers from categories                                                                                |
-| URLs           | Built only in `internal/urls`; site address from config; the merged site's URL scheme is decided in phase 4                                                       |
+| URLs           | Built only in `internal/urls`; site address from config                                                                                                              |
 | Templates      | templ components in `internal/views` with typed parameters; generated `_templ.go` files are committed, and CI checks formatting and generation                    |
 | Database       | `pgx/v5` with sqlc: SQL in `internal/db/queries`, typed Go code generated and checked against the schema; small pool                                              |
-| Migrations     | `goose` from phase 1 step 7, with the existing schema as baseline; run at server start since cutover                                                                                       |
+| Migrations     | `goose` from step 7, with the existing schema as baseline; run at server start since cutover                                                                                       |
 | Markdown       | goldmark in its own package, with options per content type; review output differences on real posts during cutover                                                |
 | Images         | `govips` (cgo) against sharp's prebuilt libvips from npm, with mozjpeg; libvips caching turned off                                                               |
 | Sessions       | Keep the existing table and cookie name                                                                                                                           |
@@ -37,11 +24,11 @@ and G1–G3 (editor).
 | Editor data    | JSON in `<script type="application/json">`                                                                                                                        |
 | Editor saves   | `fetch` with `FormData`, returning JSON field errors; validation lives only in Go                                                                                 |
 | Assets         | Vite manifest with hashed files, embedded in the binary                                                                                                           |
-| CSS            | Tailwind v4, scanning `internal/views`; from phase 3, only design tokens, no arbitrary values, and a Go test that checks component classes                        |
+| CSS            | Tailwind v4, scanning `internal/views`                                                                                                                           |
 | Repo layout    | Go module at the root: `internal/server` (routes, handlers), `internal/views` (templ), `internal/urls` (URL builders); the editor in `web/editor`, copied from SvelteKit |
 | Deployment     | Multi-stage Dockerfile on Railway, with sharp's libvips from npm at build time and runtime                                                                       |
 | Observability  | Drop OpenTelemetry; use `slog` and authenticated `pprof`                                                                                                          |
-| Dates          | Embed `time/tzdata` and hard-code Italian month names; English ones in phase 4                                                                                    |
+| Dates          | Embed `time/tzdata` and hard-code Italian month names                                                                                                             |
 
 ## Architecture
 
@@ -54,7 +41,7 @@ and G1–G3 (editor).
   safely encoded initial post data, available tags, and endpoint URLs.
 - Go serves the compiled JavaScript and CSS. Node, Vite, Svelte, and Tailwind remain
   build tools; production runs Go without a Node server.
-- Keep PostgreSQL, the existing schema, and S3-compatible image storage in phase 1.
+- Keep PostgreSQL, the existing schema, and S3-compatible image storage during the migration.
   Replace Prisma access with `pgx`, without combining this with a database migration.
 
 ## Editor integration
@@ -76,7 +63,7 @@ integration with local Svelte state and `fetch` requests.
 Keep requests on the same origin with session-cookie authentication. Enforce
 authorization, CSRF protection, and input validation in Go.
 
-## Phase 1: Go migration
+## Steps
 
 Go has served production since 2026-11-21 (step 9); SvelteKit served it until then, so nothing partial reached visitors. There's no second
 Railway service: the Go server replaces SvelteKit on the same one.
@@ -195,44 +182,3 @@ the required formatting, lint, and Svelte checks.
 - [x] Pin GitHub Actions to exact versions with `actions.lock` (`gh actions-lock`), and add `.nvmrc`
 - [x] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions; enabling the Renovate app is left
 - [x] Move the lasting facts from the notes into `docs/ARCHITECTURE.md`; keep the plan and notes in `docs/`
-
-## Phase 2: Revisions
-
-- [ ] Add a revisions table keyed by post and `bodyRevision`
-- [ ] Save a revision in the save transaction whenever the body changes
-- [ ] List revisions on the edit page and restore one
-
-## Phase 3: New design
-
-- [ ] Reset the Tailwind theme to the design tokens: colors, fonts, and spacing
-- [ ] Self-host Public Sans and Source Serif 4
-- [ ] Add a Go test that fails on arbitrary values and on template classes missing from the built CSS
-- [ ] Move repeated patterns into template partials or `@utility` rules
-- [ ] Document the tokens and partials in `AGENTS.md`
-- [ ] Redesign the layout, home, notes, archive, search, and about pages; the home has no articles until phase 4
-
-## Phase 4: Articles
-
-- [ ] Decide the merged site's URL scheme and domains
-- [ ] Reorganize `internal/server` before adding article pages: group the page handlers, by feature or in packages
-- [ ] Add article fields: type, language, summary, last-updated date, table of contents and comments flags
-- [ ] Import the Hugo posts: front matter, `fig`/`relref`/`center` shortcodes, raw HTML (`<sup>`, `<video>`)
-- [ ] Upload the blog's images and videos to S3, with WebP versions
-- [ ] Enable raw HTML, Chroma syntax highlighting, footnotes, and tables for articles
-- [ ] Add article, article archive, and projects pages
-- [ ] Add Italian/English interface strings, English dates, and `hreflang` links; notes stay Italian-only
-- [ ] Add related notes on articles, by tag
-- [ ] Add giscus comments, keeping article paths so the `pathname` mapping still finds threads
-- [ ] Add feeds for notes, articles, and everything
-- [ ] Redirect old blog URLs, Hugo feeds, and `blog.contrini.it`
-- [ ] Retire Hugo and Netlify
-
-## Phase 5: New editor
-
-- [ ] Replace the textarea with CodeMirror 6 live preview, still storing plain Markdown
-- [ ] Add the quick composer on the notes page (G1)
-- [ ] Add the full editor with the details sidebar (G2)
-- [ ] Add the drafts page (G3)
-- [ ] Add the `/` menu, moving blocks, and image paste and drag
-- [ ] Fetch page titles for pasted links, refusing private network addresses
-- [ ] Add note links (`#670`) and footnotes to the renderer
