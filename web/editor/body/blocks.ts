@@ -107,7 +107,9 @@ const blockTheme = EditorView.theme({
 	'.cm-line.cm-md-code': {
 		margin: '0 0.75rem',
 		backgroundColor: 'var(--editor-code)',
+		// Tailwind's text-sm, like posts' code blocks
 		fontSize: '0.875rem',
+		lineHeight: '1.25rem',
 	},
 	'.cm-md-code-first': {
 		paddingTop: '0.5rem',
