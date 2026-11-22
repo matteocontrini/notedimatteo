@@ -1,6 +1,6 @@
 import { EditorSelection, EditorState, Text, type StateCommand } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
-import { imageDecorations, previewURL } from './codemirror';
+import { blockDecorations, imageDecorations, markdownLanguage, previewURL } from './codemirror';
 import { insertLink, quoteLines, wrapBold, wrapItalic } from './markdown';
 import { normalizeSlug } from './slug';
 import { completeCurrentTag, getCurrentTag } from './tags';
@@ -113,6 +113,40 @@ describe('images', () => {
 	it('put _preview before the extension of the file name', () => {
 		expect(previewURL('https://s', 'a.b/c')).toBe('https://s/a.b/c_preview');
 		expect(previewURL('https://s', 'x/y.jpeg')).toBe('https://s/x/y_preview.jpeg');
+	});
+});
+
+describe('blocks', () => {
+	it('mark the lines of quotes and code blocks, and the end of each quote', () => {
+		const doc = [
+			'text',
+			'> one',
+			'> two',
+			'',
+			'```',
+			'code',
+			'```',
+			'',
+			'> quote',
+			'> > nested',
+		].join('\n');
+		const state = EditorState.create({ doc, extensions: markdownLanguage });
+		const lines: string[] = [];
+		const closes: number[] = [];
+		blockDecorations(state).between(0, doc.length, (from, _to, decoration) => {
+			if (decoration.spec.widget) closes.push(state.doc.lineAt(from).number);
+			else lines.push(`${state.doc.lineAt(from).number}: ${decoration.spec.class}`);
+		});
+		expect(lines).toEqual([
+			'2: cm-md-quote cm-md-quote-first',
+			'3: cm-md-quote cm-md-quote-last',
+			'5: cm-md-code cm-md-code-first',
+			'6: cm-md-code',
+			'7: cm-md-code cm-md-code-last',
+			'9: cm-md-quote cm-md-quote-first',
+			'10: cm-md-quote cm-md-quote-last',
+		]);
+		expect(closes).toEqual([3, 10]);
 	});
 });
 

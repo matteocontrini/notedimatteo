@@ -136,7 +136,7 @@
 		</span>
 	</label>
 
-	<div class:hidden={showPreview} bind:this={editorParent}></div>
+	<div class:hidden={showPreview} data-category={form.category} bind:this={editorParent}></div>
 
 	{#if showPreview}
 		<div class="w-full border border-slate-300 px-3 py-2 dark:border-slate-500">

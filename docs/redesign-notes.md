@@ -42,6 +42,15 @@ before resuming. Record what the code and git history don't show; remove notes t
   Tailwind emits a `--color-*` variable only when something uses it; those variables do.
 - The shortcuts compare `event.key` like the textarea's handler did (so every keyboard layout keeps the same
   keys), in a `keydown` handler at `Prec.highest`, ahead of the default keymap.
+- The editor should look like the published page (decided 2026-11-22). Matched: images as wide as the text,
+  quotes (border; citations show the quotation marks from `--quote-open-mark` and `--quote-close-mark`, which
+  `main.css` shares with the site), underlined link text, bold at 700, inline code at full size, code blocks on a
+  grey background. Left on purpose: headings (posts show them as plain text: Tailwind's reset removes their
+  styles, and the site never adds them back), paragraph spacing, list bullets, and single line breaks, which are
+  what plain-text editing looks like. Phase 3 changes the published page: restyle the editor with it.
+- Quotes and code blocks get line classes from the parse tree (`blockDecorations`, a `ViewPlugin`). The category
+  reaches the editor as `data-category` on its container, as on the site's `<article>`. Lines take horizontal
+  margins only: CodeMirror measures line heights, which vertical margins would break.
 - Uploads show an "Uploading image…" widget at the cursor; a `StateField` maps its position through edits, and the
   markup replaces it when the upload ends. The cursor starts at the end of the body.
 - Bug found 2026-11-22: browsers encode `FormData` text with `\r\n` line breaks, and the Go save endpoint stored

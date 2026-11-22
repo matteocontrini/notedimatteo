@@ -3,17 +3,26 @@
 
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { commonmarkLanguage } from '@codemirror/lang-markdown';
-import { HighlightStyle, Language, syntaxHighlighting } from '@codemirror/language';
+import { HighlightStyle, Language, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import {
 	EditorSelection,
 	EditorState,
 	Prec,
+	type Range,
 	StateEffect,
 	StateField,
 	type StateCommand,
 	type Text,
 } from '@codemirror/state';
-import { Decoration, type DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view';
+import {
+	Decoration,
+	type DecorationSet,
+	EditorView,
+	ViewPlugin,
+	type ViewUpdate,
+	WidgetType,
+	keymap,
+} from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import { type MarkdownParser, Strikethrough } from '@lezer/markdown';
 import { insertLink, quoteLines, wrapBold, wrapItalic } from './markdown';
@@ -43,6 +52,7 @@ export const createBodyEditor = (options: BodyEditorOptions) => {
 				keymap.of([...defaultKeymap, ...historyKeymap]),
 				markdownLanguage,
 				syntaxHighlighting(markdownStyle),
+				blocks,
 				images(options.imageBaseURL),
 				uploads,
 				EditorView.lineWrapping,
@@ -76,7 +86,7 @@ export const createBodyEditor = (options: BodyEditorOptions) => {
 // markdownLanguage is CommonMark with strikethrough, like the renderer. It's
 // built the way lang-markdown's markdown() builds it, without the HTML support
 // that markdown() adds, which brings the HTML, CSS, and JavaScript parsers.
-const markdownLanguage = new Language(
+export const markdownLanguage = new Language(
 	commonmarkLanguage.data,
 	(commonmarkLanguage.parser as MarkdownParser).configure([Strikethrough]),
 	[],
@@ -105,17 +115,18 @@ const shortcuts = Prec.highest(
 	}),
 );
 
+// The styles follow published posts (web/assets/main.css), except headings,
+// which posts show as plain text
 const markdownStyle = HighlightStyle.define([
-	{ tag: tags.strong, fontWeight: '600' },
+	{ tag: tags.strong, fontWeight: '700' },
 	{ tag: tags.emphasis, fontStyle: 'italic' },
 	{ tag: tags.strikethrough, textDecoration: 'line-through' },
 	{ tag: tags.heading, fontWeight: '600' },
-	{ tag: tags.link, color: 'var(--editor-link)' },
-	{ tag: tags.url, color: 'var(--editor-mark)' },
-	{ tag: tags.quote, color: 'var(--editor-quote)' },
-	{ tag: tags.monospace, fontFamily: 'var(--font-mono)', fontSize: '0.875em' },
-	// Last, so markers inside links and quotes are dimmed too
-	{ tag: tags.processingInstruction, color: 'var(--editor-mark)' },
+	{ tag: tags.link, color: 'var(--editor-link)', textDecoration: 'underline' },
+	{ tag: tags.url, color: 'var(--editor-mark)', textDecoration: 'none' },
+	{ tag: tags.monospace, fontFamily: 'var(--font-mono)' },
+	// Last, so markers inside links are dimmed and not underlined too
+	{ tag: tags.processingInstruction, color: 'var(--editor-mark)', textDecoration: 'none' },
 ]);
 
 const theme = EditorView.theme({
@@ -151,18 +162,128 @@ const theme = EditorView.theme({
 	'.cm-md-image': {
 		padding: '0.25rem 0.75rem 0.5rem',
 	},
+	// As wide as the text, like in published posts
 	'.cm-md-image img': {
-		maxWidth: 'min(100%, 24rem)',
+		display: 'block',
+		maxWidth: '100%',
 		height: 'auto',
 	},
-	// The parser reads [img] tags as link brackets: this also overrides the link color inside them
+	// The parser reads [img] tags as link brackets: this also overrides the link style inside them
 	'.cm-md-image-tag, .cm-md-image-tag *': {
 		color: 'var(--editor-mark)',
+		textDecoration: 'none',
+	},
+	// Quotes and code blocks, like in published posts
+	'.cm-line.cm-md-quote': {
+		marginLeft: '0.75rem',
+		paddingLeft: '1rem',
+		borderLeft: '6px solid var(--editor-quote-border)',
+	},
+	'.cm-md-quote-first': { paddingTop: '0.25rem' },
+	'.cm-md-quote-last': { paddingBottom: '0.25rem' },
+	'.cm-md-quote-close': { display: 'none' },
+	// Citations show quotation marks instead of the border
+	"[data-category='cit'] & .cm-line.cm-md-quote": { borderLeft: 'none' },
+	"[data-category='cit'] & .cm-md-quote-first": {
+		paddingTop: '0.5rem',
+		textIndent: '28px',
+		backgroundImage: 'var(--quote-open-mark)',
+		backgroundSize: '23px 23px',
+		backgroundRepeat: 'no-repeat',
+		backgroundPosition: '14px 4px',
+	},
+	"[data-category='cit'] & .cm-md-quote-last": { paddingBottom: '0.5rem' },
+	"[data-category='cit'] & .cm-md-quote-close": {
+		display: 'inline-block',
+		width: '25px',
+		height: '1.5rem',
+		verticalAlign: 'top',
+		backgroundImage: 'var(--quote-close-mark)',
+		backgroundSize: '23px 23px',
+		backgroundRepeat: 'no-repeat',
+		backgroundPosition: 'bottom 2px right',
+	},
+	'.cm-line.cm-md-code': {
+		margin: '0 0.75rem',
+		backgroundColor: 'var(--editor-code)',
+		fontSize: '0.875rem',
+	},
+	'.cm-md-code-first': {
+		paddingTop: '0.5rem',
+		borderTopLeftRadius: '0.25rem',
+		borderTopRightRadius: '0.25rem',
+	},
+	'.cm-md-code-last': {
+		paddingBottom: '0.5rem',
+		borderBottomLeftRadius: '0.25rem',
+		borderBottomRightRadius: '0.25rem',
 	},
 	'.cm-md-uploading': {
 		color: 'var(--editor-mark)',
 	},
 });
+
+// Quotes and code blocks
+
+// The closing quotation mark of a citation, which CSS hides elsewhere
+class QuoteCloseWidget extends WidgetType {
+	toDOM() {
+		const mark = document.createElement('span');
+		mark.className = 'cm-md-quote-close';
+		return mark;
+	}
+}
+
+const quoteClose = Decoration.widget({ widget: new QuoteCloseWidget(), side: 1 });
+
+// blockDecorations gives each line of a quote or code block a class, plus one
+// for the block's first and last lines. Blocks inside a quote keep the
+// quote's style.
+export const blockDecorations = (state: EditorState) => {
+	const decorations: Range<Decoration>[] = [];
+	syntaxTree(state).iterate({
+		enter(node) {
+			const block =
+				node.name === 'Blockquote'
+					? 'quote'
+					: node.name === 'FencedCode' || node.name === 'CodeBlock'
+						? 'code'
+						: null;
+			if (!block) return;
+
+			const first = state.doc.lineAt(node.from);
+			const last = state.doc.lineAt(node.to);
+			for (let number = first.number; number <= last.number; number++) {
+				const classes = [`cm-md-${block}`];
+				if (number === first.number) classes.push(`cm-md-${block}-first`);
+				if (number === last.number) classes.push(`cm-md-${block}-last`);
+				const line = state.doc.line(number);
+				decorations.push(Decoration.line({ class: classes.join(' ') }).range(line.from));
+			}
+			if (block === 'quote') decorations.push(quoteClose.range(last.to));
+			return false;
+		},
+	});
+	return Decoration.set(decorations, true);
+};
+
+const blocks = ViewPlugin.fromClass(
+	class {
+		decorations: DecorationSet;
+
+		constructor(view: EditorView) {
+			this.decorations = blockDecorations(view.state);
+		}
+
+		update(update: ViewUpdate) {
+			// The parser can finish after the change that started it
+			if (update.docChanged || syntaxTree(update.state) !== syntaxTree(update.startState)) {
+				this.decorations = blockDecorations(update.state);
+			}
+		}
+	},
+	{ decorations: (plugin) => plugin.decorations },
+);
 
 // Images
 
@@ -210,7 +331,7 @@ const imageTag = Decoration.mark({ class: 'cm-md-image-tag' });
 // imageDecorations shows each [img] markup's preview below its line, and dims
 // its [img] and [/img] tags like the other markers.
 export const imageDecorations = (doc: Text, baseURL: string) => {
-	const decorations = [];
+	const decorations: Range<Decoration>[] = [];
 	for (let number = 1; number <= doc.lines; number++) {
 		const line = doc.line(number);
 		for (const match of line.text.matchAll(imagePattern)) {

@@ -17,6 +17,12 @@
 }
 
 @layer base {
+	/* The quotation marks around quotes in citations, on the site and in the editor */
+	:root {
+		--quote-open-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
+		--quote-close-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
+	}
+
 	/* Colors of the post body editor, which web/editor/codemirror.ts reads */
 	:root {
 		--editor-border: var(--color-slate-300);
@@ -25,7 +31,7 @@
 		--editor-text: var(--color-slate-900);
 		--editor-mark: var(--color-slate-400);
 		--editor-link: var(--color-sky-700);
-		--editor-quote: var(--color-slate-600);
+		--editor-quote-border: #d4ebfc;
 		--editor-code: var(--color-slate-100);
 		--editor-selection: var(--color-sky-100);
 	}
@@ -37,7 +43,7 @@
 		--editor-text: var(--color-white);
 		--editor-mark: var(--color-slate-400);
 		--editor-link: var(--color-sky-500);
-		--editor-quote: var(--color-slate-300);
+		--editor-quote-border: var(--color-sky-800);
 		--editor-code: var(--color-slate-800);
 		--editor-selection: var(--color-slate-500);
 	}
@@ -223,7 +229,7 @@
 				clear: both;
 				margin-top: 0.5em;
 				margin-bottom: 0.2em;
-				background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
+				background-image: var(--quote-open-mark);
 				background-size: 23px 23px;
 				background-repeat: no-repeat;
 				background-position: 14px 4px;
@@ -235,7 +241,7 @@
 			}
 
 			blockquote p:last-child {
-				background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
+				background-image: var(--quote-close-mark);
 				background-size: 23px 23px;
 				background-repeat: no-repeat;
 				background-position: bottom 2px right;

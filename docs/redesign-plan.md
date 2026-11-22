@@ -58,6 +58,7 @@ Only the body field changes; the rest of the edit page stays as it is.
 - [ ] Move repeated patterns into template partials or `utility` rules
 - [ ] Document the tokens and partials in `AGENTS.md`
 - [ ] Redesign the layout, home, notes, archive, search, and about pages; the home has no articles until phase 5
+- [ ] Restyle the post body editor (`web/editor/codemirror.ts`) to match the new post pages
 
 ## Phase 4: Image proxy
 
