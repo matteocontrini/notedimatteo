@@ -22,7 +22,7 @@ import {
 	StateField,
 } from '@codemirror/state';
 import { Decoration, type DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view';
-import { codeBlockNodes, insideCodeBlock } from './blocks';
+import { closeFence, codeBlockNodes, insideCodeBlock } from './blocks';
 
 const isBlank = (text: string) => !/\S/.test(text);
 
@@ -224,10 +224,14 @@ export const continueMarkup: StateCommand = ({ state, dispatch }) => {
 	return handled;
 };
 
-// enter continues lists and quotes, starts paragraphs, and in code blocks
-// inserts a line break that keeps the indentation of the line above.
+// enter continues lists and quotes, starts paragraphs, closes a code block
+// after its opening fence, and in code blocks inserts a line break that keeps
+// the indentation of the line above.
 export const enter: StateCommand = (target) =>
-	continueMarkup(target) || insertParagraph(target) || insertNewlineAndIndent(target);
+	continueMarkup(target) ||
+	insertParagraph(target) ||
+	closeFence(target) ||
+	insertNewlineAndIndent(target);
 
 const paragraphKeymap = Prec.high(
 	keymap.of([

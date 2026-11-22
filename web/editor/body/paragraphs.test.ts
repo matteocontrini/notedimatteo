@@ -108,6 +108,16 @@ describe('Enter', () => {
 		expect(run(insertParagraph, '```\ncode()|')).toBeNull();
 	});
 
+	it('after an opening fence adds the closing fence, with the cursor between them', () => {
+		expect(run(enter, '```|')).toBe('```\n|\n```');
+		expect(run(enter, 'A\n\n```go|')).toBe('A\n\n```go\n|\n```');
+		expect(run(enter, '~~~~|')).toBe('~~~~\n|\n~~~~');
+		// Text below stays out of the code block
+		expect(run(enter, '```|\nB')).toBe('```\n|\n```\n\nB');
+		// An opening fence that has its closing fence only gets a new line
+		expect(run(enter, '```|\ncode\n```')).toBe('```\n|\ncode\n```');
+	});
+
 	it('keeps the indentation of the line above in code blocks', () => {
 		expect(run(enter, '```\n    a|')).toBe('```\n    a\n    |');
 	});

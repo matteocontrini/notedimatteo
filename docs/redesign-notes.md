@@ -71,6 +71,9 @@ before resuming. Record what the code and git history don't show; remove notes t
   - In code blocks, Tab inserts 4 spaces at the cursor or indents the selected lines, and Shift+Tab removes a step
     (`indentCode`, `dedentCode` in `blocks.ts`). Elsewhere Tab keeps moving the focus. Posts' code blocks mix tabs, 2
     spaces, and 4 spaces (22 blocks in production, 2026-11-22); tabs would show 8 columns wide on the site.
+  - Enter at the end of an opening fence without a closing fence adds the closing fence (same characters as the
+    opening) with the cursor on the empty line between; if text follows, a blank line keeps it out of the block
+    (`closeFence` in `blocks.ts`, in the Enter chain before the indenting line break).
   - `testing.ts` marks cursors with `|` and selections with `«` and `»`.
   - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
     `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.

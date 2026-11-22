@@ -3,7 +3,12 @@
 
 import { indentLess, indentMore } from '@codemirror/commands';
 import { indentUnit, syntaxTree } from '@codemirror/language';
-import type { EditorState, Range, StateCommand } from '@codemirror/state';
+import {
+	EditorSelection,
+	type EditorState,
+	type Range,
+	type StateCommand,
+} from '@codemirror/state';
 import {
 	Decoration,
 	type DecorationSet,
@@ -30,6 +35,36 @@ export const insideCodeBlock = (state: EditorState, pos: number) => {
 		if (node.name === 'CodeBlock') return node.from < pos && pos < node.to;
 	}
 	return false;
+};
+
+// closeFence, at the end of an opening fence without its closing fence,
+// adds the closing fence and puts the cursor on the empty line between them.
+// When text follows, a blank line keeps it out of the code block.
+export const closeFence: StateCommand = ({ state, dispatch }) => {
+	const { doc, selection } = state;
+	if (selection.ranges.length > 1 || !selection.main.empty) return false;
+	const pos = selection.main.head;
+	const line = doc.lineAt(pos);
+	if (pos !== line.to) return false;
+
+	const fence = syntaxTree(state).resolveInner(pos, -1);
+	const block = fence.name === 'FencedCode' ? fence : fence.parent;
+	if (block?.name !== 'FencedCode' || doc.lineAt(block.from).number !== line.number) return false;
+	const fences = block.getChildren('CodeMark');
+	if (fences.length !== 1) return false;
+
+	const marker = doc.sliceString(fences[0].from, fences[0].to);
+	const textBelow = line.number < doc.lines && !/^\s*$/.test(doc.line(line.number + 1).text);
+	const insert = `\n\n${marker}${textBelow ? '\n' : ''}`;
+	dispatch(
+		state.update({
+			changes: { from: pos, insert },
+			selection: EditorSelection.cursor(pos + 1),
+			scrollIntoView: true,
+			userEvent: 'input',
+		}),
+	);
+	return true;
 };
 
 const inCode = (state: EditorState) =>

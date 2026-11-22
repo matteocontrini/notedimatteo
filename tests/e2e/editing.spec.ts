@@ -89,16 +89,20 @@ test('the body editor hides blank lines and keeps paragraphs with Enter', async 
 		});
 	});
 
-	await test.step('Tab and Shift+Tab indent in code blocks, and move the focus elsewhere', async () => {
+	await test.step('Enter closes a code block, and Tab and Shift+Tab indent in it but move the focus elsewhere', async () => {
 		await body.press('ControlOrMeta+End');
 		await body.press('Enter');
 		await body.pressSequentially('```');
 		await body.press('Enter');
+		// Enter after the opening fence adds the closing one
+		const code = body.locator('.cm-md-code');
+		await expect(code).toHaveText(['```', '', '```']);
+
 		await body.press('Tab');
 		await body.pressSequentially('rientrato');
-		await expect(body.locator('.cm-line').last()).toHaveText('    rientrato');
+		await expect(code.nth(1)).toHaveText('    rientrato');
 		await body.press('Shift+Tab');
-		await expect(body.locator('.cm-line').last()).toHaveText('rientrato');
+		await expect(code.nth(1)).toHaveText('rientrato');
 
 		await body.locator('.cm-line').first().click();
 		await body.press('Tab');
