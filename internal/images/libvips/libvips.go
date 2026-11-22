@@ -4,7 +4,16 @@
 // PKG_CONFIG_LIBDIR=.libvips (see scripts/libvips.mjs).
 package libvips
 
-import "C" // Compiles magick.c, which govips needs to link
+/*
+#include <stdlib.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#else
+// Do nothing on macOS, which has no malloc_trim and doesn't need it
+static int malloc_trim(size_t pad) { return 0; }
+#endif
+*/
+import "C" // Also compiles magick.c, which govips needs to link
 
 import (
 	"fmt"
@@ -22,15 +31,22 @@ const (
 	previewWidth = 1200
 )
 
-// Start starts libvips with its operation cache turned off, so memory goes
-// back down after each upload. Call the returned function to stop it.
+// Start starts libvips with one worker thread and its operation cache turned
+// off, so memory goes back down after each upload. Call the returned function
+// to stop it.
 func Start() (stop func(), err error) {
 	vips.LoggingSettings(func(domain string, level vips.LogLevel, message string) {
 		slog.Warn("libvips", "domain", domain, "message", message)
 	}, vips.LogLevelWarning)
 
-	// Zero values turn the cache off; Startup(nil) would use govips's defaults
-	if err := vips.Startup(&vips.Config{}); err != nil {
+	config := &vips.Config{
+		// Set concurrency to 1 thread to keep memory low, because each thread holds its own buffers.
+		// Without this, libvips starts a thread for each CPU of the host.
+		ConcurrencyLevel: 1,
+		// Turn off libvips cache
+		MaxCacheMem: 0, MaxCacheSize: 0, MaxCacheFiles: 0,
+	}
+	if err := vips.Startup(config); err != nil {
 		return nil, fmt.Errorf("start libvips: %w", err)
 	}
 	return vips.Shutdown, nil
@@ -43,6 +59,10 @@ type Processor struct{}
 // and encodes the main JPEG and a preview at most 1200 pixels wide. Both have
 // no metadata.
 func (Processor) Process(data []byte) (images.Processed, error) {
+	// Release memory to the system after processing, otherwise glibc keeps
+	// the memory even after libvips frees it
+	defer C.malloc_trim(0)
+
 	img, err := vips.NewImageFromBuffer(data)
 	if err != nil {
 		return images.Processed{}, fmt.Errorf("%w: %w", images.ErrUnreadable, err)

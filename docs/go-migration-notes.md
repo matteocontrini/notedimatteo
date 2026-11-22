@@ -161,7 +161,21 @@ don't show; remove notes that stop being true.
   profile without converting made the blog's WebPs look washed out (Hugo, September 2026). A test converts an sRGB
   color to Display P3 with libvips's built-in `"p3"` profile and checks that the output has the sRGB values again.
 - Install with `go get github.com/davidbyttow/govips/v2/vips@v2.20.0`. Asking for `.../govips/v2` resolves to a stale 2020 root-module version.
-- `vips.Startup(&vips.Config{})` turns caching off: values ≥ 0 are applied. `Startup(nil)` uses govips defaults, with caching.
+- `vips.Startup` gets cache limits of 0, which turn caching off: govips applies values ≥ 0. `Startup(nil)` uses govips
+  defaults, with a cache of 50 MB and 100 operations.
+- Memory (2026-11-22): production (1 GB, 1 vCPU) was killed without a log line when uploading two 2900×2400 PNG
+  screenshots. The first upload took it from 21 MB to 917 MB, where it stayed. `ConcurrencyLevel: 0` meant a libvips
+  thread per host CPU, each with its own buffers, and glibc's allocator kept the freed memory in a pool per thread.
+  Docker repro, 8 rounds of 2 uploads at once of the same screenshot (RSS after):
+  - 64 threads: 1.25 GB after round 1, 2 GB after round 4
+  - 64 threads, `MALLOC_ARENA_MAX=2`: about 1.1 GB, flat
+  - 1 thread: grows by about 100 MB a round
+  - 1 thread, `MALLOC_ARENA_MAX=2`: about 220 MB, flat; same speed (about 650 ms an image)
+  - plus `debug.FreeOSMemory()` after each round: no change (Go's own memory is small)
+  - plus glibc's `malloc_trim(0)` after each round (chosen, after each upload): back to about 25 MB
+  - plus `malloc_trim(0)` but without `MALLOC_ARENA_MAX`: 160 MB after 12 rounds
+  - imgproxy does the same: one libvips thread, `MALLOC_ARENA_MAX=2`, and `FreeOSMemory` plus `malloc_trim(0)` every
+    10 s. sharp also runs libvips with one thread on glibc. jemalloc would replace `MALLOC_ARENA_MAX` but adds a package.
 - Rejected (2026-11-21): Homebrew's `vips` (8.18.7 with mozjpeg, but 28 dependencies, ImageMagick and Poppler
   included), and development inside Docker (the image would need sharp's libvips anyway, and testcontainers,
   Playwright's server, and GoLand's cgo insight would all get harder).

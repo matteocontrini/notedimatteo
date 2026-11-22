@@ -36,6 +36,9 @@ RUN apt-get update \
 # sharp's libvips is a single library with its dependencies built in
 COPY --from=assets /app/node_modules/@img/sharp-libvips-linux-*/lib/libvips-cpp.so.* /usr/local/lib/
 RUN ldconfig
+# Limit glibc to two memory pools, otherwise it creates one per thread and
+# memory grows with each upload
+ENV MALLOC_ARENA_MAX=2
 
 # Runs the image processing tests in the runtime image: docker build --target libvips-test .
 FROM build AS libvips-test-build
