@@ -24,7 +24,7 @@ before resuming. Record what the code and git history don't show; remove notes t
   `markdown()`: it pulls in `lang-html`, which brings the HTML, CSS, and JavaScript parsers even with
   `completeHTMLTags: false` (measured with esbuild, minified: core 273 KB / 89 KB gzipped; plus `markdown()`
   504 / 174; plus `commonmarkLanguage` only 308 / 100). `commonmarkLanguage` is a plain `Language`, with no
-  `configure`: `codemirror.ts` builds `new Language(commonmarkLanguage.data, parser.configure([Strikethrough]))`,
+  `configure`: `body/language.ts` builds `new Language(commonmarkLanguage.data, parser.configure([Strikethrough]))`,
   as `markdown()` does inside.
 - The editor bundle went from 84 KB (31 KB gzipped) to 401 KB (135 KB gzipped); only the edit page loads it.
 - `@lezer/markdown` tags every marker (`HeaderMark QuoteMark ListMark LinkMark EmphasisMark CodeMark`) as
@@ -48,6 +48,25 @@ before resuming. Record what the code and git history don't show; remove notes t
   grey background. Left on purpose: headings (posts show them as plain text: Tailwind's reset removes their
   styles, and the site never adds them back), paragraph spacing, list bullets, and single line breaks, which are
   what plain-text editing looks like. Phase 3 changes the published page: restyle the editor with it.
+- Paragraphs (2026-11-22, a first step towards G2, where blocks are separated by space and no blank lines show):
+  - `hiddenBlankLines` hides every blank line except those in code blocks and those with a cursor, so the cursor
+    never sits in hidden text. A state field replaces each run with a block widget (10 px between blocks, 0 at
+    the start and end) and makes the run plus the line breaks around it atomic: the arrows cross a paragraph
+    break in one step, and Backspace and Delete there join the paragraphs (word-processor style: "AB").
+  - Enter: lists and quotes go through lang-markdown's `insertNewlineContinueMarkupCommand({nonTightLists: false})`
+    (its default turns a two-item list loose instead of leaving it); leaving a list adds the blank line, or the
+    next text would join the last item. Elsewhere Enter inserts `\n\n`; on a blank line it only adds a missing
+    separation; in code blocks it falls through to the plain line break. Shift+Enter inserts one line break.
+  - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
+    `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.
+  - An image inserted at the end of the text gets a paragraph after it, where the cursor goes.
+  - Block replace decorations default to inclusive, which makes them valid on an empty line.
+  - Importing `insertNewlineContinueMarkupCommand` brings lang-markdown's GFM parser setup: +13 KB (4.5 KB gzipped).
+  - Single line breaks still show as new lines; the site joins them into one paragraph. Lines in a quote continue
+    with `> `, which the site also joins.
+- The editor lives in `web/editor/body`, one module per part with its tests; `testing.ts` writes cursors as `|`
+  in the text, so command tests read as before and after. `tests/e2e/editing.spec.ts` checks paragraphs in the
+  browser against the server's preview.
 - Quotes and code blocks get line classes from the parse tree (`blockDecorations`, a `ViewPlugin`). The category
   reaches the editor as `data-category` on its container, as on the site's `<article>`. Lines take horizontal
   margins only: CodeMirror measures line heights, which vertical margins would break.

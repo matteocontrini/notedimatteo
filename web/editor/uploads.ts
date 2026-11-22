@@ -27,12 +27,12 @@ export const getImageMarkup = (image: UploadedImage) =>
 
 // imageInsertion returns what to insert between `before` and `after` so that
 // the image markup sits in its own paragraph, adding only the line breaks
-// that are missing. `before` and `after` need only their last and first two
-// characters.
+// that are missing. At the end of the text it adds a paragraph after the
+// image, where the cursor goes. `before` and `after` need only their last and
+// first two characters.
 export const imageInsertion = (before: string, after: string, markup: string) => {
 	const spacingBefore =
 		before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
-	const spacingAfter =
-		after === '' || after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+	const spacingAfter = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
 	return spacingBefore + markup + spacingAfter;
 };

@@ -23,7 +23,7 @@
 		--quote-close-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%230067B9'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
 	}
 
-	/* Colors of the post body editor, which web/editor/codemirror.ts reads */
+	/* Colors of the post body editor, which the modules in web/editor/body read */
 	:root {
 		--editor-border: var(--color-slate-300);
 		--editor-border-focused: var(--color-slate-700);

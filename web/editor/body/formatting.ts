@@ -1,4 +1,7 @@
-import { EditorSelection, type StateCommand, type Text } from '@codemirror/state';
+// Formatting commands and their shortcuts.
+
+import { EditorSelection, Prec, type StateCommand, type Text } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 
 // An Edit replaces the text from `from` to `to` with `insert`, then selects
 // from `anchor` to `head`, in positions of the edited text.
@@ -59,3 +62,25 @@ export const quoteLines = editSelections((doc, from, to) => {
 		head: to + totalAdded,
 	};
 });
+
+// The shortcuts compare event.key like the textarea's did, so every keyboard
+// layout keeps the same keys. They run before the default keymap, which binds
+// Mod-i to something else.
+const shortcutCommands: [(event: KeyboardEvent) => boolean, StateCommand][] = [
+	[(event) => event.key.toLowerCase() === 'b', wrapBold],
+	[(event) => event.key.toLowerCase() === 'i', wrapItalic],
+	[(event) => event.key.toLowerCase() === 'k', insertLink],
+	[(event) => event.shiftKey && event.key === "'", quoteLines],
+];
+
+export const formattingShortcuts = Prec.highest(
+	EditorView.domEventHandlers({
+		keydown(event, view) {
+			if (!(event.metaKey || event.ctrlKey)) return false;
+			const command = shortcutCommands.find(([matches]) => matches(event))?.[1];
+			if (!command) return false;
+			event.preventDefault();
+			return command(view);
+		},
+	}),
+);

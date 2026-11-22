@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { EditorView } from '@codemirror/view';
 	import { onMount, tick } from 'svelte';
-	import { createBodyEditor, finishUpload, startUpload } from './codemirror';
+	import { createBodyEditor, finishUpload, startUpload } from './body';
 	import type { EditorURLs, FieldErrors, PostForm } from './form';
 	import { getImageMarkup, uploadImage } from './uploads';
 

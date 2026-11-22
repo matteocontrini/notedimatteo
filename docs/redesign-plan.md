@@ -42,6 +42,9 @@ Only the body field changes; the rest of the edit page stays as it is.
 - [x] Theme it with the site's font and colors, light and dark
 - [x] Update the browser tests, which type into `textarea[name=body]`
 - [x] Store bodies with `\n` line breaks, and convert the ones saved with `\r\n` since cutover (`00003`)
+- [x] Match published posts: images, quotes (citations too), links, bold, inline code, code blocks
+- [x] Hide the blank lines between blocks and show the space between paragraphs; Enter starts a paragraph,
+  continues lists and quotes, and leaves a list on an empty item; Backspace joins paragraphs
 - [ ] Check it by hand on Chrome and Firefox for Android
 
 ## Phase 2: Revisions
@@ -58,7 +61,7 @@ Only the body field changes; the rest of the edit page stays as it is.
 - [ ] Move repeated patterns into template partials or `utility` rules
 - [ ] Document the tokens and partials in `AGENTS.md`
 - [ ] Redesign the layout, home, notes, archive, search, and about pages; the home has no articles until phase 5
-- [ ] Restyle the post body editor (`web/editor/codemirror.ts`) to match the new post pages
+- [ ] Restyle the post body editor (`web/editor/body`) to match the new post pages
 
 ## Phase 4: Image proxy
 
