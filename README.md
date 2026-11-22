@@ -8,6 +8,8 @@ This repository contains the source code for the website [notedimatteo.it](https
 - The post editor is a Svelte 5 app that Go mounts on the edit page.
 - Vite builds the CSS (Tailwind) and the scripts, and the Go binary embeds them.
 
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) describes how the pieces work together.
+
 ## Configuration
 
 Refer to `.env.example` for the environment variables. Create a `.env` file in the root directory and set the variables accordingly.

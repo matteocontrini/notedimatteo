@@ -1,3 +1,5 @@
+`docs/ARCHITECTURE.md` describes how the site works.
+
 Verifying changes:
 
 - Run `npm run format` to format your changes before finishing.

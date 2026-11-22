@@ -4,7 +4,7 @@ Replace the persistent SvelteKit/Node server with a Go server that renders HTML,
 while keeping the interactive editor in Svelte 5. The aim is lower, stable memory
 usage. Later phases merge the blog (matteosonoio.it, Hugo) into the same site.
 
-Working notes, gotchas, and open questions: `GO-MIGRATION-NOTES.md`.
+Working notes, gotchas, and open questions: `go-migration-notes.md`.
 
 ## Phases
 
@@ -194,7 +194,7 @@ the required formatting, lint, and Svelte checks.
 
 - [x] Pin GitHub Actions to exact versions with `actions.lock` (`gh actions-lock`), and add `.nvmrc`
 - [x] Add Renovate for npm, Go modules, the Dockerfile, and GitHub Actions; enabling the Renovate app is left
-- [ ] Move the lasting facts from `GO-MIGRATION-NOTES.md` into a README architecture section; delete the migration notes and plan's phase 1
+- [x] Move the lasting facts from the notes into `docs/ARCHITECTURE.md`; keep the plan and notes in `docs/`
 
 ## Phase 2: Revisions
 

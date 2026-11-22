@@ -1,6 +1,6 @@
 # Go migration notes
 
-Working notes for `GO-MIGRATION-PLAN.md`: facts found while working, gotchas, and
+Working notes for `go-migration-plan.md`: facts found while working, gotchas, and
 open questions. Read both before resuming. Record what the code and git history
 don't show; remove notes that stop being true.
 
@@ -324,7 +324,7 @@ don't show; remove notes that stop being true.
   a visit's first page.
 - Go doesn't compress responses. Railway's edge gzips responses with a `Content-Length` (seen after cutover: CSS
   yes; HTML and the feed, streamed without one, no). Pages and the feed therefore set `Content-Length`
-  from their buffers; compression of pages unverified until the next deploy. Pages get `no-cache`, and
+  from their buffers, and the edge now gzips them (checked 2026-11-22). Pages get `no-cache`, and
   `private, no-cache` for a logged-in user (admin controls); SvelteKit sent no `Cache-Control` on pages.
 - No `ETag`s, though SvelteKit sent them on pages: Go has no built-in support for dynamic pages, and a 304
   still costs the queries and the render. Hashed assets are `immutable`; the favicon is refetched daily (6.8 KB).
