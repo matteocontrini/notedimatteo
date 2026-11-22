@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { continueMarkup, hiddenBlankLines, hiddenLinesOfRun, insertParagraph } from './paragraphs';
+import {
+	continueMarkup,
+	enter,
+	hiddenBlankLines,
+	hiddenLinesOfRun,
+	insertParagraph,
+} from './paragraphs';
 import { run, stateOf } from './testing';
 
 // shown writes a run of blank lines as S for shown and h for hidden
@@ -100,6 +106,10 @@ describe('Enter', () => {
 		// While typing a code block, before its closing fence
 		expect(run(insertParagraph, 'A\n\n```|')).toBeNull();
 		expect(run(insertParagraph, '```\ncode()|')).toBeNull();
+	});
+
+	it('keeps the indentation of the line above in code blocks', () => {
+		expect(run(enter, '```\n    a|')).toBe('```\n    a\n    |');
 	});
 
 	it('continues lists and quotes', () => {

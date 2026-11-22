@@ -88,4 +88,20 @@ test('the body editor hides blank lines and keeps paragraphs with Enter', async 
 			await expect(content.locator('p').last()).toHaveText('Dopo la lista');
 		});
 	});
+
+	await test.step('Tab and Shift+Tab indent in code blocks, and move the focus elsewhere', async () => {
+		await body.press('ControlOrMeta+End');
+		await body.press('Enter');
+		await body.pressSequentially('```');
+		await body.press('Enter');
+		await body.press('Tab');
+		await body.pressSequentially('rientrato');
+		await expect(body.locator('.cm-line').last()).toHaveText('    rientrato');
+		await body.press('Shift+Tab');
+		await expect(body.locator('.cm-line').last()).toHaveText('rientrato');
+
+		await body.locator('.cm-line').first().click();
+		await body.press('Tab');
+		await expect(body).not.toBeFocused();
+	});
 });

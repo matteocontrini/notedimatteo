@@ -1,6 +1,8 @@
 import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
-import { blockDecorations } from './blocks';
+import { indentUnit } from '@codemirror/language';
+import { blockDecorations, dedentCode, indentCode } from './blocks';
+import { run } from './testing';
 import { markdownLanguage } from './language';
 
 describe('blocks', () => {
@@ -34,5 +36,28 @@ describe('blocks', () => {
 			'10: cm-md-quote cm-md-quote-last',
 		]);
 		expect(closes).toEqual([3, 10]);
+	});
+});
+
+describe('Tab in code blocks', () => {
+	const fourSpaces = indentUnit.of('    ');
+
+	it('inserts an indentation step at the cursor', () => {
+		expect(run(indentCode, '```\nfoo|\n```', fourSpaces)).toBe('```\nfoo    |\n```');
+	});
+
+	it('indents every selected line', () => {
+		expect(run(indentCode, '```\n«a\nb»\n```', fourSpaces)).toBe('```\n    «a\n    b»\n```');
+	});
+
+	it('with Shift removes an indentation step', () => {
+		expect(run(dedentCode, '```\n    a|\n```', fourSpaces)).toBe('```\na|\n```');
+		expect(run(dedentCode, '```\n      a|\n```', fourSpaces)).toBe('```\n  a|\n```');
+	});
+
+	it('does nothing outside code blocks, so the focus moves on', () => {
+		expect(run(indentCode, 'text|')).toBeNull();
+		expect(run(dedentCode, 'text|')).toBeNull();
+		expect(run(indentCode, '```\ncode\n```|')).toBeNull();
 	});
 });

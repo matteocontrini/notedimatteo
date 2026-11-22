@@ -1,8 +1,9 @@
 // Quotes and code blocks look like in published posts: line classes from the
-// parse tree carry the styles.
+// parse tree carry the styles. In code blocks, Tab and Shift+Tab indent.
 
-import { syntaxTree } from '@codemirror/language';
-import type { EditorState, Range } from '@codemirror/state';
+import { indentLess, indentMore } from '@codemirror/commands';
+import { indentUnit, syntaxTree } from '@codemirror/language';
+import type { EditorState, Range, StateCommand } from '@codemirror/state';
 import {
 	Decoration,
 	type DecorationSet,
@@ -10,10 +11,52 @@ import {
 	ViewPlugin,
 	type ViewUpdate,
 	WidgetType,
+	keymap,
 } from '@codemirror/view';
 
 // codeBlockNodes are the parse tree nodes of code blocks, fenced or indented
 export const codeBlockNodes = new Set(['FencedCode', 'CodeBlock']);
+
+// insideCodeBlock reports whether pos is inside a code block's code. After a
+// closing fence it isn't. A fence without its closing fence yet, as while
+// typing it, runs to the end of the text.
+export const insideCodeBlock = (state: EditorState, pos: number) => {
+	for (let node = syntaxTree(state).resolveInner(pos, -1); node.parent; node = node.parent) {
+		if (node.name === 'FencedCode') {
+			const fences = node.getChildren('CodeMark');
+			const closing = fences.length > 1 ? fences[fences.length - 1] : undefined;
+			return pos > node.from && (!closing || pos < closing.from);
+		}
+		if (node.name === 'CodeBlock') return node.from < pos && pos < node.to;
+	}
+	return false;
+};
+
+const inCode = (state: EditorState) =>
+	state.selection.ranges.every((range) => insideCodeBlock(state, range.head));
+
+// indentCode inserts an indentation step at the cursor, or indents the
+// selected lines. Outside code blocks it does nothing, so Tab moves the focus
+// to the next field as usual.
+export const indentCode: StateCommand = ({ state, dispatch }) => {
+	if (!inCode(state)) return false;
+	if (state.selection.ranges.some((range) => !range.empty)) return indentMore({ state, dispatch });
+	const step = state.replaceSelection(state.facet(indentUnit));
+	dispatch(state.update(step, { scrollIntoView: true, userEvent: 'input.indent' }));
+	return true;
+};
+
+// dedentCode removes an indentation step from the lines with a cursor or a
+// selection.
+export const dedentCode: StateCommand = (target) => inCode(target.state) && indentLess(target);
+
+const codeIndentation = [
+	indentUnit.of('    '),
+	keymap.of([
+		{ key: 'Tab', run: indentCode },
+		{ key: 'Shift-Tab', run: dedentCode },
+	]),
+];
 
 // The closing quotation mark of a citation, which CSS hides elsewhere
 class QuoteCloseWidget extends WidgetType {
@@ -123,4 +166,4 @@ const blockTheme = EditorView.theme({
 	},
 });
 
-export const blocks = [blockLines, blockTheme];
+export const blocks = [blockLines, blockTheme, codeIndentation];

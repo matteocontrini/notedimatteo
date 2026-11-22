@@ -64,7 +64,14 @@ before resuming. Record what the code and git history don't show; remove notes t
     separation; in code blocks it falls through to the plain line break. Shift+Enter inserts one line break.
   - Enter always inserts `\n\n` and moves the cursor after it, as in a word processor: at the start of a paragraph
     the paragraph moves down and an empty one appears above; on an empty paragraph it adds another. On a blank line
-    right below a block it only adds the missing blank line.
+    right below a block it only adds the missing blank line. In code blocks Enter keeps the indentation of
+    the line above (`insertNewlineAndIndent`); a closing fence typed after an indented line needs the indentation
+    removed first, since a fence indented by 4+ spaces doesn't close the block.
+  - Code block lines use `text-sm` like posts: 0.875rem with a 1.25rem line height.
+  - In code blocks, Tab inserts 4 spaces at the cursor or indents the selected lines, and Shift+Tab removes a step
+    (`indentCode`, `dedentCode` in `blocks.ts`). Elsewhere Tab keeps moving the focus. Posts' code blocks mix tabs, 2
+    spaces, and 4 spaces (22 blocks in production, 2026-11-22); tabs would show 8 columns wide on the site.
+  - `testing.ts` marks cursors with `|` and selections with `«` and `»`.
   - A fenced block without its closing fence runs to the end of the text, so "inside a code block" can't be
     `pos < node.to`: `insideCodeBlock` checks the closing `CodeMark`.
   - An image inserted at the end of the text gets a paragraph after it, where the cursor goes.

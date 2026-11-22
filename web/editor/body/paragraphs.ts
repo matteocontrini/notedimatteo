@@ -9,7 +9,7 @@
 // after it. What shows depends only on the text, so moving the cursor changes
 // nothing.
 
-import { insertNewline } from '@codemirror/commands';
+import { insertNewline, insertNewlineAndIndent } from '@codemirror/commands';
 import { insertNewlineContinueMarkupCommand } from '@codemirror/lang-markdown';
 import { syntaxTree } from '@codemirror/language';
 import {
@@ -22,7 +22,7 @@ import {
 	StateField,
 } from '@codemirror/state';
 import { Decoration, type DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view';
-import { codeBlockNodes } from './blocks';
+import { codeBlockNodes, insideCodeBlock } from './blocks';
 
 const isBlank = (text: string) => !/\S/.test(text);
 
@@ -41,22 +41,6 @@ const codeBlockLines = (state: EditorState) => {
 		},
 	});
 	return lines;
-};
-
-// insideCodeBlock reports whether pos is inside a code block, where Enter
-// inserts a plain line break. After a closing fence, Enter starts a
-// paragraph. A fence without its closing fence yet, as while typing it, runs
-// to the end of the text.
-const insideCodeBlock = (state: EditorState, pos: number) => {
-	for (let node = syntaxTree(state).resolveInner(pos, -1); node.parent; node = node.parent) {
-		if (node.name === 'FencedCode') {
-			const fences = node.getChildren('CodeMark');
-			const closing = fences.length > 1 ? fences[fences.length - 1] : undefined;
-			return pos > node.from && (!closing || pos < closing.from);
-		}
-		if (node.name === 'CodeBlock') return node.from < pos && pos < node.to;
-	}
-	return false;
 };
 
 // A BlankRun is a run of blank lines to hide, by line number.
@@ -240,9 +224,14 @@ export const continueMarkup: StateCommand = ({ state, dispatch }) => {
 	return handled;
 };
 
+// enter continues lists and quotes, starts paragraphs, and in code blocks
+// inserts a line break that keeps the indentation of the line above.
+export const enter: StateCommand = (target) =>
+	continueMarkup(target) || insertParagraph(target) || insertNewlineAndIndent(target);
+
 const paragraphKeymap = Prec.high(
 	keymap.of([
-		{ key: 'Enter', run: (view) => continueMarkup(view) || insertParagraph(view) },
+		{ key: 'Enter', run: enter },
 		{ key: 'Shift-Enter', run: insertNewline },
 	]),
 );
