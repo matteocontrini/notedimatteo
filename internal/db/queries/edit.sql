@@ -13,7 +13,7 @@ SELECT p.id,
        p."updatedAt"               AS updated_at,
        p."publishedAt"             AS published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id
+           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
        )::text[]                   AS tags
 FROM posts p
 WHERE p.number = @number;
@@ -50,5 +50,7 @@ SELECT unnest(@names::text[])
 ON CONFLICT DO NOTHING;
 
 -- name: AddPostTags :exec
-INSERT INTO posts_tags ("postId", "tagName")
-SELECT @post_id, unnest(@names::text[]);
+-- Links the tags to the post, numbering them in the order of names.
+INSERT INTO posts_tags ("postId", "tagName", "position")
+SELECT @post_id, t.name, (t.ordinality - 1)::int
+FROM unnest(@names::text[]) WITH ORDINALITY AS t(name, ordinality);

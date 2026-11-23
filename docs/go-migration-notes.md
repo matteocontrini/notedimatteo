@@ -215,6 +215,7 @@ don't show; remove notes that stop being true.
 - Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns.
   Locally that's the order saved from the editor; on the production copy, Postgres reads them through the
   `(postId, tagName)` index, so they come sorted by name. Both apps showed the same order. Kept as is on purpose.
+  Since `00004_tag_position.sql` (2026-11-23), a `position` column keeps the order typed (`sqlite-notes.md`).
 - Theme: mode-watcher stores the preference in localStorage `mode-watcher-mode` (`system`/`light`/`dark`); dark mode
   is a `.dark` class. Go applies it with an inline head script (`themeInit` in `layout.templ`) and handles the
   select in `web/assets/site.ts`.

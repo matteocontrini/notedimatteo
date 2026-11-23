@@ -63,7 +63,7 @@ SELECT p.id,
        p."updatedAt"               AS updated_at,
        p."publishedAt"             AS published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id
+           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
        )::text[]                   AS tags,
        c.html                      AS cached_html
 FROM posts p
@@ -116,8 +116,8 @@ type PostsRow struct {
 
 // Posts and CountPosts take the same optional filters: a NULL parameter
 // doesn't filter. Keep their WHERE clauses identical.
-// Published posts, newest first. Tags have no ORDER BY: they come in whatever
-// order Postgres returns them.
+// Published posts, newest first. Each post's tags come in the order they were
+// typed in.
 // No cached HTML if it's from another body revision or renderer version
 // LIMIT NULL returns every row
 func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error) {

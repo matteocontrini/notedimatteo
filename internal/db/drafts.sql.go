@@ -68,7 +68,7 @@ SELECT p.id,
        p."updatedAt"               AS updated_at,
        p."publishedAt"             AS published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id
+           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
        )::text[]                   AS tags,
        c.html                      AS cached_html
 FROM posts p

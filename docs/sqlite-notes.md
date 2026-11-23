@@ -18,8 +18,33 @@ start without redoing them. Remove notes that stop being true.
   (`NULLIF` in `UpdatePost`), so Go never sees `NULL`. The migration: `UPDATE … SET title = '' WHERE title IS NULL`
   (and slug), then `SET DEFAULT ''`, `SET NOT NULL`. The seeds in `internal/db/db_test.go` and `tests/e2e/data.ts`
   insert `NULL`: switch them to `''`.
-- Tags: `ARRAY(SELECT pt."tagName" … ORDER BY pt."tagName")`. Production already returns them sorted (through the
-  `(postId, tagName)` index), so pages don't change; locally, the order saved from the editor does.
+- Tag order (decided 2026-11-23: keep the order typed in the editor):
+  - Today nothing defines it. Saves keep the typed order (`parseTags`, then delete and reinsert the links; SvelteKit
+    did the same with `createMany`), but the queries read tags without `ORDER BY`. On production, Postgres reads
+    them through the `(postId, tagName)` index, so pages show them by name; locally, a sequential scan returns
+    roughly the typed order (posts #1 and #3).
+  - A `position` column on `posts_tags` keeps the typed order. The migration fills it from the rows' physical order,
+    the best record of the typed order left (inserts append; space freed by deletes can break that, rarely):
+
+    ```sql
+    ALTER TABLE posts_tags ADD COLUMN "position" INTEGER;
+    UPDATE posts_tags pt
+    SET "position" = o.position
+    FROM (SELECT ctid, row_number() OVER (PARTITION BY "postId" ORDER BY ctid) - 1 AS position FROM posts_tags) o
+    WHERE pt.ctid = o.ctid;
+    ALTER TABLE posts_tags ALTER COLUMN "position" SET NOT NULL;
+    ```
+
+  - Tested on a copy of the production copy (2026-11-23): positions match the physical order for every post, no
+    duplicates. 111 of the 363 posts with several tags then show them in another order than by name (like #664
+    `github, cloud`, #6 `internet, business, informazione`): a visible change, back to the order typed.
+  - Queries: `ORDER BY pt."position"` inside the `ARRAY(…)` subqueries, and `AddPostTags` numbers the names:
+    `SELECT @post_id, t.name, (t.ordinality - 1)::int FROM unnest(@names::text[]) WITH ORDINALITY AS t(name,
+    ordinality)`. sqlc accepts it, and `Names` stays `[]string`.
+  - SQLite: `position INTEGER NOT NULL` in `posts_tags`; `json_each`'s `key` is the array index, so
+    `SELECT @post_id, value, key FROM json_each(CAST(@names AS TEXT))` (sqlc accepts it too). The copy command
+    copies the column.
+  - The primary key stays `(postId, tagName)`: a tag appears once per post, and `parseTags` already drops repeats.
 - Archive: replace the `EXTRACT` query with one returning `"publishedAt"` of published posts, newest first, and
   count months in Go in Europe/Rome (the prototype's `Archive`). Fixes the TODO in `site.sql` and `ARCHITECTURE.md`.
 - Rename (optional): goose migration with `ALTER TABLE … RENAME COLUMN` for every camelCase column (`createdAt`,
@@ -198,6 +223,7 @@ CREATE TABLE tags (name TEXT PRIMARY KEY) WITHOUT ROWID;
 CREATE TABLE posts_tags (
     post_id  INTEGER NOT NULL REFERENCES posts (id) ON DELETE CASCADE ON UPDATE CASCADE,
     tag_name TEXT    NOT NULL REFERENCES tags (name) ON DELETE CASCADE ON UPDATE CASCADE,
+    position INTEGER NOT NULL, -- the order typed in the editor (Step 0); the prototype didn't have it
     PRIMARY KEY (post_id, tag_name)
 ) WITHOUT ROWID;
 CREATE INDEX posts_tags_tag_name ON posts_tags (tag_name);
@@ -236,8 +262,10 @@ All 17 queries generate after these workarounds:
 
    ```sql
    CAST((SELECT json_group_array(tag_name) FROM (
-       SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.tag_name)) AS TEXT) AS tags
+       SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position)) AS TEXT) AS tags
    ```
+
+   (The prototype ordered by `tag_name`; Step 0 adds `position`.)
 
    Without the `CAST`, the column is `interface{}`; with it, `string`. Go decodes it with `json.Unmarshal`, so
    `db.Post` becomes a struct built from the row instead of an alias of it.

@@ -2,8 +2,8 @@
 -- doesn't filter. Keep their WHERE clauses identical.
 
 -- name: Posts :many
--- Published posts, newest first. Tags have no ORDER BY: they come in whatever
--- order Postgres returns them.
+-- Published posts, newest first. Each post's tags come in the order they were
+-- typed in.
 SELECT p.id,
        p.number,
        p.category,
@@ -16,7 +16,7 @@ SELECT p.id,
        p."updatedAt"               AS updated_at,
        p."publishedAt"             AS published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id
+           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
        )::text[]                   AS tags,
        c.html                      AS cached_html
 FROM posts p

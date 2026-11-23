@@ -11,8 +11,9 @@ import (
 )
 
 const addPostTags = `-- name: AddPostTags :exec
-INSERT INTO posts_tags ("postId", "tagName")
-SELECT $1, unnest($2::text[])
+INSERT INTO posts_tags ("postId", "tagName", "position")
+SELECT $1, t.name, (t.ordinality - 1)::int
+FROM unnest($2::text[]) WITH ORDINALITY AS t(name, ordinality)
 `
 
 type AddPostTagsParams struct {
@@ -20,6 +21,7 @@ type AddPostTagsParams struct {
 	Names  []string
 }
 
+// Links the tags to the post, numbering them in the order of names.
 func (q *Queries) AddPostTags(ctx context.Context, arg AddPostTagsParams) error {
 	_, err := q.db.Exec(ctx, addPostTags, arg.PostID, arg.Names)
 	return err
@@ -87,7 +89,7 @@ SELECT p.id,
        p."updatedAt"               AS updated_at,
        p."publishedAt"             AS published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id
+           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
        )::text[]                   AS tags
 FROM posts p
 WHERE p.number = $1

@@ -48,13 +48,16 @@ export function seedSQL() {
 			`${quote(post.body)}, '${post.publishedAt.toISOString()}', '${post.publishedAt.toISOString()}', NULL)`,
 	);
 	const links = posts.flatMap((post) =>
-		post.tags.map((tag) => `((SELECT id FROM posts WHERE number = ${post.number}), ${quote(tag)})`),
+		post.tags.map(
+			(tag, position) =>
+				`((SELECT id FROM posts WHERE number = ${post.number}), ${quote(tag)}, ${position})`,
+		),
 	);
 
 	return `
 		INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt", "publishedAt", "updatedAt")
 		VALUES ${rows.join(',\n')};
 		INSERT INTO tags (name) VALUES ${tags.map((tag) => `(${quote(tag)})`).join(', ')};
-		INSERT INTO posts_tags ("postId", "tagName") VALUES ${links.join(',\n')};
+		INSERT INTO posts_tags ("postId", "tagName", "position") VALUES ${links.join(',\n')};
 	`;
 }

@@ -32,8 +32,8 @@ func TestSavePost(t *testing.T) {
 	if post.Title != "Title" || post.Category != "til" || post.Slug != "" || post.UpdatedAt == nil || post.PublishedAt != nil {
 		t.Errorf("saved %+v", post)
 	}
-	// Postgres can return the tags in any order
-	if tags := slices.Sorted(slices.Values(post.Tags)); !slices.Equal(tags, []string{"go", "zz-new-tag"}) {
+	// Tags keep the order they were typed in, not the order of their names
+	if !slices.Equal(post.Tags, []string{"zz-new-tag", "go"}) {
 		t.Errorf("tags = %v", post.Tags)
 	}
 

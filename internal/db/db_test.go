@@ -25,10 +25,10 @@ INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt"
 	(4, 'note', NULL, NULL, FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
 	(5, 'note', NULL, NULL, FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
 INSERT INTO tags (name) VALUES ('go'), ('svelte');
-INSERT INTO posts_tags ("postId", "tagName")
-SELECT id, 'go' FROM posts WHERE number IN (1, 3, 5)
+INSERT INTO posts_tags ("postId", "tagName", "position")
+SELECT id, 'go', 0 FROM posts WHERE number IN (1, 3, 5)
 UNION ALL
-SELECT id, 'svelte' FROM posts WHERE number = 2;
+SELECT id, 'svelte', 0 FROM posts WHERE number = 2;
 `
 
 // TestMain starts a Postgres container with the migrations and testSeed.

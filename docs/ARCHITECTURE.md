@@ -61,6 +61,7 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 - goose migrations are embedded and run when the server starts. `00001_baseline.sql` recreates the Prisma
   schema with `IF NOT EXISTS`, so on the production database it only recorded version 1. Migrations have no Down.
 - Production Postgres runs in UTC; archive months group by the database session's time zone (a TODO).
+- A post's tags keep the order they were typed in: `posts_tags.position`, numbered from 0 by each save.
 
 ## Markdown
 
