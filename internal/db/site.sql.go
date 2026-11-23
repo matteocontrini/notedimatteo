@@ -13,7 +13,7 @@ import (
 const categories = `-- name: Categories :many
 SELECT category AS slug, COUNT(*)::int AS count
 FROM posts
-WHERE "publishedAt" IS NOT NULL
+WHERE published_at IS NOT NULL
 GROUP BY category
 ORDER BY count DESC, slug
 `
@@ -45,10 +45,10 @@ func (q *Queries) Categories(ctx context.Context) ([]CategoriesRow, error) {
 }
 
 const publishedTimes = `-- name: PublishedTimes :many
-SELECT "publishedAt"
+SELECT published_at
 FROM posts
-WHERE "publishedAt" IS NOT NULL
-ORDER BY "publishedAt" DESC
+WHERE published_at IS NOT NULL
+ORDER BY published_at DESC
 `
 
 // Returns the publication times of published posts, newest first.
@@ -60,11 +60,11 @@ func (q *Queries) PublishedTimes(ctx context.Context) ([]*time.Time, error) {
 	defer rows.Close()
 	var items []*time.Time
 	for rows.Next() {
-		var publishedAt *time.Time
-		if err := rows.Scan(&publishedAt); err != nil {
+		var published_at *time.Time
+		if err := rows.Scan(&published_at); err != nil {
 			return nil, err
 		}
-		items = append(items, publishedAt)
+		items = append(items, published_at)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -73,11 +73,11 @@ func (q *Queries) PublishedTimes(ctx context.Context) ([]*time.Time, error) {
 }
 
 const tags = `-- name: Tags :many
-SELECT pt."tagName" AS name, COUNT(*)::int AS count
+SELECT pt.tag_name AS name, COUNT(*)::int AS count
 FROM posts_tags pt
-JOIN posts p ON p.id = pt."postId"
-WHERE p."publishedAt" IS NOT NULL
-GROUP BY pt."tagName"
+JOIN posts p ON p.id = pt.post_id
+WHERE p.published_at IS NOT NULL
+GROUP BY pt.tag_name
 ORDER BY count DESC, name
 `
 

@@ -13,7 +13,7 @@ import (
 const countDrafts = `-- name: CountDrafts :one
 SELECT COUNT(*)::int
 FROM posts
-WHERE "publishedAt" IS NULL
+WHERE published_at IS NULL
 `
 
 func (q *Queries) CountDrafts(ctx context.Context) (int, error) {
@@ -24,7 +24,7 @@ func (q *Queries) CountDrafts(ctx context.Context) (int, error) {
 }
 
 const createDraft = `-- name: CreateDraft :one
-INSERT INTO posts (number, category, "hideTitle", body, "createdAt")
+INSERT INTO posts (number, category, hide_title, body, created_at)
 SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', $1::timestamptz
 FROM posts
 RETURNING number
@@ -41,7 +41,7 @@ func (q *Queries) CreateDraft(ctx context.Context, createdAt time.Time) (int, er
 const deleteDraft = `-- name: DeleteDraft :execrows
 DELETE FROM posts
 WHERE number = $1
-  AND "publishedAt" IS NULL
+  AND published_at IS NULL
 `
 
 // Postgres also deletes the post's tags and cached HTML (ON DELETE CASCADE).
@@ -60,23 +60,23 @@ SELECT p.id,
        p.category,
        p.title,
        p.slug,
-       p."hideTitle"               AS hide_title,
+       p.hide_title,
        p.body,
-       p."bodyRevision"            AS body_revision,
-       p."createdAt"               AS created_at,
-       p."updatedAt"               AS updated_at,
-       p."publishedAt"             AS published_at,
+       p.body_revision,
+       p.created_at,
+       p.updated_at,
+       p.published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
-       )::text[]                   AS tags,
-       c.html                      AS cached_html
+           SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
+       )::text[] AS tags,
+       c.html AS cached_html
 FROM posts p
 LEFT JOIN post_html_cache c
-       ON c."postId" = p.id
-      AND c."rendererVersion" = $1::int
-      AND c."bodyRevision" = p."bodyRevision"
-WHERE p."publishedAt" IS NULL
-ORDER BY p."createdAt" DESC
+       ON c.post_id = p.id
+      AND c.renderer_version = $1::int
+      AND c.body_revision = p.body_revision
+WHERE p.published_at IS NULL
+ORDER BY p.created_at DESC
 `
 
 type DraftsRow struct {
@@ -95,7 +95,7 @@ type DraftsRow struct {
 	CachedHTML   *string
 }
 
-// A draft is a post with no publishedAt.
+// A draft is a post with no published_at.
 // Returns drafts, newest first. The columns match Posts, so Go can convert
 // each row to Post.
 func (q *Queries) Drafts(ctx context.Context, rendererVersion int) ([]DraftsRow, error) {

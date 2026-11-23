@@ -18,14 +18,14 @@ var testDatabaseURL string
 // testSeed is the data in the test database: published posts in two categories,
 // two months, and with tags, plus a draft.
 const testSeed = `
-INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt", "publishedAt", "updatedAt") VALUES
+INSERT INTO posts (number, category, title, slug, hide_title, body, created_at, published_at, updated_at) VALUES
 	(1, 'note', '', '', FALSE, 'Prima nota', '2026-09-10 10:00Z', '2026-09-10 10:00Z', NULL),
 	(2, 'til', 'Un titolo', 'un-titolo', FALSE, 'Seconda nota, con un titolo', '2026-09-20 10:00Z', '2026-09-20 10:00Z', NULL),
 	(3, 'note', '', '', FALSE, 'Terza nota', '2026-10-05 10:00Z', '2026-10-05 10:00Z', NULL),
 	(4, 'note', '', '', FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
 	(5, 'note', '', '', FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
 INSERT INTO tags (name) VALUES ('go'), ('svelte');
-INSERT INTO posts_tags ("postId", "tagName", "position")
+INSERT INTO posts_tags (post_id, tag_name, position)
 SELECT id, 'go', 0 FROM posts WHERE number IN (1, 3, 5)
 UNION ALL
 SELECT id, 'svelte', 0 FROM posts WHERE number = 2;

@@ -34,25 +34,25 @@ func TestStoredTimes(t *testing.T) {
 
 	var created, updated, published, rendered, sessionCreated, lastActivity time.Time
 	err = db.conn.QueryRow(ctx, `
-		SELECT p."createdAt", p."updatedAt", p."publishedAt", c."renderedAt"
-		FROM posts p JOIN post_html_cache c ON c."postId" = p.id
+		SELECT p.created_at, p.updated_at, p.published_at, c.rendered_at
+		FROM posts p JOIN post_html_cache c ON c.post_id = p.id
 		WHERE p.number = $1`, number).Scan(&created, &updated, &published, &rendered)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.conn.QueryRow(ctx, `SELECT "createdAt", "lastActivityAt" FROM sessions WHERE token = $1`, "times-test").
+	err = db.conn.QueryRow(ctx, `SELECT created_at, last_activity_at FROM sessions WHERE token = $1`, "times-test").
 		Scan(&sessionCreated, &lastActivity)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	times := map[string]time.Time{
-		"posts.createdAt":            created,
-		"posts.updatedAt":            updated,
-		"posts.publishedAt":          published,
-		"post_html_cache.renderedAt": rendered,
-		"sessions.createdAt":         sessionCreated,
-		"sessions.lastActivityAt":    lastActivity,
+		"posts.created_at":            created,
+		"posts.updated_at":            updated,
+		"posts.published_at":          published,
+		"post_html_cache.rendered_at": rendered,
+		"sessions.created_at":         sessionCreated,
+		"sessions.last_activity_at":   lastActivity,
 	}
 	for column, value := range times {
 		if value.Before(start) || value.After(time.Now()) {

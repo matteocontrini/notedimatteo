@@ -11,7 +11,7 @@ import (
 )
 
 const addPostTags = `-- name: AddPostTags :exec
-INSERT INTO posts_tags ("postId", "tagName", "position")
+INSERT INTO posts_tags (post_id, tag_name, position)
 SELECT $1, t.name, (t.ordinality - 1)::int
 FROM unnest($2::text[]) WITH ORDINALITY AS t(name, ordinality)
 `
@@ -41,7 +41,7 @@ func (q *Queries) CreateTags(ctx context.Context, names []string) error {
 
 const deletePostTags = `-- name: DeletePostTags :exec
 DELETE FROM posts_tags
-WHERE "postId" = $1
+WHERE post_id = $1
 `
 
 func (q *Queries) DeletePostTags(ctx context.Context, postID int) error {
@@ -50,7 +50,7 @@ func (q *Queries) DeletePostTags(ctx context.Context, postID int) error {
 }
 
 const lockPost = `-- name: LockPost :one
-SELECT id, body, "bodyRevision" AS body_revision, "publishedAt" AS published_at
+SELECT id, body, body_revision, published_at
 FROM posts
 WHERE number = $1
 FOR UPDATE
@@ -83,14 +83,14 @@ SELECT p.id,
        p.category,
        p.title,
        p.slug,
-       p."hideTitle"               AS hide_title,
+       p.hide_title,
        p.body,
-       p."createdAt"               AS created_at,
-       p."updatedAt"               AS updated_at,
-       p."publishedAt"             AS published_at,
+       p.created_at,
+       p.updated_at,
+       p.published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
-       )::text[]                   AS tags
+           SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
+       )::text[] AS tags
 FROM posts p
 WHERE p.number = $1
 `
@@ -132,15 +132,15 @@ func (q *Queries) PostForEdit(ctx context.Context, number int) (PostForEditRow, 
 
 const updatePost = `-- name: UpdatePost :exec
 UPDATE posts
-SET number         = $1,
-    category       = $2,
-    title          = $3,
-    slug           = $4,
-    "hideTitle"    = $5,
-    body           = $6,
-    "bodyRevision" = $7,
-    "updatedAt"    = $8::timestamptz,
-    "publishedAt"  = $9
+SET number        = $1,
+    category      = $2,
+    title         = $3,
+    slug          = $4,
+    hide_title    = $5,
+    body          = $6,
+    body_revision = $7,
+    updated_at    = $8::timestamptz,
+    published_at  = $9
 WHERE id = $10
 `
 

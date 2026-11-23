@@ -87,10 +87,16 @@ start without redoing them. Remove notes that stop being true.
       30 September gave `202609` by default and `202610` only with `TZ=Europe/Rome`. Using it means setting `TZ` on
       Railway and in every test, which changes `time.Local` for the whole server.
     - Kept: counting in Go.
-- Rename (optional): goose migration with `ALTER TABLE … RENAME COLUMN` for every camelCase column (`createdAt`,
-  `updatedAt`, `publishedAt`, `hideTitle`, `bodyRevision`, `postId`, `tagName`, `lastActivityAt`,
-  `rendererVersion`, `renderedAt`), and the `AS` aliases in the queries go away. Constraint names (`posts_number_key`,
-  checked in `edit.go`) stay. A rollback to an older deployment would break, as with any migration.
+- Rename to snake_case (done 2026-11-23, `00007_snake_case_columns.sql`):
+  - `ALTER TABLE … RENAME COLUMN` for every camelCase column (`createdAt`, `updatedAt`, `publishedAt`, `hideTitle`,
+    `bodyRevision`, `postId`, `tagName`, `lastActivityAt`, `rendererVersion`, `renderedAt`). The queries lost their
+    quotes and the aliases that repeated the new names; sqlc's Go types didn't change.
+  - Constraint and index names stay camelCase (`posts_tags_postId_fkey`); `posts_number_key`, which `edit.go`
+    checks, has no camelCase. Postgres 18 also named the `NOT NULL` constraints after the old columns
+    (`posts_createdAt_not_null`). `position` needs no quotes: Postgres reserves it only as a function or type name.
+  - The editor's JSON and form fields (`hideTitle`, `createdAt`, … in `internal/server/edit.go`) aren't columns
+    and keep their names.
+  - Older deployments read the old names: a rollback past this migration breaks, as with any migration.
 - Skipped (2026-11-23): a unique index on `sessions.token`.
 
 ## Prototype (2026-11-22)

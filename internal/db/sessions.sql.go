@@ -11,7 +11,7 @@ import (
 )
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (token, "createdAt", "lastActivityAt")
+INSERT INTO sessions (token, created_at, last_activity_at)
 VALUES ($1, $2::timestamptz, $2::timestamptz)
 `
 
@@ -36,7 +36,7 @@ func (q *Queries) DeleteSession(ctx context.Context, token string) error {
 }
 
 const sessionByToken = `-- name: SessionByToken :one
-SELECT id, "lastActivityAt" AS last_activity_at
+SELECT id, last_activity_at
 FROM sessions
 WHERE token = $1
 `
@@ -55,7 +55,7 @@ func (q *Queries) SessionByToken(ctx context.Context, token string) (SessionByTo
 
 const touchSession = `-- name: TouchSession :exec
 UPDATE sessions
-SET "lastActivityAt" = $1::timestamptz
+SET last_activity_at = $1::timestamptz
 WHERE id = $2
 `
 

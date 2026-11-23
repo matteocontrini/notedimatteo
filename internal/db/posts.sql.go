@@ -13,17 +13,17 @@ import (
 const countPosts = `-- name: CountPosts :one
 SELECT COUNT(*)::int
 FROM posts p
-WHERE p."publishedAt" IS NOT NULL
+WHERE p.published_at IS NOT NULL
   AND ($1::int IS NULL OR p.number = $1)
   AND ($2::text IS NULL OR p.category = $2)
   AND ($3::text IS NULL OR EXISTS (
-          SELECT 1 FROM posts_tags pt WHERE pt."postId" = p.id AND pt."tagName" = $3))
+          SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = $3))
   AND ($4::text IS NULL
           OR p.title ILIKE $4
           OR p.body ILIKE $4
-          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt."postId" = p.id AND pt."tagName" ILIKE $4))
-  AND ($5::timestamptz IS NULL OR p."publishedAt" >= $5)
-  AND ($6::timestamptz IS NULL OR p."publishedAt" < $6)
+          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name ILIKE $4))
+  AND ($5::timestamptz IS NULL OR p.published_at >= $5)
+  AND ($6::timestamptz IS NULL OR p.published_at < $6)
 `
 
 type CountPostsParams struct {
@@ -56,33 +56,33 @@ SELECT p.id,
        p.category,
        p.title,
        p.slug,
-       p."hideTitle"               AS hide_title,
+       p.hide_title,
        p.body,
-       p."bodyRevision"            AS body_revision,
-       p."createdAt"               AS created_at,
-       p."updatedAt"               AS updated_at,
-       p."publishedAt"             AS published_at,
+       p.body_revision,
+       p.created_at,
+       p.updated_at,
+       p.published_at,
        ARRAY(
-           SELECT pt."tagName" FROM posts_tags pt WHERE pt."postId" = p.id ORDER BY pt."position"
-       )::text[]                   AS tags,
-       c.html                      AS cached_html
+           SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
+       )::text[] AS tags,
+       c.html AS cached_html
 FROM posts p
 LEFT JOIN post_html_cache c
-       ON c."postId" = p.id
-      AND c."rendererVersion" = $1::int
-      AND c."bodyRevision" = p."bodyRevision"
-WHERE p."publishedAt" IS NOT NULL
+       ON c.post_id = p.id
+      AND c.renderer_version = $1::int
+      AND c.body_revision = p.body_revision
+WHERE p.published_at IS NOT NULL
   AND ($2::int IS NULL OR p.number = $2)
   AND ($3::text IS NULL OR p.category = $3)
   AND ($4::text IS NULL OR EXISTS (
-          SELECT 1 FROM posts_tags pt WHERE pt."postId" = p.id AND pt."tagName" = $4))
+          SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = $4))
   AND ($5::text IS NULL
           OR p.title ILIKE $5
           OR p.body ILIKE $5
-          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt."postId" = p.id AND pt."tagName" ILIKE $5))
-  AND ($6::timestamptz IS NULL OR p."publishedAt" >= $6)
-  AND ($7::timestamptz IS NULL OR p."publishedAt" < $7)
-ORDER BY p."publishedAt" DESC, p.number DESC
+          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name ILIKE $5))
+  AND ($6::timestamptz IS NULL OR p.published_at >= $6)
+  AND ($7::timestamptz IS NULL OR p.published_at < $7)
+ORDER BY p.published_at DESC, p.number DESC
 LIMIT $9::int OFFSET $8::int
 `
 
@@ -164,13 +164,13 @@ func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error
 }
 
 const savePostHTML = `-- name: SavePostHTML :exec
-INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html, "renderedAt")
+INSERT INTO post_html_cache (post_id, renderer_version, body_revision, html, rendered_at)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT ("postId") DO UPDATE
-SET "rendererVersion" = EXCLUDED."rendererVersion",
-    "bodyRevision"    = EXCLUDED."bodyRevision",
-    html              = EXCLUDED.html,
-    "renderedAt"      = EXCLUDED."renderedAt"
+ON CONFLICT (post_id) DO UPDATE
+SET renderer_version = EXCLUDED.renderer_version,
+    body_revision    = EXCLUDED.body_revision,
+    html             = EXCLUDED.html,
+    rendered_at      = EXCLUDED.rendered_at
 `
 
 type SavePostHTMLParams struct {

@@ -54,9 +54,9 @@ export function seedSQL() {
 	);
 
 	return `
-		INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt", "publishedAt", "updatedAt")
+		INSERT INTO posts (number, category, title, slug, hide_title, body, created_at, published_at, updated_at)
 		VALUES ${rows.join(',\n')};
 		INSERT INTO tags (name) VALUES ${tags.map((tag) => `(${quote(tag)})`).join(', ')};
-		INSERT INTO posts_tags ("postId", "tagName", "position") VALUES ${links.join(',\n')};
+		INSERT INTO posts_tags (post_id, tag_name, position) VALUES ${links.join(',\n')};
 	`;
 }

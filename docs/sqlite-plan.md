@@ -37,7 +37,7 @@ dialect. The revisions work (branch `post-revisions`) merges after the move.
 - [x] Make `title` and `slug` `NOT NULL DEFAULT ''`, and drop `COALESCE` and `NULLIF` (`00006`)
 - [x] Keep tags in the order typed: a `position` column on `posts_tags`, filled from the rows' current order (`00004`)
 - [x] Group the archive by month in Go, in Europe/Rome; the month pages use Rome too
-- [ ] Optional: rename the columns to snake_case
+- [x] Rename the columns to snake_case (`00007`)
 
 ### Step 1: Database package
 

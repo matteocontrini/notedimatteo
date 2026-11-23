@@ -57,7 +57,8 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   - Filters are optional parameters (`sqlc.narg(x) IS NULL OR ...`), so the query text never changes. `Posts`
     and `CountPosts` repeat the same `WHERE`; a test checks they agree.
   - Row types like `db.Post` are aliases of sqlc's generated structs.
-- The schema comes from the SvelteKit app's Prisma migrations, so columns are camelCase (`"publishedAt"`).
+- The schema comes from the SvelteKit app's Prisma migrations. `00007` renamed its camelCase columns to snake_case;
+  constraint and index names keep the old case (`posts_tags_postId_fkey`).
 - goose migrations are embedded and run when the server starts. `00001_baseline.sql` recreates the Prisma
   schema with `IF NOT EXISTS`, so on the production database it only recorded version 1. Migrations have no Down.
 - Archive months are in Europe/Rome: Go counts the publication times per month (`db.Archive`), and the month
