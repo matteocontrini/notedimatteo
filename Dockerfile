@@ -50,5 +50,10 @@ RUN libvips.test
 
 FROM runtime AS server
 COPY --from=build /out/server /usr/local/bin/server
+
+# Litestream wraps the Go app and backs the SQLite database (see litestream.yml)
+COPY --from=litestream/litestream:0.5.18 /usr/local/bin/litestream /usr/local/bin/litestream
+COPY litestream.yml /etc/litestream.yml
+
 USER nobody
-ENTRYPOINT ["server"]
+ENTRYPOINT ["litestream", "replicate"]

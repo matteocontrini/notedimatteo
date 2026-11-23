@@ -165,7 +165,10 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   `test:js`, `test:go`, `test:e2e`), `docker`, and `verify-lockfile`. Actions use exact versions, locked in
   `.github/workflows/actions.lock`: run `gh actions-lock` after changing a `uses:`.
 - The Dockerfile has stages `assets` (Node: npm, libvips, Vite) → `build` (Go) → `runtime` (Debian trixie with
-  sharp's `libvips-cpp.so`) → `server`, about 146 MB, running as `nobody`.
+  sharp's `libvips-cpp.so`) → `server`, about 200 MB, running as `nobody`.
+- The `server` stage runs Litestream (`litestream.yml`), which starts the server and copies every change of the
+  database to a private bucket within a second. When the database file doesn't exist, it restores the latest copy
+  first. Its binary comes from the `litestream/litestream` image.
 - Railway builds the Dockerfile from `main` and runs the `server` stage. Railway's previous deployment is the
   rollback.
 - Renovate (`renovate.json`): packages that run on the server (Go modules, the Go version, libvips) weekly on
@@ -182,3 +185,4 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 | `STORAGE_S3_ENDPOINT`, `_REGION`, `_ACCESS_KEY_ID`, `_SECRET_ACCESS_KEY`, `_BUCKET` | All or none; without them, uploads are off |
 | `SITE_URL` | Default `https://notedimatteo.it`; GoatCounter runs only on that host |
 | `PORT` | Default 6200 |
+| `LITESTREAM_ENDPOINT`, `_BUCKET`, `_ACCESS_KEY_ID`, `_SECRET_ACCESS_KEY` | Required by the Docker image: the bucket for the database's backups (`litestream.yml`) |

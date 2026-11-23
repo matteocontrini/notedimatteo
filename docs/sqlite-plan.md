@@ -65,8 +65,10 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 
 ### Step 4: Deployment
 
-- [ ] Add Litestream to the image, running the server with `litestream replicate -restore-if-db-not-exists -exec`,
-  and replicating to R2
+- [x] Add Litestream to the image, running the server with `litestream replicate` (`litestream.yml`), and test
+  replication, shutdown, and restore locally
+- [x] Test against R2 with a dev bucket and token, including the first start with an empty bucket
+- [ ] Create production's private R2 bucket and a token for it only
 - [ ] Choose the host: Railway, or Bunny Magic Containers (deployed like `../traquantopassa-svelte`: GHCR, then
   `container-update-image`). For Bunny, try a throwaway app first: can `nobody` write to a fresh volume, what does a
   redeploy do, and does the restore on start work

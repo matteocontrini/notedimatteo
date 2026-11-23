@@ -1,0 +1,27 @@
+# Litestream wraps the Go app while copying every change of the SQLite database to a
+# private S3 bucket, within a second. When the database file doesn't exist,
+# it first restores the latest copy from the bucket; when the bucket has none,
+# the server starts with a new database.
+#
+# Litestream reads these variables:
+# - DATABASE_PATH, the server's database file
+# - LITESTREAM_ENDPOINT, for R2 https://<account id>.r2.cloudflarestorage.com
+# - LITESTREAM_BUCKET, a dedicated private bucket
+# - LITESTREAM_ACCESS_KEY_ID and LITESTREAM_SECRET_ACCESS_KEY
+
+exec: server
+
+# Full db snapshot once a day and the history of the last 7 days.
+# A restore can go back to any moment in that period
+snapshot:
+  interval: 24h
+  retention: 168h
+
+dbs:
+  - path: ${DATABASE_PATH}
+    restore-if-db-not-exists: true
+    replica:
+      type: s3
+      endpoint: ${LITESTREAM_ENDPOINT}
+      bucket: ${LITESTREAM_BUCKET}
+      path: notedimatteo

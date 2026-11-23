@@ -56,7 +56,7 @@
 		},
 		{
 			"description": "Packages that run on the server where updates matter most are checked weekly",
-			"matchPackageNames": ["@img/sharp-libvips-**", "go", "golang"],
+			"matchPackageNames": ["@img/sharp-libvips-**", "go", "golang", "litestream/litestream"],
 			"schedule": ["* * * * 3"]
 		},
 		{

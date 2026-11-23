@@ -453,14 +453,56 @@ Magic Containers) is chosen at Step 4.
 - What it gives: continuous backups with point-in-time restore; a lost volume (Bunny's node failure, a mistake)
   costs at most the last seconds of writes; the first deploy restores the copy of production from R2, so the file
   never has to be uploaded to the volume.
-- R2 needs its endpoint in the replica URL or a config file: check the v0.5 syntax.
 - Locks: Litestream (v0.5.18 uses modernc and mattn, so the standard Unix VFS) and the server open the same file.
   ncruces' default build is "compatible with the standard Unix and Windows SQLite VFSes" (`vfs/README.md`): it uses
   OFD locks, which conflict with SQLite's POSIX record locks across processes as `fcntl(2)` specifies. Never build
   with ncruces' `sqlite3_flock` or `sqlite3_dotlk` tags: ncruces warns that incompatible VFSes "will eventually
   corrupt data". The same applies to the `sqlite3` CLI on a live file.
-- To check while setting it up: Litestream's guidance for applications (checkpointing, busy timeout), retention
-  settings, and how its binary gets into the image (release download or `go install`), so Renovate can track it.
+- Set up 2026-11-23 (`litestream.yml`, the Dockerfile's `server` stage), from v0.5.18's source and litestream.io
+  (`guides/docker`, `tips`, `reference/config`, fetched with curl and `uvx trafilatura --markdown < page.html`):
+  - The image copies the binary from `litestream/litestream:0.5.18` (static, 50 MB: the image goes from about
+    146 MB to 201 MB) and runs `litestream replicate`, which reads `/etc/litestream.yml`. Renovate's
+    `dockerfile` manager sees the `COPY --from` image; it's in the weekly server-packages rule.
+  - The config uses `exec: server`, `restore-if-db-not-exists: true`, and an S3 replica built from variables
+    (Litestream expands `${VAR}`, and reads `LITESTREAM_ACCESS_KEY_ID` and `LITESTREAM_SECRET_ACCESS_KEY` by
+    itself). The R2 defaults (signed payloads, 2 parallel uploads) apply when the endpoint ends in
+    `.r2.cloudflarestorage.com` and uses https, whether it's in the URL or the `endpoint` field. With an endpoint,
+    the region defaults to `us-east-1`, which R2 accepts.
+  - Retention: snapshots every 24 h, kept 168 h (the default keeps 24 h, so point-in-time restore would only reach
+    a day back). Durations take only `s`, `m`, `h`. The backups repo's daily dump keeps the long history.
+  - The bucket must be private and only for this: the uploads bucket is public through
+    `STORAGE_PUBLIC_BASE_URL`, and the database holds session tokens. Two processes replicating to the same path
+    can make it unrestorable (litestream.io/tips): never point a local run at production's bucket.
+  - The application side matches litestream.io's tips already: `busy_timeout` 5 s, WAL, `foreign_keys`,
+    `synchronous=NORMAL`. `wal_autocheckpoint = 0` is only for tens of thousands of writes per second.
+  - On SIGTERM, Litestream signals the server, waits for it to exit, then syncs the last changes (up to 30 s,
+    `shutdown-sync-timeout`). A server that exits (a failed migration) stops Litestream too, with an error.
+  - litestream.io/guides/docker: the database must be on local storage or a block device, never NFS, SMB, or
+    another network filesystem, where locks don't work. Check what Railway's and Bunny's volumes are.
+- Tested 2026-11-23 with Docker, rclone's S3 server standing in for R2, and the 2026-11-23 production copy:
+  - A volume with the file: "database exists, skipping restore", the server starts, a snapshot (987 KB
+    compressed) is uploaded in a second. A login (a new session) is uploaded as transaction 2 within a second.
+  - `docker stop`: exits in 0.2 s with code 0, after the server's shutdown and Litestream's.
+  - A new empty volume (owned by `nobody`): "restore completed" in 28 ms, then the server starts. The restored file
+    passes `integrity_check` and has 676 posts, 1,109 links, 676 cached pages, and 12 sessions (11 plus the login).
+  - An empty bucket can't be tested with rclone: it answers 404 to listing a prefix that doesn't exist, which
+    Litestream reports as "restore failed: get v0.3.x time bounds". MinIO's images are gone from Docker Hub and
+    quay.io. R2 returns an empty list (below).
+- Tested 2026-11-23 on R2, with a dev bucket and a token for it only (`.env.r2`, ignored by git and Docker, passed
+  with `docker run --env-file`; production gets another bucket and token). rclone reads the same file through
+  `RCLONE_CONFIG_R2_*` variables set inside the container (`provider Cloudflare`, `--s3-no-check-bucket`); its
+  403 on `GetBucketVersioning` is expected with a token limited to objects.
+  - Empty bucket, empty volume: "no backup found, starting fresh" after about 3 s, then the server migrates a new
+    file and the first snapshot is uploaded.
+  - The cutover rehearsal: a volume with the production copy is uploaded in 2 s; a restore into a new empty volume
+    takes 3 s and passes `integrity_check`, with every row.
+  - The endpoint was `<account>.eu.r2.cloudflarestorage.com` (an EU bucket): the R2 detection matches its suffix.
+  - A write is lost from the bucket when it comes within a second of Litestream starting and the container stops
+    in that same second: Litestream opens the database on its first check (`init` in `Sync`, every
+    `monitor-interval`, 1 s), and `DB.Close` makes the final sync only once it's open. The write stays in the
+    local file and is uploaded at the next start. After that first second, a login followed at once by
+    `docker stop` was uploaded by the final sync (checked with debug logs and a restore).
+  - Afterwards, the test folder was deleted from the dev bucket (`rclone purge`).
 - Backups repo: its Action can run `litestream restore` from R2 into a file and commit `sqlite3 .dump` output,
   keeping today's text history. It needs a read-only R2 token.
 - Rejected (2026-11-23): the server uploading a daily `VACUUM INTO` snapshot (a day of writes at risk), a one-off
