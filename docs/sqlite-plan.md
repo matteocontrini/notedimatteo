@@ -60,8 +60,8 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 
 ### Step 3: Copy
 
-- [ ] Add a command that copies a Postgres database into a new SQLite file, sessions included
-- [ ] Compare the copy of production with Postgres, like the prototype: lists, filters, searches, pages
+- [x] Add a command that copies a Postgres database into a new SQLite file, sessions included (`cmd/pgcopy`)
+- [x] Compare the copy of production with Postgres: every page from the old and new servers is identical
 
 ### Step 4: Deployment
 
@@ -77,7 +77,8 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 
 ### Step 5: Cutover
 
-- [ ] Stop writing, copy production, and replicate the file to R2 with Litestream
+- [ ] Stop writing, run the backup workflow, import its dump into a local Postgres, copy that with `pgcopy`, and
+  replicate the file to R2 with Litestream
 - [ ] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
 - [ ] Keep the Postgres service for a while as the rollback, then delete it
 - [ ] Remove the copy command

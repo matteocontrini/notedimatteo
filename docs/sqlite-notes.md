@@ -130,6 +130,33 @@ start without redoing them. Remove notes that stop being true.
 - The local `.env` still has `DATABASE_URL`: `npm run dev` needs `DATABASE_PATH` (`.env.example`; `/*.db*` is
   ignored by git).
 
+## Step 3 (done 2026-11-23)
+
+- Source: no direct connection to production. Production writes without edits only `post_html_cache` (a view of a
+  post whose cache is missing or stale, `postItems`), `sessions` (login, logout, activity once a minute), and
+  `goose_db_version` (deploys): losing those costs a re-render or a login. So a backup taken after the last edit
+  is enough: run the backups repo's workflow by hand (`workflow_dispatch`), fetch `schema.sql` and `data.sql`
+  from its commit with `gh api …/contents/<file>?ref=<sha> -H "Accept: application/vnd.github.raw"`, and import
+  them into a throwaway database (`createdb`, `psql -v ON_ERROR_STOP=1 -f schema.sql -f data.sql`).
+- The 2026-11-23 backup (commit `1732ecf`, after 00004–00007 deployed): 676 posts, all published; 99 tags; 1,109
+  links; 11 sessions; 676 cached pages at renderer version 2; every time in milliseconds.
+- `cmd/pgcopy <postgres URL> <sqlite file>`: refuses an existing file, migrates it, reads Postgres in one
+  read-only repeatable-read transaction, inserts every table in one SQLite transaction (ids kept; times as
+  `db.Time`, bools bound as 0/1), then compares row counts, runs `integrity_check` and `foreign_key_check`, and
+  checkpoints the WAL. 122 ms. pgx is a direct dependency again until Step 5.
+- Comparison: the old server built from `origin/main` (`136663c`, what production runs: `git archive` into the
+  scratchpad, symlinked `node_modules` and `.libvips`, `vite build`, `go build`) on the imported database, the new
+  one on a copy of the file, both with the same variables. A Python script fetched 2,574 paths logged out (every
+  post, its slug and a wrong slug, every home page, category, tag, month, `?page=` edge cases, missing pages, the
+  feed, and 200 words with accented letters searched upper-cased and without accents, plus `%`, `_`, `\`, `'`) and
+  75 logged in (drafts, editor pages, searches), comparing status, `Location`, `Content-Type`, `Cache-Control`,
+  and the body byte for byte. All equal.
+- The one difference found: the editor's JSON times. pgx returns times in the process's zone (`+01:00` on this
+  Mac), `db.Time` in UTC (`Z`): the same instants, and Railway runs in UTC, so production already sends `Z`. With
+  the old server under `TZ=UTC`, every page matched.
+- `TEST_DATABASE_PATH=<copy> go test ./internal/db` passes, and the file's checksum doesn't change.
+- Note: the work is on the local branch `sqlite`; `git archive HEAD` there gives the new code, not production's.
+
 ## Prototype (2026-11-22)
 
 - Built in the session's scratchpad (`…/scratchpad/sqlite`, likely gone by now): a separate Go module with the
