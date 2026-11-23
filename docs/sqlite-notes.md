@@ -17,11 +17,15 @@ start without redoing them. Remove notes that stop being true.
     `TestStoredTimes` checks the six columns (it reports all six if the truncation goes).
   - Checked on a copy of the production copy through the real server: no defaults or sub-millisecond times left,
     and login, a new draft, and a publishing save store millisecond times.
-- Title and slug: on the production copy, 442 titles and 516 slugs are `NULL`, none are `''`, and 86 posts have
-  one without the other. Every query maps `NULL` to `''` (`COALESCE` in `Posts`, `Drafts`, `PostForEdit`) and back
-  (`NULLIF` in `UpdatePost`), so Go never sees `NULL`. The migration: `UPDATE … SET title = '' WHERE title IS NULL`
-  (and slug), then `SET DEFAULT ''`, `SET NOT NULL`. The seeds in `internal/db/db_test.go` and `tests/e2e/data.ts`
-  insert `NULL`: switch them to `''`.
+- Title and slug (done 2026-11-23, `00006_title_slug_not_null.sql`):
+  - On the production copy, 442 titles and 516 slugs were `NULL` and none were `''`. The queries mapped `NULL` to
+    `''` (`COALESCE` in `Posts`, `Drafts`, `PostForEdit`) and back (`NULLIF` in `UpdatePost`), so Go never saw
+    `NULL`.
+  - The migration sets them to `''`, then `DEFAULT ''` and `NOT NULL`. The queries read and write the columns
+    directly; the seeds insert `''`. sqlc's types didn't change (`string`).
+  - Checked on a copy of the production copy through the real server: all 670 titles and slugs equal the old
+    `COALESCE` values; `/669` redirects to its slug, `/670` (no slug) loads, and a save that clears the title and
+    slug stores `''` and makes the old slug URL redirect to `/669`.
 - Tag order (decided 2026-11-23: keep the order typed in the editor):
   - Today nothing defines it. Saves keep the typed order (`parseTags`, then delete and reinsert the links; SvelteKit
     did the same with `createMany`), but the queries read tags without `ORDER BY`. On production, Postgres reads
@@ -216,8 +220,8 @@ CREATE TABLE posts (
     created_at    DATETIME NOT NULL,
     updated_at    DATETIME,
     published_at  DATETIME,
-    title         TEXT,
-    slug          TEXT,
+    title         TEXT     NOT NULL DEFAULT '', -- Step 0; the prototype allowed NULL
+    slug          TEXT     NOT NULL DEFAULT '',
     hide_title    BOOLEAN  NOT NULL,
     body          TEXT     NOT NULL,
     body_revision INTEGER  NOT NULL DEFAULT 1
@@ -276,8 +280,9 @@ All 17 queries generate after these workarounds:
 2. Grammar bug: `a OR b LIKE c ESCAPE '\'` fails ("extraneous input 'ESCAPE'"); `a OR (b LIKE c ESCAPE '\')` works.
    Parenthesize every `LIKE … ESCAPE`.
 3. Weak inference: in `sqlc.narg(x) IS NULL OR col = sqlc.narg(x)` the parameter is `interface{}`.
-   `CAST(sqlc.narg(x) AS TEXT) IS NULL` (or `AS INTEGER`) gives `*string` (`*int`). `NULLIF(@title, '')` needs
-   `NULLIF(CAST(@title AS TEXT), '')`, and `json_each(@names)` needs `json_each(CAST(@names AS TEXT))`.
+   `CAST(sqlc.narg(x) AS TEXT) IS NULL` (or `AS INTEGER`) gives `*string` (`*int`). `NULLIF(@title, '')` needed
+   `NULLIF(CAST(@title AS TEXT), '')` (gone since Step 0 made the columns `NOT NULL`), and `json_each(@names)`
+   needs `json_each(CAST(@names AS TEXT))`.
 4. Never `CAST(x AS DATETIME)`: `DATETIME` has NUMERIC affinity, so `CAST('2026-11-22 10:00:00.000' AS DATETIME)`
    is the integer `2026`. The two date filters (`published_from`, `published_until`) stay `interface{}`, and the
    wrapper passes `time.Time` or nil.

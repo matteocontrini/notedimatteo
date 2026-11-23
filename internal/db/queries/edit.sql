@@ -5,8 +5,8 @@
 SELECT p.id,
        p.number,
        p.category,
-       COALESCE(p.title, '')::text AS title,
-       COALESCE(p.slug, '')::text  AS slug,
+       p.title,
+       p.slug,
        p."hideTitle"               AS hide_title,
        p.body,
        p."createdAt"               AS created_at,
@@ -26,12 +26,12 @@ WHERE number = @number
 FOR UPDATE;
 
 -- name: UpdatePost :exec
--- Saves the editor's fields. An empty title or slug becomes NULL.
+-- Saves the editor's fields.
 UPDATE posts
 SET number         = @number,
     category       = @category,
-    title          = NULLIF(@title::text, ''),
-    slug           = NULLIF(@slug::text, ''),
+    title          = @title,
+    slug           = @slug,
     "hideTitle"    = @hide_title,
     body           = @body,
     "bodyRevision" = @body_revision,

@@ -8,8 +8,8 @@ export const BUCKET = 'uploads';
 export type SeedPost = {
 	number: number;
 	category: string;
-	title: string | null;
-	slug: string | null;
+	title: string;
+	slug: string;
 	body: string;
 	tags: string[];
 	publishedAt: Date;
@@ -26,8 +26,8 @@ export const posts: SeedPost[] = Array.from({ length: 24 }, (_, i) => {
 	return {
 		number,
 		category: ['note', 'til', 'cit'][number % 3],
-		title: number === 24 ? 'Il post più recente' : null,
-		slug: number === 24 ? 'il-post-piu-recente' : null,
+		title: number === 24 ? 'Il post più recente' : '',
+		slug: number === 24 ? 'il-post-piu-recente' : '',
 		body: number === 7 ? 'Una nota sullo zucchero.' : `Nota numero ${number}.`,
 		tags,
 		publishedAt:
@@ -37,8 +37,7 @@ export const posts: SeedPost[] = Array.from({ length: 24 }, (_, i) => {
 	};
 });
 
-const quote = (value: string | null) =>
-	value === null ? 'NULL' : `'${value.replaceAll("'", "''")}'`;
+const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 export function seedSQL() {
 	const tags = [...new Set(posts.flatMap((post) => post.tags))];

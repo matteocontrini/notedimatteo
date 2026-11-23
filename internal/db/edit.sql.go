@@ -81,8 +81,8 @@ const postForEdit = `-- name: PostForEdit :one
 SELECT p.id,
        p.number,
        p.category,
-       COALESCE(p.title, '')::text AS title,
-       COALESCE(p.slug, '')::text  AS slug,
+       p.title,
+       p.slug,
        p."hideTitle"               AS hide_title,
        p.body,
        p."createdAt"               AS created_at,
@@ -134,8 +134,8 @@ const updatePost = `-- name: UpdatePost :exec
 UPDATE posts
 SET number         = $1,
     category       = $2,
-    title          = NULLIF($3::text, ''),
-    slug           = NULLIF($4::text, ''),
+    title          = $3,
+    slug           = $4,
     "hideTitle"    = $5,
     body           = $6,
     "bodyRevision" = $7,
@@ -157,7 +157,7 @@ type UpdatePostParams struct {
 	ID           int
 }
 
-// Saves the editor's fields. An empty title or slug becomes NULL.
+// Saves the editor's fields.
 func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
 	_, err := q.db.Exec(ctx, updatePost,
 		arg.Number,

@@ -34,7 +34,7 @@ dialect. The revisions work (branch `post-revisions`) merges after the move.
 
 - [x] Go sets every time, rounded to milliseconds; drop the time defaults and `CURRENT_TIMESTAMP` from the queries
   (`00005`)
-- [ ] Make `title` and `slug` `NOT NULL DEFAULT ''`, and drop `COALESCE` and `NULLIF`
+- [x] Make `title` and `slug` `NOT NULL DEFAULT ''`, and drop `COALESCE` and `NULLIF` (`00006`)
 - [x] Keep tags in the order typed: a `position` column on `posts_tags`, filled from the rows' current order (`00004`)
 - [ ] Group the archive by month in Go, in Europe/Rome
 - [ ] Optional: rename the columns to snake_case

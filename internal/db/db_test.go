@@ -19,11 +19,11 @@ var testDatabaseURL string
 // two months, and with tags, plus a draft.
 const testSeed = `
 INSERT INTO posts (number, category, title, slug, "hideTitle", body, "createdAt", "publishedAt", "updatedAt") VALUES
-	(1, 'note', NULL, NULL, FALSE, 'Prima nota', '2026-09-10 10:00Z', '2026-09-10 10:00Z', NULL),
+	(1, 'note', '', '', FALSE, 'Prima nota', '2026-09-10 10:00Z', '2026-09-10 10:00Z', NULL),
 	(2, 'til', 'Un titolo', 'un-titolo', FALSE, 'Seconda nota, con un titolo', '2026-09-20 10:00Z', '2026-09-20 10:00Z', NULL),
-	(3, 'note', NULL, NULL, FALSE, 'Terza nota', '2026-10-05 10:00Z', '2026-10-05 10:00Z', NULL),
-	(4, 'note', NULL, NULL, FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
-	(5, 'note', NULL, NULL, FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
+	(3, 'note', '', '', FALSE, 'Terza nota', '2026-10-05 10:00Z', '2026-10-05 10:00Z', NULL),
+	(4, 'note', '', '', FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
+	(5, 'note', '', '', FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
 INSERT INTO tags (name) VALUES ('go'), ('svelte');
 INSERT INTO posts_tags ("postId", "tagName", "position")
 SELECT id, 'go', 0 FROM posts WHERE number IN (1, 3, 5)
