@@ -391,24 +391,68 @@ accents, plus short and common ones. Counts are posts found:
 - Outside SQLite: Bleve (Italian analyzer, but a heavy dependency and an index to sync), Meilisearch or Typesense
   (another service), an in-memory index in Go (duplicates SQLite). None is worth it at this size.
 
-## Railway
+## Hosting and Litestream
+
+Decided 2026-11-23: Litestream replicates the database to R2, whichever host runs it; the host (Railway or Bunny
+Magic Containers) is chosen at Step 4.
+
+### Litestream
+
+- One command runs everything: `litestream replicate -restore-if-db-not-exists -exec server <db path> <replica URL>`
+  (flags before the paths, or a config file). Checked in v0.5.18's source (`cmd/litestream/replicate.go`):
+  - With `-restore-if-db-not-exists`, it restores from the replica before replicating when the file is missing; when
+    the replica has no backup yet, it logs "no backup found, starting fresh" and continues. When the file exists, it
+    skips the restore.
+  - With `-exec`, it starts the server after the restore and runs it as a subprocess.
+- What it gives: continuous backups with point-in-time restore; a lost volume (Bunny's node failure, a mistake)
+  costs at most the last seconds of writes; the first deploy restores the copy of production from R2, so the file
+  never has to be uploaded to the volume.
+- R2 needs its endpoint in the replica URL or a config file: check the v0.5 syntax.
+- Locks: Litestream (v0.5.18 uses modernc and mattn, so the standard Unix VFS) and the server open the same file.
+  ncruces' default build is "compatible with the standard Unix and Windows SQLite VFSes" (`vfs/README.md`): it uses
+  OFD locks, which conflict with SQLite's POSIX record locks across processes as `fcntl(2)` specifies. Never build
+  with ncruces' `sqlite3_flock` or `sqlite3_dotlk` tags: ncruces warns that incompatible VFSes "will eventually
+  corrupt data". The same applies to the `sqlite3` CLI on a live file.
+- To check while setting it up: Litestream's guidance for applications (checkpointing, busy timeout), retention
+  settings, and how its binary gets into the image (release download or `go install`), so Renovate can track it.
+- Backups repo: its Action can run `litestream restore` from R2 into a file and commit `sqlite3 .dump` output,
+  keeping today's text history. It needs a read-only R2 token.
+- Rejected (2026-11-23): the server uploading a daily `VACUUM INTO` snapshot (a day of writes at risk), a one-off
+  server mode importing from Postgres when the file is empty, and uploading the file with `railway ssh`.
+
+### Railway
 
 - A service with a volume can't run two deployments at once: the old one stops before the new one starts, so each
   deploy has a short downtime (accepted). One volume per service, no replicas.
 - Volumes are mounted as root, when the container starts (not at build or pre-deploy). The image runs as `nobody`.
   Railway's only documented fix is `RAILWAY_RUN_UID=0`, which runs the server as root. To keep `nobody`: start as
-  root, `chown` the mount, and drop to `nobody` (Debian's `setpriv`, in util-linux). Decide when adding the volume.
-- Railway's volume backups (manual or scheduled, incremental) can't be downloaded: fine as a second layer only.
+  root, `chown` the mount, and drop to `nobody` (Debian's `setpriv`, in util-linux).
+- Railway's volume backups (manual or scheduled, incremental) can't be downloaded: a second layer at most.
 - Today's backups: the private repo `notedimatteo-backups` runs `supabase db dump` daily against Postgres
-  (`go-migration-notes.md`, "Production data"). A file inside the volume isn't reachable from GitHub Actions.
-  Options:
-  - The server runs `VACUUM INTO` (a consistent copy while running) daily and uploads it to R2 with the existing
-    S3 client; the backups repo's Action downloads it and commits `sqlite3 .dump` output (text diffs as today).
-  - Litestream streams WAL changes to R2 continuously (point-in-time restore), as a second process in the image.
-- Getting the copy onto the volume, options: upload the file (`railway ssh`), or a one-off server mode that imports
-  from Postgres at start when the file is empty (`IMPORT_DATABASE_URL`), removed after cutover.
-- Rollback after cutover: Railway's previous deployment reads Postgres, which misses whatever was written to
-  SQLite since. Copy it back by hand, or don't write until the new deploy looks right.
+  (`go-migration-notes.md`, "Production data").
+
+### Bunny Magic Containers
+
+- Deploys like `../traquantopassa-svelte`: the build workflow pushes the image to GHCR; a deploy workflow runs
+  `BunnyWay/actions/container-update-image` (container `app`, the commit's tag) and
+  `.github/scripts/wait-for-deployment.js`, which polls `https://api.bunny.net/mc/apps/{id}/overview` until every
+  pod runs the new image.
+- Persistent volumes (from Bunny's docs and blog, read 2026-11-23):
+  - Announced 2026-03-04; a third-party write-up calls them public preview, and Bunny's pages give no status.
+  - Bound to a node in a region. If the node is down for maintenance, the pod waits for it; after a hardware failure
+    the volume comes back empty. No automatic backups or replication: Bunny recommends exporting to object storage.
+    Litestream covers both.
+  - Containers in a pod share a group that owns the volume, and new files are group-writable; fresh volumes'
+    owner and mode aren't documented. Test whether `nobody` can write.
+  - Redeploy behavior (stop before start, or overlap) isn't documented. Two processes writing the same file through
+    different volumes would break replication: test it.
+  - No SSH, upload, or download documented: the restore on start replaces them.
+  - 10 MB/s read and write per volume, up to 100 GB, 2 volumes per app, $0.10/GB a month on the provisioned size.
+- Fits phase 4 of the redesign, which considers Bunny as the CDN in front of imgproxy.
+- Bunny Database ("SQLite-compatible", public preview since 2026-02) would put queries over the network and may not
+  run `ext/unicode`: not pursued.
+- Rollback after cutover, on either host: the previous deployment reads Postgres, which misses whatever was written
+  to SQLite since. Copy it back by hand, or don't write until the new deploy looks right.
 
 ## Tests and tooling
 

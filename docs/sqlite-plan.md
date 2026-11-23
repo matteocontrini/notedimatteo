@@ -1,13 +1,14 @@
 # SQLite plan
 
-Replace PostgreSQL with SQLite, in a file on the Railway service's volume. This runs after `go-migration-plan.md`
-and before the redesign's phases 2 (revisions) and 5 (articles), which add tables and columns.
+Replace PostgreSQL with SQLite, in a file on a volume, with Litestream streaming every change to R2. This runs
+after `go-migration-plan.md` and before the redesign's phases 2 (revisions) and 5 (articles), which add tables and
+columns.
 
 Working notes, measurements, and the prototype's findings: `sqlite-notes.md`.
 
 ## Why
 
-- One service fewer on Railway: no separate Postgres to run, pay for, and update.
+- One service fewer: no separate Postgres to run, pay for, and update.
 - Development, Go tests, and production copies work with a file: no Postgres, testcontainers, or `pg_dump`.
 - The data is small (670 posts: a 1.5 MB file) and has one writer.
 
@@ -23,7 +24,8 @@ Working notes, measurements, and the prototype's findings: `sqlite-notes.md`.
 | Tags        | Kept in the order typed (a `position` column); `json_group_array` decoded in Go                                     |
 | Archive     | Months grouped in Go in Europe/Rome (done in Step 0)                                                                |
 | Search      | Unicode-aware `LIKE`, so results stay the same as Postgres's `ILIKE`                                                |
-| Deploys     | A volume means a short downtime on every deploy: accepted                                                           |
+| Hosting     | Railway or Bunny Magic Containers (decided at Step 4); one instance with the file on a volume; a short downtime on every deploy is accepted |
+| Litestream  | `litestream replicate -restore-if-db-not-exists -exec server`: restores from R2 when the volume has no database, then streams changes to R2 while running the server |
 
 ## Steps
 
@@ -56,18 +58,23 @@ dialect. The revisions work (branch `post-revisions`) merges after the move.
 
 - [ ] Add a command that copies a Postgres database into a new SQLite file, sessions included
 - [ ] Compare the copy of production with Postgres, like the prototype: lists, filters, searches, pages
-- [ ] Decide how the file reaches the volume
 
 ### Step 4: Deployment
 
-- [ ] Add the volume, and make it writable: Railway mounts it as root, and the server runs as `nobody`
-- [ ] Choose the backups (a snapshot uploaded to R2 by the server, or Litestream), replace the `supabase db dump`
-  Action, and test a restore
+- [ ] Add Litestream to the image, running the server with `litestream replicate -restore-if-db-not-exists -exec`,
+  and replicating to R2
+- [ ] Choose the host: Railway, or Bunny Magic Containers (deployed like `../traquantopassa-svelte`: GHCR, then
+  `container-update-image`). For Bunny, try a throwaway app first: can `nobody` write to a fresh volume, what does a
+  redeploy do, and does the restore on start work
+- [ ] Make the volume writable for `nobody` (Railway mounts it as root)
+- [ ] Replace the `supabase db dump` Action: restore from R2 and commit a text dump; test a restore, including to an
+  earlier point in time
 - [ ] Update `ARCHITECTURE.md`, `README.md`, `.env.example`, CI, and Renovate
 
 ### Step 5: Cutover
 
-- [ ] Stop writing, copy production, deploy, and check pages, login, a save, and an upload
+- [ ] Stop writing, copy production, and replicate the file to R2 with Litestream
+- [ ] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
 - [ ] Keep the Postgres service for a while as the rollback, then delete it
 - [ ] Remove the copy command
 
