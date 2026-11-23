@@ -6,7 +6,7 @@ import (
 )
 
 func setRequired(t *testing.T) {
-	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("DATABASE_PATH", "test.db")
 	t.Setenv("STORAGE_PUBLIC_BASE_URL", "https://storage.example.com")
 	t.Setenv("ADMIN_USERNAME", "admin")
 	t.Setenv("ADMIN_PASSWORD", "secret")

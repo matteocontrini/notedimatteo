@@ -14,6 +14,11 @@ node_modules
 .DS_Store
 Thumbs.db
 
+# Local database (DATABASE_PATH in .env.example), with its WAL and shared-memory files
+/*.db
+/*.db-wal
+/*.db-shm
+
 # Env
 .env
 .env.*

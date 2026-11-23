@@ -29,16 +29,20 @@ func (db *DB) Categories(ctx context.Context) ([]CategoryCount, error) {
 
 // Archive returns the number of published posts per month in loc, newest first.
 func (db *DB) Archive(ctx context.Context, loc *time.Location) ([]MonthCount, error) {
-	times, err := db.queries.PublishedTimes(ctx)
+	rows, err := db.queries.PublishedTimes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("query publication times: %w", err)
+	}
+	times := make([]time.Time, len(rows))
+	for i, row := range rows {
+		times[i] = row.Time
 	}
 	return countByMonth(times, loc), nil
 }
 
 // countByMonth counts times per month in loc. The times must be sorted newest
 // first; the months come in the same order.
-func countByMonth(times []*time.Time, loc *time.Location) []MonthCount {
+func countByMonth(times []time.Time, loc *time.Location) []MonthCount {
 	var months []MonthCount
 	for _, t := range times {
 		local := t.In(loc)

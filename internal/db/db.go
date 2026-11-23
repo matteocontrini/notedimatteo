@@ -1,4 +1,4 @@
-// Package db holds the PostgreSQL connection pool and SQL queries.
+// Package db holds the SQLite database and its SQL queries.
 //
 // The queries are in queries/*.sql. sqlc generates their Go code (the *.sql.go
 // and sqlc*.go files) with `go tool sqlc generate`, checking them against the
@@ -7,67 +7,74 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
-	"time"
+	"net/url"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ncruces/go-sqlite3"
+	"github.com/ncruces/go-sqlite3/driver"
+	"github.com/ncruces/go-sqlite3/ext/unicode"
 )
 
-const (
-	maxConns        = 4
-	maxConnIdleTime = 5 * time.Minute
-	connectTimeout  = 10 * time.Second
-)
-
-// currentTime returns the current time truncated to milliseconds, the precision
-// of every stored time.
-func currentTime() time.Time {
-	return time.Now().Truncate(time.Millisecond)
-}
+// maxConns is the number of connections. One can read while another writes.
+const maxConns = 2
 
 type DB struct {
-	pool *pgxpool.Pool
-	// conn runs queries and starts transactions. It's the pool, except in tests,
-	// which use a transaction they roll back at the end.
-	conn    conn
+	sql     *sql.DB
 	queries *Queries
 }
 
-type conn interface {
-	DBTX
-	Begin(ctx context.Context) (pgx.Tx, error)
+// Open opens the database file at path, creating it if it doesn't exist.
+func Open(ctx context.Context, path string) (*DB, error) {
+	sqlDB, err := openSQL(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := sqlDB.PingContext(ctx); err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	return &DB{sql: sqlDB, queries: New(sqlDB)}, nil
 }
 
-// Open connects to the database and fails if it can't be reached.
-func Open(ctx context.Context, url string) (*DB, error) {
-	cfg, err := pgxpool.ParseConfig(url)
+// openSQL opens path with the settings every connection needs.
+func openSQL(path string) (*sql.DB, error) {
+	params := url.Values{}
+	// Transactions take the write lock when they begin, so a transaction that
+	// reads and then writes never fails because another one wrote in between.
+	params.Set("_txlock", "immediate")
+	params.Add("_pragma", "busy_timeout(5000)")
+	params.Add("_pragma", "journal_mode(wal)")
+	params.Add("_pragma", "synchronous(normal)")
+	// Without foreign keys on, deletes don't cascade.
+	params.Add("_pragma", "foreign_keys(on)")
+
+	sqlDB, err := driver.Open("file:"+path+"?"+params.Encode(), func(conn *sqlite3.Conn) error {
+		// LIKE, upper, and lower handle every letter, not only ASCII ones
+		return unicode.Register(conn)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("parse database URL: %w", err)
+		return nil, fmt.Errorf("open database: %w", err)
 	}
-	cfg.MaxConns = maxConns
-	cfg.MaxConnIdleTime = maxConnIdleTime
-
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("create connection pool: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, connectTimeout)
-	defer cancel()
-
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("connect to database: %w", err)
-	}
-
-	return &DB{pool: pool, conn: pool, queries: New(pool)}, nil
+	sqlDB.SetMaxOpenConns(maxConns)
+	sqlDB.SetMaxIdleConns(maxConns)
+	return sqlDB, nil
 }
 
 func (db *DB) Close() {
-	db.pool.Close()
+	db.sql.Close()
 }
 
 func (db *DB) Ping(ctx context.Context) error {
-	return db.pool.Ping(ctx)
+	return db.sql.PingContext(ctx)
+}
+
+// decodeTags decodes the JSON array of tag names that queries return.
+func decodeTags(tags string) ([]string, error) {
+	var names []string
+	if err := json.Unmarshal([]byte(tags), &names); err != nil {
+		return nil, fmt.Errorf("decode tags: %w", err)
+	}
+	return names, nil
 }

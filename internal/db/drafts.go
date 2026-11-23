@@ -15,7 +15,9 @@ func (db *DB) Drafts(ctx context.Context) ([]Post, error) {
 	}
 	posts := make([]Post, len(rows))
 	for i, row := range rows {
-		posts[i] = Post(row)
+		if posts[i], err = newPost(PostsRow(row)); err != nil {
+			return nil, err
+		}
 	}
 	return posts, nil
 }

@@ -2,25 +2,28 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/jackc/pgx/v5"
+	"time"
 )
 
 // Session is a login. The browser keeps its token in a cookie.
-type Session = SessionByTokenRow
+type Session struct {
+	ID             int
+	LastActivityAt time.Time
+}
 
 // SessionByToken returns the session with token, or nil if there's none.
 func (db *DB) SessionByToken(ctx context.Context, token string) (*Session, error) {
-	session, err := db.queries.SessionByToken(ctx, token)
-	if errors.Is(err, pgx.ErrNoRows) {
+	row, err := db.queries.SessionByToken(ctx, token)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find session: %w", err)
 	}
-	return &session, nil
+	return &Session{ID: row.ID, LastActivityAt: row.LastActivityAt.Time}, nil
 }
 
 func (db *DB) CreateSession(ctx context.Context, token string) error {

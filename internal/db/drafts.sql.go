@@ -7,32 +7,31 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const countDrafts = `-- name: CountDrafts :one
-SELECT COUNT(*)::int
+SELECT COUNT(*)
 FROM posts
 WHERE published_at IS NULL
 `
 
 func (q *Queries) CountDrafts(ctx context.Context) (int, error) {
-	row := q.db.QueryRow(ctx, countDrafts)
-	var column_1 int
-	err := row.Scan(&column_1)
-	return column_1, err
+	row := q.db.QueryRowContext(ctx, countDrafts)
+	var count int
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createDraft = `-- name: CreateDraft :one
 INSERT INTO posts (number, category, hide_title, body, created_at)
-SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', $1::timestamptz
+SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', ?1
 FROM posts
 RETURNING number
 `
 
 // Creates an empty note with the next post number.
-func (q *Queries) CreateDraft(ctx context.Context, createdAt time.Time) (int, error) {
-	row := q.db.QueryRow(ctx, createDraft, createdAt)
+func (q *Queries) CreateDraft(ctx context.Context, createdAt Time) (int, error) {
+	row := q.db.QueryRowContext(ctx, createDraft, createdAt)
 	var number int
 	err := row.Scan(&number)
 	return number, err
@@ -40,17 +39,17 @@ func (q *Queries) CreateDraft(ctx context.Context, createdAt time.Time) (int, er
 
 const deleteDraft = `-- name: DeleteDraft :execrows
 DELETE FROM posts
-WHERE number = $1
+WHERE number = ?1
   AND published_at IS NULL
 `
 
-// Postgres also deletes the post's tags and cached HTML (ON DELETE CASCADE).
+// The database also deletes the post's tags and cached HTML (ON DELETE CASCADE).
 func (q *Queries) DeleteDraft(ctx context.Context, number int) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteDraft, number)
+	result, err := q.db.ExecContext(ctx, deleteDraft, number)
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+	return result.RowsAffected()
 }
 
 const drafts = `-- name: Drafts :many
@@ -66,14 +65,14 @@ SELECT p.id,
        p.created_at,
        p.updated_at,
        p.published_at,
-       ARRAY(
+       CAST((SELECT json_group_array(tag_name) FROM (
            SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
-       )::text[] AS tags,
+       )) AS TEXT) AS tags,
        c.html AS cached_html
 FROM posts p
 LEFT JOIN post_html_cache c
        ON c.post_id = p.id
-      AND c.renderer_version = $1::int
+      AND c.renderer_version = ?1
       AND c.body_revision = p.body_revision
 WHERE p.published_at IS NULL
 ORDER BY p.created_at DESC
@@ -88,10 +87,10 @@ type DraftsRow struct {
 	HideTitle    bool
 	Body         string
 	BodyRevision int
-	CreatedAt    time.Time
-	UpdatedAt    *time.Time
-	PublishedAt  *time.Time
-	Tags         []string
+	CreatedAt    Time
+	UpdatedAt    *Time
+	PublishedAt  *Time
+	Tags         string
 	CachedHTML   *string
 }
 
@@ -99,7 +98,7 @@ type DraftsRow struct {
 // Returns drafts, newest first. The columns match Posts, so Go can convert
 // each row to Post.
 func (q *Queries) Drafts(ctx context.Context, rendererVersion int) ([]DraftsRow, error) {
-	rows, err := q.db.Query(ctx, drafts, rendererVersion)
+	rows, err := q.db.QueryContext(ctx, drafts, rendererVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +124,9 @@ func (q *Queries) Drafts(ctx context.Context, rendererVersion int) ([]DraftsRow,
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

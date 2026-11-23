@@ -1,6 +1,6 @@
 version: '2'
 sql:
-  - engine: postgresql
+  - engine: sqlite
     # sqlc applies the goose migrations' Up sections in order to learn the schema
     schema: internal/db/migrations
     queries: internal/db/queries
@@ -8,28 +8,46 @@ sql:
       go:
         package: db
         out: internal/db
-        sql_package: pgx/v5
         emit_pointers_for_null_types: true
         omit_unused_structs: true
         initialisms: [id, html, url]
         output_db_file_name: sqlc.go
         output_models_file_name: sqlc_models.go
-        # Use int and time.Time instead of sqlc's default int32 and pgtype.Timestamptz.
-        # Each type is listed twice: once for required columns, once for nullable ones.
+        # STRICT tables have no time or boolean types: map those columns by name.
+        # Times are db.Time; a nullable one is a pointer.
         overrides:
-          - db_type: serial
+          - column: posts.created_at
+            go_type: &time
+              type: Time
+          - column: posts.updated_at
+            go_type: &nullableTime
+              type: Time
+              pointer: true
+          - column: posts.published_at
+            go_type: *nullableTime
+          - column: post_html_cache.rendered_at
+            go_type: *time
+          - column: sessions.created_at
+            go_type: *time
+          - column: sessions.last_activity_at
+            go_type: *time
+          - column: posts.hide_title
+            go_type: bool
+          # Use int instead of sqlc's default int64. sqlc matches type names
+          # case-sensitively: columns are INTEGER, and expressions like COUNT(*) are
+          # integer. Each type is listed twice: once for required values, once for
+          # nullable ones.
+          - db_type: INTEGER
             go_type: int
-          - db_type: pg_catalog.int4
-            go_type: int
-          - db_type: pg_catalog.int4
+          - db_type: INTEGER
             nullable: true
             go_type:
               type: int
               pointer: true
-          - db_type: timestamptz
-            go_type: time.Time
-          - db_type: timestamptz
+          - db_type: integer
+            go_type: int
+          - db_type: integer
             nullable: true
             go_type:
-              type: time.Time
+              type: int
               pointer: true

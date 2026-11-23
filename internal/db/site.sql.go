@@ -7,11 +7,10 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const categories = `-- name: Categories :many
-SELECT category AS slug, COUNT(*)::int AS count
+SELECT category AS slug, COUNT(*) AS count
 FROM posts
 WHERE published_at IS NOT NULL
 GROUP BY category
@@ -25,7 +24,7 @@ type CategoriesRow struct {
 
 // Categories of published posts, most used first.
 func (q *Queries) Categories(ctx context.Context) ([]CategoriesRow, error) {
-	rows, err := q.db.Query(ctx, categories)
+	rows, err := q.db.QueryContext(ctx, categories)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +36,9 @@ func (q *Queries) Categories(ctx context.Context) ([]CategoriesRow, error) {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -52,19 +54,22 @@ ORDER BY published_at DESC
 `
 
 // Returns the publication times of published posts, newest first.
-func (q *Queries) PublishedTimes(ctx context.Context) ([]*time.Time, error) {
-	rows, err := q.db.Query(ctx, publishedTimes)
+func (q *Queries) PublishedTimes(ctx context.Context) ([]*Time, error) {
+	rows, err := q.db.QueryContext(ctx, publishedTimes)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*time.Time
+	var items []*Time
 	for rows.Next() {
-		var published_at *time.Time
+		var published_at *Time
 		if err := rows.Scan(&published_at); err != nil {
 			return nil, err
 		}
 		items = append(items, published_at)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -73,7 +78,7 @@ func (q *Queries) PublishedTimes(ctx context.Context) ([]*time.Time, error) {
 }
 
 const tags = `-- name: Tags :many
-SELECT pt.tag_name AS name, COUNT(*)::int AS count
+SELECT pt.tag_name AS name, COUNT(*) AS count
 FROM posts_tags pt
 JOIN posts p ON p.id = pt.post_id
 WHERE p.published_at IS NOT NULL
@@ -88,7 +93,7 @@ type TagsRow struct {
 
 // Tags of published posts, most used first.
 func (q *Queries) Tags(ctx context.Context) ([]TagsRow, error) {
-	rows, err := q.db.Query(ctx, tags)
+	rows, err := q.db.QueryContext(ctx, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +105,9 @@ func (q *Queries) Tags(ctx context.Context) ([]TagsRow, error) {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

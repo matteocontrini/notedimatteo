@@ -4,7 +4,7 @@ This repository contains the source code for the website [notedimatteo.it](https
 
 ## Project architecture
 
-Following the migration from SvelteKit, this project is now a Go application. A Go server renders the pages with [templ](https://templ.guide), reading and writing posts from a PostgreSQL instance. 
+Following the migration from SvelteKit, this project is now a Go application. A Go server renders the pages with [templ](https://templ.guide), reading and writing posts in a SQLite database file.
 
 The post editor is a Svelte 5 app (no SvelteKit) that the HTML template mounts on the edit page. CSS and scripts are bundled by Vite and embedded in the Go binary.
 
@@ -13,6 +13,8 @@ Architecture details are described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE
 ## Configuration
 
 Refer to `.env.example` for the environment variables. Create a `.env` file in the root directory and set the variables accordingly.
+
+`DATABASE_PATH` is the SQLite database file. The server creates it if it doesn't exist.
 
 The `STORAGE_S3_*` variables are optional: without them, image uploads are disabled.
 
@@ -44,4 +46,4 @@ npm test           # runs the editor's tests (Vitest), the Go tests, and the bro
 Additional facts:
 - The scripts `dev`, `check`, and `test` also run `generate` first.
 - Image processing is handled by libvips, installed with npm. When you run `npm install`, the file `.libvips/vips.pc` is written and it points the Go build at the libvips in `node_modules`. Go commands that compile the image processing thefore need `PKG_CONFIG_LIBDIR="$PWD/.libvips"` (already included in the scripts).
-- Docker is needed to run the tests with Testcontainers.
+- Docker is needed to run the browser tests, which start an S3 server with Testcontainers.

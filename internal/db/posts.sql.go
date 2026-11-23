@@ -7,23 +7,23 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const countPosts = `-- name: CountPosts :one
-SELECT COUNT(*)::int
+SELECT COUNT(*)
 FROM posts p
 WHERE p.published_at IS NOT NULL
-  AND ($1::int IS NULL OR p.number = $1)
-  AND ($2::text IS NULL OR p.category = $2)
-  AND ($3::text IS NULL OR EXISTS (
-          SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = $3))
-  AND ($4::text IS NULL
-          OR p.title ILIKE $4
-          OR p.body ILIKE $4
-          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name ILIKE $4))
-  AND ($5::timestamptz IS NULL OR p.published_at >= $5)
-  AND ($6::timestamptz IS NULL OR p.published_at < $6)
+  AND (p.number = ?1 OR ?1 IS NULL)
+  AND (p.category = ?2 OR ?2 IS NULL)
+  AND (EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = ?3)
+          OR ?3 IS NULL)
+  AND ((p.title LIKE ?4 ESCAPE '\')
+          OR (p.body LIKE ?4 ESCAPE '\')
+          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id
+                     AND (pt.tag_name LIKE ?4 ESCAPE '\'))
+          OR ?4 IS NULL)
+  AND (p.published_at >= ?5 OR ?5 IS NULL)
+  AND (p.published_at < ?6 OR ?6 IS NULL)
 `
 
 type CountPostsParams struct {
@@ -31,12 +31,12 @@ type CountPostsParams struct {
 	Category       *string
 	Tag            *string
 	SearchPattern  *string
-	PublishedFrom  *time.Time
-	PublishedUntil *time.Time
+	PublishedFrom  *Time
+	PublishedUntil *Time
 }
 
 func (q *Queries) CountPosts(ctx context.Context, arg CountPostsParams) (int, error) {
-	row := q.db.QueryRow(ctx, countPosts,
+	row := q.db.QueryRowContext(ctx, countPosts,
 		arg.Number,
 		arg.Category,
 		arg.Tag,
@@ -44,9 +44,9 @@ func (q *Queries) CountPosts(ctx context.Context, arg CountPostsParams) (int, er
 		arg.PublishedFrom,
 		arg.PublishedUntil,
 	)
-	var column_1 int
-	err := row.Scan(&column_1)
-	return column_1, err
+	var count int
+	err := row.Scan(&count)
+	return count, err
 }
 
 const posts = `-- name: Posts :many
@@ -62,28 +62,29 @@ SELECT p.id,
        p.created_at,
        p.updated_at,
        p.published_at,
-       ARRAY(
+       CAST((SELECT json_group_array(tag_name) FROM (
            SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
-       )::text[] AS tags,
+       )) AS TEXT) AS tags,
        c.html AS cached_html
 FROM posts p
 LEFT JOIN post_html_cache c
        ON c.post_id = p.id
-      AND c.renderer_version = $1::int
+      AND c.renderer_version = ?1
       AND c.body_revision = p.body_revision
 WHERE p.published_at IS NOT NULL
-  AND ($2::int IS NULL OR p.number = $2)
-  AND ($3::text IS NULL OR p.category = $3)
-  AND ($4::text IS NULL OR EXISTS (
-          SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = $4))
-  AND ($5::text IS NULL
-          OR p.title ILIKE $5
-          OR p.body ILIKE $5
-          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name ILIKE $5))
-  AND ($6::timestamptz IS NULL OR p.published_at >= $6)
-  AND ($7::timestamptz IS NULL OR p.published_at < $7)
+  AND (p.number = ?2 OR ?2 IS NULL)
+  AND (p.category = ?3 OR ?3 IS NULL)
+  AND (EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = ?4)
+          OR ?4 IS NULL)
+  AND ((p.title LIKE ?5 ESCAPE '\')
+          OR (p.body LIKE ?5 ESCAPE '\')
+          OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id
+                     AND (pt.tag_name LIKE ?5 ESCAPE '\'))
+          OR ?5 IS NULL)
+  AND (p.published_at >= ?6 OR ?6 IS NULL)
+  AND (p.published_at < ?7 OR ?7 IS NULL)
 ORDER BY p.published_at DESC, p.number DESC
-LIMIT $9::int OFFSET $8::int
+LIMIT ?9 OFFSET ?8
 `
 
 type PostsParams struct {
@@ -92,10 +93,10 @@ type PostsParams struct {
 	Category        *string
 	Tag             *string
 	SearchPattern   *string
-	PublishedFrom   *time.Time
-	PublishedUntil  *time.Time
+	PublishedFrom   *Time
+	PublishedUntil  *Time
 	SkipRows        int
-	MaxRows         *int
+	MaxRows         int
 }
 
 type PostsRow struct {
@@ -107,20 +108,26 @@ type PostsRow struct {
 	HideTitle    bool
 	Body         string
 	BodyRevision int
-	CreatedAt    time.Time
-	UpdatedAt    *time.Time
-	PublishedAt  *time.Time
-	Tags         []string
+	CreatedAt    Time
+	UpdatedAt    *Time
+	PublishedAt  *Time
+	Tags         string
 	CachedHTML   *string
 }
 
 // Posts and CountPosts take the same optional filters: a NULL parameter
 // doesn't filter. Keep their WHERE clauses identical.
+//
+// Each filter compares the parameter with a column before testing it for NULL:
+// sqlc types a parameter from its first use, and the column gives it a type.
+//
+// LIKE ignores case for every letter (the unicode extension, registered by
+// Open). sqlc can't parse a LIKE with ESCAPE after an OR without parentheses.
 // Returns published posts, newest first, with tags in typed order.
 // No cached HTML if it's from another body revision or renderer version
-// LIMIT NULL returns every row
+// LIMIT -1 returns every row
 func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error) {
-	rows, err := q.db.Query(ctx, posts,
+	rows, err := q.db.QueryContext(ctx, posts,
 		arg.RendererVersion,
 		arg.Number,
 		arg.Category,
@@ -157,6 +164,9 @@ func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -165,12 +175,12 @@ func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error
 
 const savePostHTML = `-- name: SavePostHTML :exec
 INSERT INTO post_html_cache (post_id, renderer_version, body_revision, html, rendered_at)
-VALUES ($1, $2, $3, $4, $5)
+VALUES (?1, ?2, ?3, ?4, ?5)
 ON CONFLICT (post_id) DO UPDATE
-SET renderer_version = EXCLUDED.renderer_version,
-    body_revision    = EXCLUDED.body_revision,
-    html             = EXCLUDED.html,
-    rendered_at      = EXCLUDED.rendered_at
+SET renderer_version = excluded.renderer_version,
+    body_revision    = excluded.body_revision,
+    html             = excluded.html,
+    rendered_at      = excluded.rendered_at
 `
 
 type SavePostHTMLParams struct {
@@ -178,12 +188,12 @@ type SavePostHTMLParams struct {
 	RendererVersion int
 	BodyRevision    int
 	HTML            string
-	RenderedAt      time.Time
+	RenderedAt      Time
 }
 
 // Caches a post's rendered body.
 func (q *Queries) SavePostHTML(ctx context.Context, arg SavePostHTMLParams) error {
-	_, err := q.db.Exec(ctx, savePostHTML,
+	_, err := q.db.ExecContext(ctx, savePostHTML,
 		arg.PostID,
 		arg.RendererVersion,
 		arg.BodyRevision,

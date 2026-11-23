@@ -1,23 +1,27 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { existsSync } from 'node:fs';
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { GenericContainer, Wait } from 'testcontainers';
 import { E2E_PORT } from '../../playwright.config.ts';
 import { ADMIN_PASSWORD, ADMIN_USERNAME, BUCKET, seedSQL } from './data.ts';
 
 /**
- * Runs the server built by `npm run test:e2e` against a throwaway Postgres
- * and an in-memory S3 server. The server applies the migrations when it
- * starts; the seed data from data.ts goes in after that.
+ * Runs the server built by `npm run test:e2e` on a database file in a
+ * temporary directory, with an in-memory S3 server. The server creates the
+ * file and applies the migrations when it starts; the seed data from data.ts
+ * goes in after that.
  */
 export default async function globalSetup() {
 	if (!existsSync('.e2e/server')) {
 		throw new Error('.e2e/server is missing: run the tests with npm run test:e2e');
 	}
 
-	const [postgres, s3] = await Promise.all([startPostgres(), startS3()]);
-	const databaseURL = postgres.getConnectionUri();
+	const s3 = await startS3();
+	const directory = mkdtempSync(join(tmpdir(), 'notedimatteo-e2e-'));
+	const databasePath = join(directory, 'notedimatteo.db');
 
 	// rclone serves the bucket over plain HTTP too, as the public address of the
 	// uploaded images
@@ -29,7 +33,7 @@ export default async function globalSetup() {
 		env: {
 			PATH: process.env.PATH,
 			PORT: String(E2E_PORT),
-			DATABASE_URL: databaseURL,
+			DATABASE_PATH: databasePath,
 			// A site address that isn't the test server's, so the page turns GoatCounter off
 			SITE_URL: 'https://notedimatteo.it',
 			ADMIN_USERNAME,
@@ -53,38 +57,31 @@ export default async function globalSetup() {
 	});
 	await Promise.race([waitForServer(`http://localhost:${E2E_PORT}/healthz`), exited]);
 
-	const seed = await postgres.exec([
-		'psql',
-		'-v',
-		'ON_ERROR_STOP=1',
-		'-U',
-		postgres.getUsername(),
-		'-d',
-		postgres.getDatabase(),
-		'-c',
-		seedSQL(),
-	]);
 	const stop = async () => {
 		server.removeAllListeners('exit');
 		exited.catch(() => {});
-		server.kill();
-		await Promise.all([postgres.stop(), s3.stop()]);
+		if (server.exitCode === null) {
+			// Wait for the server to close the database before removing it
+			const exit = once(server, 'exit');
+			server.kill();
+			await exit;
+		}
+		await s3.stop();
+		rmSync(directory, { recursive: true, force: true });
 
 		if (process.env.E2E_SERVER_LOGS) console.log(output);
 	};
 
-	if (seed.exitCode !== 0) {
+	try {
+		// The server keeps the file open: the timeout waits for its locks
+		const database = new DatabaseSync(databasePath, { timeout: 5000 });
+		database.exec(seedSQL());
+		database.close();
+	} catch (error) {
 		await stop();
-		throw new Error(`The seed failed:\n${seed.output}`);
+		throw new Error('The seed failed', { cause: error });
 	}
 	return stop;
-}
-
-function startPostgres() {
-	return new PostgreSqlContainer('postgres:18')
-		.withDatabase('notedimatteo')
-		.withCommand(['postgres', '-c', 'fsync=off'])
-		.start();
 }
 
 // startS3 runs rclone with two servers over one directory: S3 on port 9000,

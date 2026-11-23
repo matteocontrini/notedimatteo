@@ -5,7 +5,7 @@ How the site works and why it's built this way. `README.md` covers setup and the
 ## Overview
 
 - One Go binary (`cmd/server`) serves the whole site. It renders pages with [templ](https://templ.guide), reads
-  and writes PostgreSQL, stores images in an S3-compatible bucket (Cloudflare R2), and processes them with libvips.
+  and writes a SQLite file, stores images in an S3-compatible bucket (Cloudflare R2), and processes them with libvips.
 - The post editor is a Svelte 5 app that Go mounts on the edit page. Everything else is plain HTML: links and
   forms handle navigation, search, login, and deletion. Small scripts handle the theme, sidebar tag sorting, and
   delete confirmation.
@@ -22,7 +22,7 @@ How the site works and why it's built this way. `README.md` covers setup and the
 | `internal/server` | Routes, middleware, handlers; builds the data each page shows |
 | `internal/views` | templ components, date formatting (Europe/Rome, Italian month names) |
 | `internal/urls` | Every URL the site builds |
-| `internal/db` | pgx pool, sqlc queries (`queries/`), goose migrations (`migrations/`) |
+| `internal/db` | SQLite connections, sqlc queries (`queries/`), goose migrations (`migrations/`) |
 | `internal/markdown` | goldmark renderer and the `[img]` syntax |
 | `internal/images` | Upload flow: object keys and the two uploads (plain Go) |
 | `internal/images/libvips` | Image processing with govips (cgo) |
@@ -50,22 +50,32 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 
 ## Database
 
+- SQLite through [ncruces/go-sqlite3](https://github.com/ncruces/go-sqlite3) (without cgo) and `database/sql`,
+  in one file (`DATABASE_PATH`). Every connection uses WAL, `foreign_keys` (deletes cascade only with it), a busy
+  timeout, and immediate transactions, which take the write lock when they begin. Two connections: one can read
+  while the other writes.
+- `ext/unicode` replaces `LIKE`, so search ignores the case of every letter, accented ones included.
 - Queries live in `internal/db/queries/*.sql`; sqlc generates typed Go code from them and from the migrations.
   The generated files are committed. Conventions:
-  - Overrides map `int4`/`serial` to `int` and `timestamptz` to `time.Time`. Cast integer parameters and
-    results to `::int`.
-  - Filters are optional parameters (`sqlc.narg(x) IS NULL OR ...`), so the query text never changes. `Posts`
-    and `CountPosts` repeat the same `WHERE`; a test checks they agree.
-  - Row types like `db.Post` are aliases of sqlc's generated structs.
-- The schema comes from the SvelteKit app's Prisma migrations. `00007` renamed its camelCase columns to snake_case;
-  constraint and index names keep the old case (`posts_tags_postId_fkey`).
-- goose migrations are embedded and run when the server starts. `00001_baseline.sql` recreates the Prisma
-  schema with `IF NOT EXISTS`, so on the production database it only recorded version 1. Migrations have no Down.
+  - Overrides map `INTEGER` and `integer` to `int` (sqlc matches the case), each time column to `db.Time`, and
+    `posts.hide_title` to `bool`. A new time or boolean column needs its own override.
+  - Filters are optional parameters (`col = sqlc.narg(x) OR sqlc.narg(x) IS NULL`), so the query text never
+    changes. sqlc types a parameter from its first use, so the comparison comes first. `Posts` and `CountPosts`
+    repeat the same `WHERE`; a test checks they agree.
+  - Tags come as a JSON array (`json_group_array`), which Go decodes into `db.Post` and `db.EditablePost`; saves
+    pass tags as a JSON array to `json_each`.
+- Tables are `STRICT`: a value of the wrong type is an error. `STRICT` has no time or boolean types:
+  - Times are `TEXT` in UTC with milliseconds (`2026-11-23 10:00:00.000`), the format of SQLite's date
+    functions, so comparing and sorting the text compares the times. A `CHECK` on each column rejects any other
+    format; `TestTimeColumns` checks that every `*_at` column has it. `db.Time` writes and reads the format, and
+    the wrappers return `time.Time`. Go sets every time (`currentTime` in `internal/db`); no column has a time
+    default.
+  - Booleans are `INTEGER` with `CHECK (col IN (0, 1))`.
+- goose migrations are embedded and run when the server starts. `00001_baseline.sql` is the schema moved from
+  PostgreSQL, the SvelteKit app's database. Migrations have no Down.
 - Archive months are in Europe/Rome: Go counts the publication times per month (`db.Archive`), and the month
-  pages select from midnight in Rome to midnight in Rome. Production Postgres runs in UTC.
+  pages select from midnight in Rome to midnight in Rome.
 - A post's tags keep the order they were typed in: `posts_tags.position`, numbered from 0 by each save.
-- Go sets every time the database stores, truncated to milliseconds (`currentTime` in `internal/db`); no column
-  has a time default.
 
 ## Markdown
 
@@ -103,7 +113,7 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 
 - One admin account from `ADMIN_USERNAME` and `ADMIN_PASSWORD`, compared in constant time.
 - Sessions live in the `sessions` table; the cookie is `notedimatteo_session`: 60 days, `HttpOnly`,
-  `SameSite=Lax`, and `Secure` except on localhost. `lastActivityAt` updates at most once a minute.
+  `SameSite=Lax`, and `Secure` except on localhost. `last_activity_at` updates at most once a minute.
 - Logout, new draft, and delete are POST forms, because Lax cookies reach GET links from other sites.
 - TODOs: expire sessions in the database, and limit failed logins.
 
@@ -124,7 +134,8 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   form text with `\r\n` line breaks; the endpoint stores `\n`.
 - `POST /{number}/edit/preview` renders Markdown with the same renderer as published posts.
 - `form.ts` tracks unsaved changes against what the last successful save sent.
-- The save locks the post's row and updates the post, its cached HTML, and its tags in one transaction.
+- The save updates the post, its cached HTML, and its tags in one transaction, which holds the write lock from
+  its start, so two saves never overlap.
 
 ## Assets
 
@@ -139,11 +150,12 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 - Go: logic is tested as plain functions or by rendering one component; HTTP tests check status codes, headers,
   and errors, with a fake store. templ's compiler catches missing fields, so no test only checks that a field
   reaches the page.
-- Database tests (`internal/db`) start `postgres:18` with testcontainers-go, apply the migrations, and load a
-  small seed. `-short` skips them; `TEST_DATABASE_URL` runs them against another database as it is, and tests
-  that write roll back.
-- Browser tests (`tests/e2e`) build the server, start `postgres:18` and rclone's S3 server with testcontainers,
-  start the server on port 6210 (which migrates), load the seed from `data.ts`, and run Playwright. A test fails
+- Database tests (`internal/db`) build a template file with the migrations and a small seed, and each test opens
+  its own copy. `TEST_DATABASE_PATH` replaces the seed with a copy of another database file, such as a copy of
+  production data, which the tests never change.
+- Browser tests (`tests/e2e`) build the server, start rclone's S3 server with testcontainers, start the server on
+  port 6210 with a database file in a temporary directory (the server creates and migrates it), load the seed
+  from `data.ts` with `node:sqlite`, and run Playwright. A test fails
   on any uncaught JavaScript error, and requests to other hosts are aborted.
 - `docker build --target libvips-test .` runs the image processing tests inside the production image.
 
@@ -164,7 +176,7 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 
 | Variable | |
 |---|---|
-| `DATABASE_URL` | Required |
+| `DATABASE_PATH` | Required: the SQLite file, created if missing |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Required |
 | `STORAGE_PUBLIC_BASE_URL` | Required: the public address of uploaded images |
 | `STORAGE_S3_ENDPOINT`, `_REGION`, `_ACCESS_KEY_ID`, `_SECRET_ACCESS_KEY`, `_BUCKET` | All or none; without them, uploads are off |

@@ -42,11 +42,11 @@ func run() error {
 		return err
 	}
 
-	if err := db.Migrate(ctx, cfg.DatabaseURL); err != nil {
+	if err := db.Migrate(ctx, cfg.DatabasePath); err != nil {
 		return err
 	}
 
-	database, err := db.Open(ctx, cfg.DatabaseURL)
+	database, err := db.Open(ctx, cfg.DatabasePath)
 	if err != nil {
 		return err
 	}

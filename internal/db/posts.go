@@ -9,9 +9,47 @@ import (
 	"github.com/matteocontrini/notedimatteo/internal/markdown"
 )
 
-// Post is a published post. CachedHTML is nil if the cache is missing, or was
-// rendered from another body revision or by another renderer version.
-type Post = PostsRow
+// Post is a published post or a draft.
+type Post struct {
+	ID           int
+	Number       int
+	Category     string
+	Title        string
+	Slug         string
+	HideTitle    bool
+	Body         string
+	BodyRevision int
+	CreatedAt    time.Time
+	UpdatedAt    *time.Time
+	PublishedAt  *time.Time
+	// Tags are in the order they were typed.
+	Tags []string
+	// CachedHTML is nil if the cache is missing, or was rendered from another
+	// body revision or by another renderer version.
+	CachedHTML *string
+}
+
+func newPost(row PostsRow) (Post, error) {
+	tags, err := decodeTags(row.Tags)
+	if err != nil {
+		return Post{}, err
+	}
+	return Post{
+		ID:           row.ID,
+		Number:       row.Number,
+		Category:     row.Category,
+		Title:        row.Title,
+		Slug:         row.Slug,
+		HideTitle:    row.HideTitle,
+		Body:         row.Body,
+		BodyRevision: row.BodyRevision,
+		CreatedAt:    row.CreatedAt.Time,
+		UpdatedAt:    timePointer(row.UpdatedAt),
+		PublishedAt:  timePointer(row.PublishedAt),
+		Tags:         tags,
+		CachedHTML:   row.CachedHTML,
+	}, nil
+}
 
 // Timestamp is the publication time, or the creation time for drafts.
 func (p Post) Timestamp() time.Time {
@@ -35,7 +73,7 @@ type PostFilter struct {
 	Until time.Time
 }
 
-// likeEscaper escapes LIKE's wildcards, with ILIKE's default escape character.
+// likeEscaper escapes LIKE's wildcards with the queries' escape character.
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 func (f PostFilter) params() CountPostsParams {
@@ -51,10 +89,10 @@ func (f PostFilter) params() CountPostsParams {
 		p.SearchPattern = &pattern
 	}
 	if !f.From.IsZero() {
-		p.PublishedFrom = &f.From
+		p.PublishedFrom = &Time{f.From}
 	}
 	if !f.Until.IsZero() {
-		p.PublishedUntil = &f.Until
+		p.PublishedUntil = &Time{f.Until}
 	}
 	return p
 }
@@ -70,15 +108,22 @@ func (db *DB) Posts(ctx context.Context, filter PostFilter, limit, offset int) (
 		SearchPattern:   p.SearchPattern,
 		PublishedFrom:   p.PublishedFrom,
 		PublishedUntil:  p.PublishedUntil,
+		MaxRows:         limit,
 		SkipRows:        offset,
 	}
-	if limit > 0 {
-		params.MaxRows = &limit
+	if limit == 0 {
+		params.MaxRows = -1
 	}
 
-	posts, err := db.queries.Posts(ctx, params)
+	rows, err := db.queries.Posts(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("query posts: %w", err)
+	}
+	posts := make([]Post, len(rows))
+	for i, row := range rows {
+		if posts[i], err = newPost(row); err != nil {
+			return nil, err
+		}
 	}
 	return posts, nil
 }

@@ -7,47 +7,46 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const createSession = `-- name: CreateSession :exec
 INSERT INTO sessions (token, created_at, last_activity_at)
-VALUES ($1, $2::timestamptz, $2::timestamptz)
+VALUES (?1, ?2, ?2)
 `
 
 type CreateSessionParams struct {
 	Token string
-	Now   time.Time
+	Now   Time
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
-	_, err := q.db.Exec(ctx, createSession, arg.Token, arg.Now)
+	_, err := q.db.ExecContext(ctx, createSession, arg.Token, arg.Now)
 	return err
 }
 
 const deleteSession = `-- name: DeleteSession :exec
 DELETE FROM sessions
-WHERE token = $1
+WHERE token = ?1
 `
 
 func (q *Queries) DeleteSession(ctx context.Context, token string) error {
-	_, err := q.db.Exec(ctx, deleteSession, token)
+	_, err := q.db.ExecContext(ctx, deleteSession, token)
 	return err
 }
 
 const sessionByToken = `-- name: SessionByToken :one
 SELECT id, last_activity_at
 FROM sessions
-WHERE token = $1
+WHERE token = ?1
 `
 
 type SessionByTokenRow struct {
 	ID             int
-	LastActivityAt time.Time
+	LastActivityAt Time
 }
 
 func (q *Queries) SessionByToken(ctx context.Context, token string) (SessionByTokenRow, error) {
-	row := q.db.QueryRow(ctx, sessionByToken, token)
+	row := q.db.QueryRowContext(ctx, sessionByToken, token)
 	var i SessionByTokenRow
 	err := row.Scan(&i.ID, &i.LastActivityAt)
 	return i, err
@@ -55,16 +54,16 @@ func (q *Queries) SessionByToken(ctx context.Context, token string) (SessionByTo
 
 const touchSession = `-- name: TouchSession :exec
 UPDATE sessions
-SET last_activity_at = $1::timestamptz
-WHERE id = $2
+SET last_activity_at = ?1
+WHERE id = ?2
 `
 
 type TouchSessionParams struct {
-	Now time.Time
+	Now Time
 	ID  int
 }
 
 func (q *Queries) TouchSession(ctx context.Context, arg TouchSessionParams) error {
-	_, err := q.db.Exec(ctx, touchSession, arg.Now, arg.ID)
+	_, err := q.db.ExecContext(ctx, touchSession, arg.Now, arg.ID)
 	return err
 }

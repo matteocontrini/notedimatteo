@@ -52,8 +52,8 @@ jobs:
       - name: Install Playwright browsers
         if: matrix.script == 'test:e2e'
         run: npx playwright install --with-deps chromium
-      # The Go and browser tests start Postgres and rclone's S3 server with
-      # testcontainers, through the runner's Docker
+      # The browser tests start rclone's S3 server with testcontainers, through
+      # the runner's Docker
       - name: Run tests
         run: npm run ${{ matrix.script }}
       - name: Upload Playwright report

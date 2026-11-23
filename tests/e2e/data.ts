@@ -39,12 +39,15 @@ export const posts: SeedPost[] = Array.from({ length: 24 }, (_, i) => {
 
 const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
+// storedTime formats a date like the server stores times: UTC, with milliseconds.
+const storedTime = (date: Date) => quote(date.toISOString().replace('T', ' ').replace('Z', ''));
+
 export function seedSQL() {
 	const tags = [...new Set(posts.flatMap((post) => post.tags))];
 	const rows = posts.map(
 		(post) =>
 			`(${post.number}, ${quote(post.category)}, ${quote(post.title)}, ${quote(post.slug)}, FALSE, ` +
-			`${quote(post.body)}, '${post.publishedAt.toISOString()}', '${post.publishedAt.toISOString()}', NULL)`,
+			`${quote(post.body)}, ${storedTime(post.publishedAt)}, ${storedTime(post.publishedAt)}, NULL)`,
 	);
 	const links = posts.flatMap((post) =>
 		post.tags.map(

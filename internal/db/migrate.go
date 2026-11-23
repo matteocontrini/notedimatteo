@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"log/slog"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 )
 
@@ -18,12 +17,13 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Migrate applies the migrations that the database doesn't have yet. goose
-// records the applied ones in the goose_db_version table.
-func Migrate(ctx context.Context, url string) error {
-	sqlDB, err := sql.Open("pgx", url)
+// Migrate applies the migrations that the database file at path doesn't have
+// yet, creating the file if it doesn't exist. goose records the applied
+// migrations in the goose_db_version table.
+func Migrate(ctx context.Context, path string) error {
+	sqlDB, err := openSQL(path)
 	if err != nil {
-		return fmt.Errorf("open database: %w", err)
+		return err
 	}
 	defer sqlDB.Close()
 
@@ -49,7 +49,7 @@ func newMigrationProvider(sqlDB *sql.DB) (*goose.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider, err := goose.NewProvider(goose.DialectPostgres, sqlDB, files)
+	provider, err := goose.NewProvider(goose.DialectSQLite3, sqlDB, files)
 	if err != nil {
 		return nil, fmt.Errorf("load migrations: %w", err)
 	}

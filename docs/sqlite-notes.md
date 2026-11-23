@@ -97,7 +97,38 @@ start without redoing them. Remove notes that stop being true.
   - The editor's JSON and form fields (`hideTitle`, `createdAt`, … in `internal/server/edit.go`) aren't columns
     and keep their names.
   - Older deployments read the old names: a rollback past this migration breaks, as with any migration.
-- Skipped (2026-11-23): a unique index on `sessions.token`.
+- Skipped (2026-11-23): a unique index on `sessions.token`. The SQLite baseline has it (`UNIQUE`).
+
+## Steps 1 and 2 (done 2026-11-23)
+
+- Code:
+  - `00001_baseline.sql` replaces the seven Postgres migrations (see "Schema").
+  - `db.Open(ctx, path)` and `db.Migrate(ctx, path)` share `openSQL`, which sets the driver parameters and
+    registers `ext/unicode`; `SetMaxOpenConns(2)`. SQLite creates a missing file but not a missing directory.
+  - `db.Post` and `db.EditablePost` are structs now, built from sqlc's rows (`newPost`, `newEditablePost`) after
+    decoding the tags' JSON. `Drafts` converts `DraftsRow` to `PostsRow` (same fields) and reuses `newPost`.
+  - `SavePost` opens the transaction and calls `savePost` with `db.queries.WithTx(tx)`; `PostForSave` replaces
+    `LockPost` (`FOR UPDATE`). The number taken is `errors.Is(err, sqlite3.CONSTRAINT_UNIQUE)`: ncruces' `Error`
+    implements `Is` for `ExtendedErrorCode`.
+  - Times are `db.Time` in sqlc's code (see "Schema"); the wrappers convert to `time.Time`, so `db.Session` is a
+    struct too. `UpdatePostParams.UpdatedAt` is `*Time` (the column is nullable).
+- Tests:
+  - `TestMain` builds a template (migrate and seed, or `VACUUM INTO` from `TEST_DATABASE_PATH` opened with
+    `mode=ro`, then migrate), and `openTestDB` copies it into `t.TempDir()`. `openTestTx`, the `-short` skip, and
+    `TestMigrationsLoad` (TestMain migrates anyway) are gone. The Go tests no longer need Docker.
+  - `TestStoredTimes` reads the stored text and checks its exact format and that it's the current time in UTC.
+    `TestTimeColumns` checks that every table is `STRICT` and every `*_at` column has the format `CHECK` (both
+    failures checked), and that the `CHECK` rejects `2026-11-23T10:00:00Z`. `TestSearchIgnoresCase` (seed post 4 has `più`) fails without `unicode.Register`
+    (checked).
+  - Browser tests: `DatabaseSync(path, { timeout: 5000 })` seeds while the server holds the file; teardown waits
+    for the server to exit before removing the temporary directory. `data.ts` writes times as
+    `toISOString()` without `T` and `Z`, the stored format.
+- `npm` refuses to run on Node 24 (the nvm default here): `engines` wants 26.x
+  (`~/.nvm/versions/node/v26.13.1`).
+- Smoke test of the built server on a new file: it migrates, serves `/`, the `sqlite3` CLI reads the file while it
+  runs (WAL), and a clean shutdown checkpoints and removes `-wal` and `-shm`.
+- The local `.env` still has `DATABASE_URL`: `npm run dev` needs `DATABASE_PATH` (`.env.example`; `/*.db*` is
+  ignored by git).
 
 ## Prototype (2026-11-22)
 
@@ -169,7 +200,9 @@ Workload: 1,200 home pages, 120 searches, and 120 reads of all posts, 4 goroutin
 - Since v0.33.0 (2026-03) it translates SQLite's Wasm build to Go with wasm2go, in
   `github.com/ncruces/go-sqlite3-wasm/v6`. Before that it ran the Wasm in wazero. Its only dependencies are Go and
   `x/sys` (`ext/unicode` adds `x/text`).
-- sqlc already depends on v0.32.0 (in `go.sum` as indirect): Renovate will see two versions until sqlc updates.
+- sqlc depends on v0.32.0, but the tools share the module graph: sqlc builds with v0.38.0 (checked). It imports
+  the deprecated `go-sqlite3/embed`, which now prints "If you're reading this, you're unnecessarily importing
+  github.com/ncruces/go-sqlite3/embed." on every `sqlc generate`: harmless, until sqlc drops the import.
 - `ext/unicode`: Unicode-aware `upper`, `lower`, `LIKE` (`strings.EqualFold` rules, through a regexp cached per
   statement), `REGEXP`, collations, plus `casefold`, `unaccent`, `normalize`, `initcap`. Overriding `LIKE` turns off
   SQLite's LIKE optimization (indexes for prefix patterns): no query here uses it.
@@ -178,7 +211,9 @@ Workload: 1,200 home pages, 120 searches, and 120 reads of all posts, 4 goroutin
 - `_txlock` defaults to `immediate`. A busy timeout of 1 minute is set before any `_pragma`.
 - `_timefmt` takes SQLite's formats; for formats without an offset (like `2006-01-02 15:04:05.000`,
   `TimeFormat4`) it converts to UTC before writing. Columns declared `DATETIME`, `DATE`, `TIME`, or `TIMESTAMP`
-  scan into `time.Time`.
+  scan into `time.Time` (`scanFromDecl` in `driver/driver.go`); a `TEXT` column always scans as a string, and only
+  the default RFC 3339 format is recognized in other columns (`maybeTime`, not fixed width). The schema is
+  `STRICT`, so the code doesn't use `_timefmt`: `db.Time` writes and reads the text.
 - Errors: `*sqlite3.Error`, with `ExtendedCode() == sqlite3.CONSTRAINT_UNIQUE` for the number taken.
 
 The opener used by the prototype:
@@ -232,8 +267,8 @@ db, err := driver.Open("file:"+path+"?"+q.Encode(), func(c *sqlite3.Conn) error 
 ### Settings from jacob.gold's post (2025-08)
 
 - It suggests a 32 MiB page cache, `temp_store = MEMORY`, `PRAGMA optimize` on each connection, 2–8 connections,
-  and `STRICT` tables. The database is 1.5 MB, so the default 2 MB cache already holds all of it; `STRICT` conflicts
-  with the declared types sqlc needs (see "Schema"). `PRAGMA optimize` is cheap: consider it.
+  and `STRICT` tables. The database is 1.5 MB, so the default 2 MB cache already holds all of it; the tables are
+  `STRICT` (see "Schema"). `PRAGMA optimize` is cheap: consider it.
 
 ### modernc.org/sqlite (rejected)
 
@@ -248,56 +283,40 @@ db, err := driver.Open("file:"+path+"?"+q.Encode(), func(c *sqlite3.Conn) error 
 
 ## Schema
 
-The prototype's baseline (the real one also needs whatever revisions adds, if phase 2 lands first):
+The schema is `internal/db/migrations/00001_baseline.sql`. The prototype's had declared `DATETIME` and `BOOLEAN`
+types and no `CHECK`s; the baseline is `STRICT` (decided 2026-11-23):
 
-```sql
-CREATE TABLE posts (
-    id            INTEGER PRIMARY KEY,
-    number        INTEGER  NOT NULL UNIQUE,
-    category      TEXT     NOT NULL,
-    created_at    DATETIME NOT NULL,
-    updated_at    DATETIME,
-    published_at  DATETIME,
-    title         TEXT     NOT NULL DEFAULT '', -- Step 0; the prototype allowed NULL
-    slug          TEXT     NOT NULL DEFAULT '',
-    hide_title    BOOLEAN  NOT NULL,
-    body          TEXT     NOT NULL,
-    body_revision INTEGER  NOT NULL DEFAULT 1
-);
-CREATE INDEX posts_published_at ON posts (published_at);
-CREATE TABLE tags (name TEXT PRIMARY KEY) WITHOUT ROWID;
-CREATE TABLE posts_tags (
-    post_id  INTEGER NOT NULL REFERENCES posts (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    tag_name TEXT    NOT NULL REFERENCES tags (name) ON DELETE CASCADE ON UPDATE CASCADE,
-    position INTEGER NOT NULL, -- the order typed in the editor (Step 0); the prototype didn't have it
-    PRIMARY KEY (post_id, tag_name)
-) WITHOUT ROWID;
-CREATE INDEX posts_tags_tag_name ON posts_tags (tag_name);
-CREATE TABLE sessions (
-    id               INTEGER PRIMARY KEY,
-    token            TEXT     NOT NULL UNIQUE,
-    created_at       DATETIME NOT NULL,
-    last_activity_at DATETIME NOT NULL
-);
-CREATE TABLE post_html_cache (
-    post_id          INTEGER PRIMARY KEY REFERENCES posts (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    renderer_version INTEGER  NOT NULL,
-    body_revision    INTEGER  NOT NULL,
-    html             TEXT     NOT NULL,
-    rendered_at      DATETIME NOT NULL
-);
-```
-
-- Not `STRICT`: strict tables allow only `INT INTEGER REAL TEXT BLOB ANY`, and the declared `DATETIME` and
-  `BOOLEAN` are what make sqlc generate `time.Time` and `bool`, and the driver decode them.
-- No time defaults: `CURRENT_TIMESTAMP` writes `2026-11-22 10:00:00`, a different format from the driver's, and
-  mixed formats break comparisons. Queries take the time as a parameter (`CreateSession`, `TouchSession`,
+- Without `STRICT`, a column stores a value of the wrong type as it is: `'x'` in an `INTEGER` column, `'true'` in a
+  boolean. `STRICT` rejects it for every column, including the ones added later, without remembering anything.
+- `STRICT` allows only `INT INTEGER REAL TEXT BLOB ANY`. Times are `TEXT` with
+  `CHECK (col IS strftime('%Y-%m-%d %H:%M:%f', col))`, which rejects other formats (`T`/`Z`, no milliseconds, an
+  offset), integers, and impossible dates like month 13, and accepts NULL (`IS`, not `=`). `TEXT` alone would
+  accept any text. Booleans are `INTEGER` with `CHECK (col IN (0, 1))`. Tested with the `sqlite3` CLI and sqlc.
+- The driver decodes times only for declared `DATETIME`-like types, so `db.Time` (`internal/db/time.go`) does it:
+  `Value` writes `timeFormat` in UTC, `Scan` parses it. `sqlc.yaml` maps each time column to `Time` (`*Time`
+  when nullable) and `posts.hide_title` to `bool` by column name. The type has no `import`, because it's in the
+  package sqlc writes to: with one, sqlc imports `db` into `db`. Forgetting an override for a new column makes
+  sqlc generate `string` (or `int`), which doesn't compile where the code expects a time.
+- A new time column needs the `CHECK` (`TestTimeColumns` fails without it, if the name ends in `_at`) and an
+  override; a new boolean needs `IN (0, 1)` and an override.
+- `STRICT, WITHOUT ROWID` together parse in SQLite and sqlc.
+- Why the docs say SQLite has no datetime type: values are stored as NULL, INTEGER, REAL, TEXT, or BLOB, and the
+  date functions work on text, Julian day numbers, or Unix time. Outside `STRICT`, a declared type only sets an
+  affinity (`DATETIME` gets NUMERIC, hence `CAST('2026-…' AS DATETIME)` = 2026); sqlc and ncruces read the name.
+- No time defaults: `CURRENT_TIMESTAMP` writes `2026-11-22 10:00:00`, without milliseconds, which the `CHECK`
+  rejects. Queries take the time as a parameter (`CreateSession`, `TouchSession`,
   `CreateDraft`, `SavePostHTML`). If a default is ever needed: `strftime('%Y-%m-%d %H:%M:%f', 'now')`.
 - `sessions.token` gained `UNIQUE` (an index for the lookup; Postgres had none).
+- `INTEGER PRIMARY KEY` without `AUTOINCREMENT` can reuse the id of a deleted last row (a deleted draft); nothing
+  refers to a deleted post's id, since its tags and cache cascade.
 - Prisma's times have millisecond precision already, so the format loses nothing.
 - Later schema changes: `ADD COLUMN` works; changing a column's type or constraints means rebuilding the table
   (create, copy, drop, rename), and goose's `-- +goose NO TRANSACTION` when foreign keys must be off.
 - The goose history restarts at version 1 in the new file; the Postgres migrations go away with Postgres.
+- The format is SQLite's own (`datetime()`, `strftime('%Y-%m-%d %H:%M:%f')`), which its docs also call ISO 8601.
+  Text in another format compares wrongly with times SQLite computes:
+  `'2026-11-23T10:00:00.000Z' < datetime('2026-11-23 12:00:00')` is 0, since `T` sorts after the space. That
+  matters for SQL like a session expiry, `last_activity_at < strftime('%Y-%m-%d %H:%M:%f', 'now', '-60 days')`.
 
 ## sqlc with the SQLite engine
 
@@ -317,13 +336,13 @@ All 17 queries generate after these workarounds:
    `db.Post` becomes a struct built from the row instead of an alias of it.
 2. Grammar bug: `a OR b LIKE c ESCAPE '\'` fails ("extraneous input 'ESCAPE'"); `a OR (b LIKE c ESCAPE '\')` works.
    Parenthesize every `LIKE … ESCAPE`.
-3. Weak inference: in `sqlc.narg(x) IS NULL OR col = sqlc.narg(x)` the parameter is `interface{}`.
-   `CAST(sqlc.narg(x) AS TEXT) IS NULL` (or `AS INTEGER`) gives `*string` (`*int`). `NULLIF(@title, '')` needed
-   `NULLIF(CAST(@title AS TEXT), '')` (gone since Step 0 made the columns `NOT NULL`), and `json_each(@names)`
-   needs `json_each(CAST(@names AS TEXT))`.
-4. Never `CAST(x AS DATETIME)`: `DATETIME` has NUMERIC affinity, so `CAST('2026-11-22 10:00:00.000' AS DATETIME)`
-   is the integer `2026`. The two date filters (`published_from`, `published_until`) stay `interface{}`, and the
-   wrapper passes `time.Time` or nil.
+3. sqlc types a parameter from its first use: in `sqlc.narg(x) IS NULL OR col = sqlc.narg(x)` it's
+   `interface{}`, in `col = sqlc.narg(x) OR sqlc.narg(x) IS NULL` it's the column's type (`*int`, `*string`,
+   `*Time`). The filters compare first, so they need no `CAST`. The prototype used
+   `CAST(sqlc.narg(x) AS TEXT) IS NULL`, which can't type times. `json_each(@names)` still needs
+   `json_each(CAST(@names AS TEXT))`.
+4. Never `CAST(x AS DATETIME)` (or any type name SQLite doesn't know): NUMERIC affinity turns
+   `'2026-11-22 10:00:00.000'` into the integer `2026`. Nothing needs it since point 3.
 5. Overrides match the type name case-sensitively: list `integer` (expressions, `COUNT`) and `INTEGER` (columns),
    each plain and nullable, to get `int`.
 6. `:execrows` still returns `int64`.
@@ -341,7 +360,7 @@ Query translations:
 | `SELECT … FOR UPDATE` | a plain `SELECT` in an immediate transaction (which holds the write lock) |
 | `ILIKE` | `LIKE … ESCAPE '\'` with `ext/unicode`'s `LIKE` |
 | `EXTRACT(YEAR/MONTH …)` | `SELECT published_at` and grouping in Go |
-| `::int`, `::text`, `::timestamptz` | removed, or `CAST` as in point 3 |
+| `::int`, `::text`, `::timestamptz` | removed (point 3) |
 | `pgconn.PgError.ConstraintName` | `sqlite3.Error.ExtendedCode() == CONSTRAINT_UNIQUE` (the message names `posts.number`) |
 | `pgx.ErrNoRows`, `pgx.BeginFunc` | `sql.ErrNoRows`, `BeginTx` + `defer Rollback` + `Commit` |
 
@@ -349,17 +368,17 @@ The `Posts` filter, as it generates:
 
 ```sql
 WHERE p.published_at IS NOT NULL
-  AND (CAST(sqlc.narg(number) AS INTEGER) IS NULL OR p.number = sqlc.narg(number))
-  AND (CAST(sqlc.narg(category) AS TEXT) IS NULL OR p.category = sqlc.narg(category))
-  AND (CAST(sqlc.narg(tag) AS TEXT) IS NULL OR EXISTS (
-          SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = sqlc.narg(tag)))
-  AND (CAST(sqlc.narg(search_pattern) AS TEXT) IS NULL
-          OR (p.title LIKE sqlc.narg(search_pattern) ESCAPE '\')
+  AND (p.number = sqlc.narg(number) OR sqlc.narg(number) IS NULL)
+  AND (p.category = sqlc.narg(category) OR sqlc.narg(category) IS NULL)
+  AND (EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id AND pt.tag_name = sqlc.narg(tag))
+          OR sqlc.narg(tag) IS NULL)
+  AND ((p.title LIKE sqlc.narg(search_pattern) ESCAPE '\')
           OR (p.body LIKE sqlc.narg(search_pattern) ESCAPE '\')
           OR EXISTS (SELECT 1 FROM posts_tags pt WHERE pt.post_id = p.id
-                     AND (pt.tag_name LIKE sqlc.narg(search_pattern) ESCAPE '\')))
-  AND (sqlc.narg(published_from) IS NULL OR p.published_at >= sqlc.narg(published_from))
-  AND (sqlc.narg(published_until) IS NULL OR p.published_at < sqlc.narg(published_until))
+                     AND (pt.tag_name LIKE sqlc.narg(search_pattern) ESCAPE '\'))
+          OR sqlc.narg(search_pattern) IS NULL)
+  AND (p.published_at >= sqlc.narg(published_from) OR sqlc.narg(published_from) IS NULL)
+  AND (p.published_at < sqlc.narg(published_until) OR sqlc.narg(published_until) IS NULL)
 ORDER BY p.published_at DESC, p.number DESC
 LIMIT @max_rows OFFSET @skip_rows
 ```
@@ -456,12 +475,7 @@ Magic Containers) is chosen at Step 4.
 
 ## Tests and tooling
 
-- `internal/db` tests: create a temp file, migrate, seed (`testSeed` needs snake_case columns). `openTestTx` keeps
-  working with `*sql.Tx` (sqlc's `DBTX` accepts it). For a production copy, copy the file and point the tests at it.
-- `TestMigrationsLoad` opens `sql.Open("pgx", …)`: switch it to the SQLite driver.
-- Browser tests: the global setup starts the server on a temp file (it migrates), then seeds with Node 26's built-in
-  `node:sqlite` (`DatabaseSync`, SQLite 3.54.1; checked). WAL and the busy timeout let it write while the server
-  runs. `@testcontainers/postgresql` goes; rclone keeps Docker.
+- See "Steps 1 and 2" for the tests as built.
 - The local `sqlite3` (macOS, 3.54.0) opens the files for ad-hoc queries.
-- Renovate: drop the `postgres:18` rule. Both drivers released within days of 2026-11-22; the 3-day minimum age
-  applies.
+- Renovate had no `postgres:18` rule (the image was only in the test code). ncruces released v0.38.0 on
+  2026-11-21; the 3-day minimum age applies to its updates.

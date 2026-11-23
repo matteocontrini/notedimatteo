@@ -11,15 +11,15 @@ func TestCountByMonth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	utc := func(value string) *time.Time {
+	utc := func(value string) time.Time {
 		parsed, err := time.Parse(time.RFC3339, value)
 		if err != nil {
 			t.Fatal(err)
 		}
-		return &parsed
+		return parsed
 	}
 
-	times := []*time.Time{
+	times := []time.Time{
 		utc("2026-12-31T23:30:00Z"), // 1 January 2027, 00:30 in Rome (UTC+1)
 		utc("2026-12-31T22:30:00Z"), // 31 December 2026, 23:30 in Rome
 		utc("2026-09-30T22:30:00Z"), // 1 October, 00:30 in Rome (UTC+2)

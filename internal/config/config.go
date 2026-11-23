@@ -17,8 +17,8 @@ const (
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
+	DatabasePath string
+	Port         string
 	// SiteURL is the public address, used for canonical links.
 	SiteURL string
 	// StoragePublicBaseURL is the public address of uploaded images.
@@ -33,7 +33,7 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		DatabaseURL:          os.Getenv("DATABASE_URL"),
+		DatabasePath:         os.Getenv("DATABASE_PATH"),
 		Port:                 os.Getenv("PORT"),
 		SiteURL:              os.Getenv("SITE_URL"),
 		StoragePublicBaseURL: os.Getenv("STORAGE_PUBLIC_BASE_URL"),
@@ -41,8 +41,8 @@ func Load() (Config, error) {
 		AdminPassword:        os.Getenv("ADMIN_PASSWORD"),
 	}
 
-	if cfg.DatabaseURL == "" {
-		return Config{}, errors.New("DATABASE_URL must be set")
+	if cfg.DatabasePath == "" {
+		return Config{}, errors.New("DATABASE_PATH must be set")
 	}
 	if cfg.StoragePublicBaseURL == "" {
 		return Config{}, errors.New("STORAGE_PUBLIC_BASE_URL must be set")

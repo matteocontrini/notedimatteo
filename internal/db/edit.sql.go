@@ -7,73 +7,48 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const addPostTags = `-- name: AddPostTags :exec
 INSERT INTO posts_tags (post_id, tag_name, position)
-SELECT $1, t.name, (t.ordinality - 1)::int
-FROM unnest($2::text[]) WITH ORDINALITY AS t(name, ordinality)
+SELECT ?1, value, key
+FROM json_each(CAST(?2 AS TEXT))
 `
 
 type AddPostTagsParams struct {
 	PostID int
-	Names  []string
+	Names  string
 }
 
-// Adds the tags to the post and saves their order in position.
+// Adds the tags to the post and saves their order in position. names is a JSON
+// array of strings, and json_each's key is each name's index.
 func (q *Queries) AddPostTags(ctx context.Context, arg AddPostTagsParams) error {
-	_, err := q.db.Exec(ctx, addPostTags, arg.PostID, arg.Names)
+	_, err := q.db.ExecContext(ctx, addPostTags, arg.PostID, arg.Names)
 	return err
 }
 
 const createTags = `-- name: CreateTags :exec
 INSERT INTO tags (name)
-SELECT unnest($1::text[])
+SELECT value FROM json_each(CAST(?1 AS TEXT))
+WHERE true
 ON CONFLICT DO NOTHING
 `
 
-// Adds the tags that don't exist yet.
-func (q *Queries) CreateTags(ctx context.Context, names []string) error {
-	_, err := q.db.Exec(ctx, createTags, names)
+// Adds the tags that don't exist yet. names is a JSON array of strings.
+// WHERE true lets the parser tell ON CONFLICT from a join constraint.
+func (q *Queries) CreateTags(ctx context.Context, names string) error {
+	_, err := q.db.ExecContext(ctx, createTags, names)
 	return err
 }
 
 const deletePostTags = `-- name: DeletePostTags :exec
 DELETE FROM posts_tags
-WHERE post_id = $1
+WHERE post_id = ?1
 `
 
 func (q *Queries) DeletePostTags(ctx context.Context, postID int) error {
-	_, err := q.db.Exec(ctx, deletePostTags, postID)
+	_, err := q.db.ExecContext(ctx, deletePostTags, postID)
 	return err
-}
-
-const lockPost = `-- name: LockPost :one
-SELECT id, body, body_revision, published_at
-FROM posts
-WHERE number = $1
-FOR UPDATE
-`
-
-type LockPostRow struct {
-	ID           int
-	Body         string
-	BodyRevision int
-	PublishedAt  *time.Time
-}
-
-// Locks a post's row until the transaction ends, so two saves can't overlap.
-func (q *Queries) LockPost(ctx context.Context, number int) (LockPostRow, error) {
-	row := q.db.QueryRow(ctx, lockPost, number)
-	var i LockPostRow
-	err := row.Scan(
-		&i.ID,
-		&i.Body,
-		&i.BodyRevision,
-		&i.PublishedAt,
-	)
-	return i, err
 }
 
 const postForEdit = `-- name: PostForEdit :one
@@ -88,11 +63,11 @@ SELECT p.id,
        p.created_at,
        p.updated_at,
        p.published_at,
-       ARRAY(
+       CAST((SELECT json_group_array(tag_name) FROM (
            SELECT pt.tag_name FROM posts_tags pt WHERE pt.post_id = p.id ORDER BY pt.position
-       )::text[] AS tags
+       )) AS TEXT) AS tags
 FROM posts p
-WHERE p.number = $1
+WHERE p.number = ?1
 `
 
 type PostForEditRow struct {
@@ -103,16 +78,16 @@ type PostForEditRow struct {
 	Slug        string
 	HideTitle   bool
 	Body        string
-	CreatedAt   time.Time
-	UpdatedAt   *time.Time
-	PublishedAt *time.Time
-	Tags        []string
+	CreatedAt   Time
+	UpdatedAt   *Time
+	PublishedAt *Time
+	Tags        string
 }
 
 // Queries for the editor, which works on drafts and published posts alike.
 // Returns a post with its tags, whether or not it's published.
 func (q *Queries) PostForEdit(ctx context.Context, number int) (PostForEditRow, error) {
-	row := q.db.QueryRow(ctx, postForEdit, number)
+	row := q.db.QueryRowContext(ctx, postForEdit, number)
 	var i PostForEditRow
 	err := row.Scan(
 		&i.ID,
@@ -130,18 +105,45 @@ func (q *Queries) PostForEdit(ctx context.Context, number int) (PostForEditRow, 
 	return i, err
 }
 
+const postForSave = `-- name: PostForSave :one
+SELECT id, body, body_revision, published_at
+FROM posts
+WHERE number = ?1
+`
+
+type PostForSaveRow struct {
+	ID           int
+	Body         string
+	BodyRevision int
+	PublishedAt  *Time
+}
+
+// Returns what a save changes. The save's transaction holds the write lock
+// from its start, so two saves can't overlap.
+func (q *Queries) PostForSave(ctx context.Context, number int) (PostForSaveRow, error) {
+	row := q.db.QueryRowContext(ctx, postForSave, number)
+	var i PostForSaveRow
+	err := row.Scan(
+		&i.ID,
+		&i.Body,
+		&i.BodyRevision,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
 const updatePost = `-- name: UpdatePost :exec
 UPDATE posts
-SET number        = $1,
-    category      = $2,
-    title         = $3,
-    slug          = $4,
-    hide_title    = $5,
-    body          = $6,
-    body_revision = $7,
-    updated_at    = $8::timestamptz,
-    published_at  = $9
-WHERE id = $10
+SET number        = ?1,
+    category      = ?2,
+    title         = ?3,
+    slug          = ?4,
+    hide_title    = ?5,
+    body          = ?6,
+    body_revision = ?7,
+    updated_at    = ?8,
+    published_at  = ?9
+WHERE id = ?10
 `
 
 type UpdatePostParams struct {
@@ -152,14 +154,14 @@ type UpdatePostParams struct {
 	HideTitle    bool
 	Body         string
 	BodyRevision int
-	UpdatedAt    time.Time
-	PublishedAt  *time.Time
+	UpdatedAt    *Time
+	PublishedAt  *Time
 	ID           int
 }
 
 // Saves the editor's fields.
 func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
-	_, err := q.db.Exec(ctx, updatePost,
+	_, err := q.db.ExecContext(ctx, updatePost,
 		arg.Number,
 		arg.Category,
 		arg.Title,

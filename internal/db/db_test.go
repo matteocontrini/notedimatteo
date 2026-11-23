@@ -2,28 +2,26 @@ package db
 
 import (
 	"context"
-	"flag"
+	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-// testDatabaseURL is the database the tests use, or "" with -short, which
-// skips them.
-var testDatabaseURL string
+// testTemplate is the database file that each test copies.
+var testTemplate string
 
 // testSeed is the data in the test database: published posts in two categories,
 // two months, and with tags, plus a draft.
 const testSeed = `
 INSERT INTO posts (number, category, title, slug, hide_title, body, created_at, published_at, updated_at) VALUES
-	(1, 'note', '', '', FALSE, 'Prima nota', '2026-09-10 10:00Z', '2026-09-10 10:00Z', NULL),
-	(2, 'til', 'Un titolo', 'un-titolo', FALSE, 'Seconda nota, con un titolo', '2026-09-20 10:00Z', '2026-09-20 10:00Z', NULL),
-	(3, 'note', '', '', FALSE, 'Terza nota', '2026-10-05 10:00Z', '2026-10-05 10:00Z', NULL),
-	(4, 'note', '', '', FALSE, 'Quarta nota', '2026-10-15 10:00Z', '2026-10-15 10:00Z', NULL),
-	(5, 'note', '', '', FALSE, 'Una bozza', '2026-10-20 10:00Z', NULL, NULL);
+	(1, 'note', '', '', FALSE, 'Prima nota', '2026-09-10 10:00:00.000', '2026-09-10 10:00:00.000', NULL),
+	(2, 'til', 'Un titolo', 'un-titolo', FALSE, 'Seconda nota, con un titolo', '2026-09-20 10:00:00.000', '2026-09-20 10:00:00.000', NULL),
+	(3, 'note', '', '', FALSE, 'Terza nota', '2026-10-05 10:00:00.000', '2026-10-05 10:00:00.000', NULL),
+	(4, 'note', '', '', FALSE, 'Quarta nota, più lunga', '2026-10-15 10:00:00.000', '2026-10-15 10:00:00.000', NULL),
+	(5, 'note', '', '', FALSE, 'Una bozza', '2026-10-20 10:00:00.000', NULL, NULL);
 INSERT INTO tags (name) VALUES ('go'), ('svelte');
 INSERT INTO posts_tags (post_id, tag_name, position)
 SELECT id, 'go', 0 FROM posts WHERE number IN (1, 3, 5)
@@ -31,87 +29,75 @@ UNION ALL
 SELECT id, 'svelte', 0 FROM posts WHERE number = 2;
 `
 
-// TestMain starts a Postgres container with the migrations and testSeed.
-// TEST_DATABASE_URL replaces it with another database, as it is, for example a
-// copy of production data.
+// TestMain prepares testTemplate: the migrations and testSeed, or a copy of the
+// database at TEST_DATABASE_PATH, for example a copy of production data, with
+// the migrations it lacks.
 func TestMain(m *testing.M) {
-	flag.Parse()
-	os.Exit(runTests(m))
-}
-
-func runTests(m *testing.M) int {
-	if testing.Short() {
-		return m.Run()
-	}
-	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
-		testDatabaseURL = url
-		return m.Run()
-	}
-
-	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:18",
-		postgres.WithDatabase("notedimatteo"),
-		postgres.BasicWaitStrategies(),
-	)
+	dir, err := os.MkdirTemp("", "notedimatteo-test-")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "start Postgres (run with -short to skip the database tests):", err)
-		return 1
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	defer container.Terminate(ctx)
+	testTemplate = filepath.Join(dir, "template.db")
 
-	testDatabaseURL, err = container.ConnectionString(ctx, "sslmode=disable")
-	if err == nil {
-		err = Migrate(ctx, testDatabaseURL)
-	}
-	if err == nil {
-		err = seed(ctx, testDatabaseURL)
-	}
+	err = prepareTemplate(context.Background(), os.Getenv("TEST_DATABASE_PATH"))
+	code := 1
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "prepare the test database:", err)
-		return 1
+	} else {
+		code = m.Run()
 	}
-	return m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
 }
 
-func seed(ctx context.Context, url string) error {
-	db, err := Open(ctx, url)
+func prepareTemplate(ctx context.Context, source string) error {
+	if source != "" {
+		// VACUUM INTO copies the database, including what's still in its WAL file,
+		// without writing to it
+		sourceDB, err := sql.Open("sqlite3", "file:"+source+"?mode=ro")
+		if err != nil {
+			return err
+		}
+		defer sourceDB.Close()
+		if _, err := sourceDB.ExecContext(ctx, "VACUUM INTO ?", testTemplate); err != nil {
+			return fmt.Errorf("copy %s: %w", source, err)
+		}
+	}
+
+	if err := Migrate(ctx, testTemplate); err != nil {
+		return err
+	}
+	if source != "" {
+		return nil
+	}
+	db, err := Open(ctx, testTemplate)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	_, err = db.pool.Exec(ctx, testSeed)
+	_, err = db.sql.ExecContext(ctx, testSeed)
 	return err
 }
 
-// openTestDB connects to the test database, or skips the test with -short.
-// Tests that write use openTestTx, so the tests can run against a copy of
-// production data.
+// openTestDB opens a copy of testTemplate, so each test can write.
 func openTestDB(t *testing.T) *DB {
 	t.Helper()
 
-	if testDatabaseURL == "" {
-		t.Skip("database tests are skipped with -short")
+	data, err := os.ReadFile(testTemplate)
+	if err != nil {
+		t.Fatal(err)
 	}
-	db, err := Open(context.Background(), testDatabaseURL)
+	path := filepath.Join(t.TempDir(), "test.db")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	db, err := Open(context.Background(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(db.Close)
 	return db
-}
-
-// openTestTx is openTestDB inside a transaction that's rolled back when the
-// test ends, so the test can write.
-func openTestTx(t *testing.T) *DB {
-	t.Helper()
-
-	db := openTestDB(t)
-	tx, err := db.pool.Begin(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { tx.Rollback(context.Background()) })
-	return &DB{pool: db.pool, conn: tx, queries: New(tx)}
 }
 
 // TestPostsAndCountAgree checks that Posts and CountPosts, whose WHERE clauses
@@ -195,6 +181,23 @@ func TestPostsPagination(t *testing.T) {
 	for _, number := range []int{-1, 0} {
 		if post, err := db.PostByNumber(ctx, number); (post != nil && post.Number != number) || err != nil {
 			t.Errorf("PostByNumber(%d) = %v, %v", number, post, err)
+		}
+	}
+}
+
+// TestSearchIgnoresCase checks that search ignores the case of accented
+// letters too.
+func TestSearchIgnoresCase(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, search := range []string{"più", "PIÙ", "Più"} {
+		posts, err := db.Posts(ctx, PostFilter{Search: search}, 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(posts) == 0 {
+			t.Errorf("searching %q found nothing", search)
 		}
 	}
 }

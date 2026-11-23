@@ -8,7 +8,7 @@ import (
 )
 
 func TestSavePost(t *testing.T) {
-	db := openTestTx(t)
+	db := openTestDB(t)
 	ctx := context.Background()
 
 	draft, err := db.CreateDraft(ctx)
@@ -80,7 +80,7 @@ func TestSavePost(t *testing.T) {
 }
 
 func TestSavePostErrors(t *testing.T) {
-	db := openTestTx(t)
+	db := openTestDB(t)
 	ctx := context.Background()
 
 	first, _ := db.CreateDraft(ctx)
