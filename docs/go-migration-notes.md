@@ -212,6 +212,7 @@ don't show; remove notes that stop being true.
 - Prisma 7's `@prisma/adapter-pg` replaces the offset of every `timestamptz` it reads with `+00:00`, so times are
   only right when the session time zone is UTC. Go reads them correctly.
 - Archive months use `EXTRACT` in the database session's time zone, not Rome's; Go keeps the same SQL (TODO).
+  Since 2026-11-23, Go groups them in Europe/Rome, and the month pages select in Rome too (`sqlite-notes.md`).
 - Tags inside a post have no order column and no `ORDER BY`, in both apps: whatever order Postgres returns.
   Locally that's the order saved from the editor; on the production copy, Postgres reads them through the
   `(postId, tagName)` index, so they come sorted by name. Both apps showed the same order. Kept as is on purpose.
@@ -365,7 +366,7 @@ don't show; remove notes that stop being true.
   none contain `]]>`, and no two share a `publishedAt`.
 - Images are served from `https://uploads.notedimatteo.it`.
 - Production Postgres runs with `TimeZone = Etc/UTC`, so the Prisma 7 time zone bug doesn't affect the live site,
-  and archive months are grouped in UTC. Local comparisons force a UTC session to match.
+  and archive months were grouped in UTC (in Rome since 2026-11-23). Local comparisons force a UTC session to match.
 - After a run against the production copy, restore its cache, which the server overwrites: extract the
   `post_html_cache` `COPY` block from `data.sql`, then `TRUNCATE post_html_cache` and load it in one transaction.
 - `sessions` holds 11 production login tokens: treat the local copy like the backup repo.

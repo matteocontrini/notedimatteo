@@ -60,7 +60,8 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 - The schema comes from the SvelteKit app's Prisma migrations, so columns are camelCase (`"publishedAt"`).
 - goose migrations are embedded and run when the server starts. `00001_baseline.sql` recreates the Prisma
   schema with `IF NOT EXISTS`, so on the production database it only recorded version 1. Migrations have no Down.
-- Production Postgres runs in UTC; archive months group by the database session's time zone (a TODO).
+- Archive months are in Europe/Rome: Go counts the publication times per month (`db.Archive`), and the month
+  pages select from midnight in Rome to midnight in Rome. Production Postgres runs in UTC.
 - A post's tags keep the order they were typed in: `posts_tags.position`, numbered from 0 by each save.
 - Go sets every time the database stores, truncated to milliseconds (`currentTime` in `internal/db`); no column
   has a time default.

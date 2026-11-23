@@ -53,8 +53,40 @@ start without redoing them. Remove notes that stop being true.
     `SELECT @post_id, value, key FROM json_each(CAST(@names AS TEXT))` (sqlc accepts it too). The copy command
     copies the column.
   - The primary key stays `(postId, tagName)`: a tag appears once per post, and `parseTags` already drops repeats.
-- Archive: replace the `EXTRACT` query with one returning `"publishedAt"` of published posts, newest first, and
-  count months in Go in Europe/Rome (the prototype's `Archive`). Fixes the TODO in `site.sql` and `ARCHITECTURE.md`.
+- Archive (done 2026-11-23):
+  - `PublishedTimes` replaces the `EXTRACT` query; `db.Archive(ctx, loc)` counts the months in Go (`countByMonth`),
+    and the server passes `views.Rome` (exported for this). The month page (`/archivio/{year}/{month}`) selects
+    the month from midnight in Rome too, so the sidebar count and the page agree. Both TODOs are gone.
+  - No production post changes month: none falls in the hours where UTC and Rome are in different months
+    (checked on the production copy). Checked through the real server by moving one post to 22:30 UTC on
+    30 September: the sidebar and both month pages put it in October (22 and 102 posts).
+  - Tests: `TestCountByMonth` (midnight in winter and summer time), and `TestFilters` checks February, March (ends
+    in summer time), and December in Rome.
+  - Cost: every page with the sidebar reads one time per published post (670, about one more a day). On the local
+    production copy with pgx it's cheaper than the old query: 0.20 ms per call against 0.47 ms (Postgres executes
+    it in 0.21 ms against 0.52 ms, since it skips `EXTRACT`, grouping, and sorting), but allocates 28 KB against
+    1.7 KB. If it ever matters: cache the sidebar's archive and tags in memory, recomputed when a save, publish,
+    unpublish, or delete changes posts (one server instance makes that safe).
+  - Grouping by Rome's month in SQL instead (measured 2026-11-23 on the prototype's ncruces copy):
+
+    | Archive on SQLite | Time per call | Allocated |
+    |---|---|---|
+    | Times to Go, counted in Go (`countByMonth`) | 0.40 ms | 190 KB |
+    | `GROUP BY` a Go function, `rome_month(published_at)` | 1.11 ms | 935 KB |
+    | `GROUP BY strftime('%Y%m', published_at, 'localtime')` | 0.40–0.45 ms | 1 KB |
+
+    - A Go function: `conn.CreateFunction("rome_month", 1, sqlite3.DETERMINISTIC|sqlite3.INNOCUOUS, fn)` in the
+      driver's connection callback, next to `unicode.Register`. `fn` reads the argument with
+      `arg[0].Time(sqlite3.TimeFormatAuto)`, converts it to Rome, and returns `yyyymm` with `ctx.ResultInt`; it
+      must handle NULL. sqlc accepts the unknown function; `CAST(… AS INTEGER)` types the column. The result equals
+      `countByMonth`'s, but it's slower: every row still crosses into Go and parses the text time again. The
+      function exists only in the server's connections: the `sqlite3` CLI gets "no such function", so it must never
+      appear in views, indexes, or generated columns.
+    - `'localtime'`: SQLite's own conversion, as fast as Go and allocating almost nothing, but ncruces implements
+      `localtime_r` with Go's `time.Local`, the process's time zone (UTC in the container). 22:30 UTC on
+      30 September gave `202609` by default and `202610` only with `TZ=Europe/Rome`. Using it means setting `TZ` on
+      Railway and in every test, which changes `time.Local` for the whole server.
+    - Kept: counting in Go.
 - Rename (optional): goose migration with `ALTER TABLE … RENAME COLUMN` for every camelCase column (`createdAt`,
   `updatedAt`, `publishedAt`, `hideTitle`, `bodyRevision`, `postId`, `tagName`, `lastActivityAt`,
   `rendererVersion`, `renderedAt`), and the `AS` aliases in the queries go away. Constraint names (`posts_number_key`,

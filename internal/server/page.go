@@ -61,7 +61,7 @@ func (s *Server) newSidebarPage(r *http.Request, meta views.Meta) (views.Page, e
 		return views.Page{}, err
 	}
 
-	archive, err := s.store.Archive(r.Context())
+	archive, err := s.store.Archive(r.Context(), views.Rome)
 	if err != nil {
 		return views.Page{}, err
 	}

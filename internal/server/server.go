@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
 	"github.com/matteocontrini/notedimatteo/internal/images"
@@ -22,7 +23,7 @@ type Store interface {
 	CountPosts(ctx context.Context, filter db.PostFilter) (int, error)
 	PostByNumber(ctx context.Context, number int) (*db.Post, error)
 	Categories(ctx context.Context) ([]db.CategoryCount, error)
-	Archive(ctx context.Context) ([]db.MonthCount, error)
+	Archive(ctx context.Context, loc *time.Location) ([]db.MonthCount, error)
 	Tags(ctx context.Context) ([]db.TagCount, error)
 	SavePostHTML(ctx context.Context, postID, bodyRevision int, html string) error
 

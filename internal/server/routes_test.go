@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/matteocontrini/notedimatteo/internal/db"
+	"github.com/matteocontrini/notedimatteo/internal/views"
 )
 
 func at(value string) *time.Time {
@@ -114,12 +115,17 @@ func TestFilters(t *testing.T) {
 		{"/archivio/open%20source", db.PostFilter{Tag: "open source"}},
 		{"/cerca?q=+%25go+", db.PostFilter{Search: "%go"}},
 		{"/archivio/2026/02", db.PostFilter{
-			From:  time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
-			Until: time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+			From:  time.Date(2026, 2, 1, 0, 0, 0, 0, views.Rome),
+			Until: time.Date(2026, 3, 1, 0, 0, 0, 0, views.Rome),
+		}},
+		// Starts in winter time (UTC+1) and ends in summer time (UTC+2)
+		{"/archivio/2026/03", db.PostFilter{
+			From:  time.Date(2026, 3, 1, 0, 0, 0, 0, views.Rome),
+			Until: time.Date(2026, 4, 1, 0, 0, 0, 0, views.Rome),
 		}},
 		{"/archivio/2026/12", db.PostFilter{
-			From:  time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC),
-			Until: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
+			From:  time.Date(2026, 12, 1, 0, 0, 0, 0, views.Rome),
+			Until: time.Date(2027, 1, 1, 0, 0, 0, 0, views.Rome),
 		}},
 	}
 

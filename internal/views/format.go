@@ -9,7 +9,8 @@ import (
 	"github.com/matteocontrini/notedimatteo/internal/db"
 )
 
-var rome = mustLoadLocation("Europe/Rome")
+// Rome is the time zone of every date the site shows.
+var Rome = mustLoadLocation("Europe/Rome")
 
 var italianMonths = [...]string{
 	"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
@@ -26,18 +27,18 @@ func mustLoadLocation(name string) *time.Location {
 
 // formatDate formats a date like "16 aprile 2026", in Rome's time zone.
 func formatDate(t time.Time) string {
-	t = t.In(rome)
+	t = t.In(Rome)
 	return fmt.Sprintf("%d %s %d", t.Day(), italianMonths[t.Month()-1], t.Year())
 }
 
 // formatTime formats a time like "16:20", in Rome's time zone.
 func formatTime(t time.Time) string {
-	return t.In(rome).Format("15:04")
+	return t.In(Rome).Format("15:04")
 }
 
 // formatDateTime formats a time like "21/11/2026, 14:05", in Rome's time zone.
 func formatDateTime(t time.Time) string {
-	return t.In(rome).Format("02/01/2006, 15:04")
+	return t.In(Rome).Format("02/01/2006, 15:04")
 }
 
 // timeUnits lists the units relativeTime uses. next is how many of a unit make
@@ -78,7 +79,7 @@ func relativeTime(t, now time.Time) string {
 
 // dateKey identifies a day in Rome's time zone.
 func dateKey(t time.Time) string {
-	return t.In(rome).Format(time.DateOnly)
+	return t.In(Rome).Format(time.DateOnly)
 }
 
 // monthName returns the lowercase Italian name of a month, from 1 to 12.
@@ -108,7 +109,7 @@ func PostTitle(post db.Post) string {
 	if post.Title != "" {
 		return post.Title
 	}
-	return fmt.Sprintf("Nota #%d del %s", post.Number, post.Timestamp().In(rome).Format("02/01/2006"))
+	return fmt.Sprintf("Nota #%d del %s", post.Number, post.Timestamp().In(Rome).Format("02/01/2006"))
 }
 
 // Categories lists the categories in the order the editor offers them.

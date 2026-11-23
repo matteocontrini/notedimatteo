@@ -21,7 +21,7 @@ Working notes, measurements, and the prototype's findings: `sqlite-notes.md`.
 | Schema      | A new goose baseline with snake_case columns; declared `DATETIME` and `BOOLEAN` types, so not `STRICT` tables       |
 | Times       | UTC text `2006-01-02 15:04:05.000` (the driver's `_timefmt`); Go sets every time, and no column has a time default   |
 | Tags        | Kept in the order typed (a `position` column); `json_group_array` decoded in Go                                     |
-| Archive     | Months grouped in Go in Europe/Rome (fixes the TODO)                                                                |
+| Archive     | Months grouped in Go in Europe/Rome (done in Step 0)                                                                |
 | Search      | Unicode-aware `LIKE`, so results stay the same as Postgres's `ILIKE`                                                |
 | Deploys     | A volume means a short downtime on every deploy: accepted                                                           |
 
@@ -36,7 +36,7 @@ dialect. The revisions work (branch `post-revisions`) merges after the move.
   (`00005`)
 - [x] Make `title` and `slug` `NOT NULL DEFAULT ''`, and drop `COALESCE` and `NULLIF` (`00006`)
 - [x] Keep tags in the order typed: a `position` column on `posts_tags`, filled from the rows' current order (`00004`)
-- [ ] Group the archive by month in Go, in Europe/Rome
+- [x] Group the archive by month in Go, in Europe/Rome; the month pages use Rome too
 - [ ] Optional: rename the columns to snake_case
 
 ### Step 1: Database package

@@ -119,9 +119,8 @@ func (s *Server) tag(w http.ResponseWriter, r *http.Request) error {
 }
 
 // month serves /archivio/{year}/{month}, with the month written with two
-// digits; /archivio/2026/4 redirects to /archivio/2026/04.
-//
-// TODO: select the month in Europe/Rome rather than UTC.
+// digits; /archivio/2026/4 redirects to /archivio/2026/04. The month starts
+// and ends at midnight in Rome, like the archive in the sidebar.
 func (s *Server) month(w http.ResponseWriter, r *http.Request) error {
 	yearText, monthText := r.PathValue("year"), r.PathValue("month")
 	year, yearErr := strconv.Atoi(yearText)
@@ -139,7 +138,7 @@ func (s *Server) month(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	from := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	from := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, views.Rome)
 	posts, err := s.store.Posts(r.Context(), db.PostFilter{From: from, Until: from.AddDate(0, 1, 0)}, 0, 0)
 	if err != nil {
 		return err

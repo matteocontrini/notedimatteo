@@ -128,11 +128,15 @@ func TestPostsAndCountAgree(t *testing.T) {
 	if err != nil || len(categories) == 0 {
 		t.Fatalf("no categories: %v", err)
 	}
-	months, err := db.Archive(ctx)
+	rome, err := time.LoadLocation("Europe/Rome")
+	if err != nil {
+		t.Fatal(err)
+	}
+	months, err := db.Archive(ctx, rome)
 	if err != nil || len(months) == 0 {
 		t.Fatalf("no months: %v", err)
 	}
-	from := time.Date(months[0].Year, time.Month(months[0].Month), 1, 0, 0, 0, 0, time.UTC)
+	from := time.Date(months[0].Year, time.Month(months[0].Month), 1, 0, 0, 0, 0, rome)
 
 	filters := []PostFilter{
 		{},

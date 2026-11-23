@@ -7,46 +7,8 @@ package db
 
 import (
 	"context"
+	"time"
 )
-
-const archive = `-- name: Archive :many
-SELECT EXTRACT(YEAR FROM "publishedAt")::int  AS year,
-       EXTRACT(MONTH FROM "publishedAt")::int AS month,
-       COUNT(*)::int                          AS count
-FROM posts
-WHERE "publishedAt" IS NOT NULL
-GROUP BY 1, 2
-ORDER BY 1 DESC, 2 DESC
-`
-
-type ArchiveRow struct {
-	Year  int
-	Month int
-	Count int
-}
-
-// Published posts per month, newest first, in the database session's time zone.
-// TODO: group by month in Europe/Rome, like the dates shown on posts, whatever
-// the session's time zone is.
-func (q *Queries) Archive(ctx context.Context) ([]ArchiveRow, error) {
-	rows, err := q.db.Query(ctx, archive)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ArchiveRow
-	for rows.Next() {
-		var i ArchiveRow
-		if err := rows.Scan(&i.Year, &i.Month, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
 
 const categories = `-- name: Categories :many
 SELECT category AS slug, COUNT(*)::int AS count
@@ -75,6 +37,34 @@ func (q *Queries) Categories(ctx context.Context) ([]CategoriesRow, error) {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const publishedTimes = `-- name: PublishedTimes :many
+SELECT "publishedAt"
+FROM posts
+WHERE "publishedAt" IS NOT NULL
+ORDER BY "publishedAt" DESC
+`
+
+// Returns the publication times of published posts, newest first.
+func (q *Queries) PublishedTimes(ctx context.Context) ([]*time.Time, error) {
+	rows, err := q.db.Query(ctx, publishedTimes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*time.Time
+	for rows.Next() {
+		var publishedAt *time.Time
+		if err := rows.Scan(&publishedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, publishedAt)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

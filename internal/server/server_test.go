@@ -68,7 +68,7 @@ func (f *fakeStore) Categories(context.Context) ([]db.CategoryCount, error) {
 	return f.categories, f.err
 }
 
-func (f *fakeStore) Archive(context.Context) ([]db.MonthCount, error) {
+func (f *fakeStore) Archive(context.Context, *time.Location) ([]db.MonthCount, error) {
 	return f.archive, f.err
 }
 

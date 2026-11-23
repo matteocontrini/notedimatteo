@@ -6,17 +6,12 @@ WHERE "publishedAt" IS NOT NULL
 GROUP BY category
 ORDER BY count DESC, slug;
 
--- name: Archive :many
--- Published posts per month, newest first, in the database session's time zone.
--- TODO: group by month in Europe/Rome, like the dates shown on posts, whatever
--- the session's time zone is.
-SELECT EXTRACT(YEAR FROM "publishedAt")::int  AS year,
-       EXTRACT(MONTH FROM "publishedAt")::int AS month,
-       COUNT(*)::int                          AS count
+-- name: PublishedTimes :many
+-- Returns the publication times of published posts, newest first.
+SELECT "publishedAt"
 FROM posts
 WHERE "publishedAt" IS NOT NULL
-GROUP BY 1, 2
-ORDER BY 1 DESC, 2 DESC;
+ORDER BY "publishedAt" DESC;
 
 -- name: Tags :many
 -- Tags of published posts, most used first.
