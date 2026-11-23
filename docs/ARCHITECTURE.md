@@ -162,15 +162,23 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 ## CI and deployment
 
 - GitHub Actions jobs: `check` (formatting, lint, types, vet, generated code committed), `test` (a matrix over
-  `test:js`, `test:go`, `test:e2e`), `docker`, and `verify-lockfile`. Actions use exact versions, locked in
+  `test:js`, `test:go`, `test:e2e`), `docker`, and `verify-lockfile`; then the Deploy workflow (below). Actions use exact versions, locked in
   `.github/workflows/actions.lock`: run `gh actions-lock` after changing a `uses:`.
 - The Dockerfile has stages `assets` (Node: npm, libvips, Vite) → `build` (Go) → `runtime` (Debian trixie with
   sharp's `libvips-cpp.so`) → `server`, about 200 MB, running as `nobody`.
 - The `server` stage runs Litestream (`litestream.yml`), which starts the server and copies every change of the
   database to a private bucket within a second. When the database file doesn't exist, it restores the latest copy
   first. Its binary comes from the `litestream/litestream` image.
-- Railway builds the Dockerfile from `main` and runs the `server` stage. Railway's previous deployment is the
-  rollback.
+- Deployment, on `main`: the Build workflow's `docker` job pushes the image to GHCR
+  (`ghcr.io/matteocontrini/notedimatteo:<commit>`). When Build passes, the Deploy workflow (`deploy.yml`,
+  triggered by `workflow_run`) runs `.github/scripts/deploy.js`, which sets the image tag of the `app` container
+  in the Bunny Magic Containers app (`BUNNY_APP_ID` repository variable, `BUNNYNET_API_KEY` secret in the
+  `production` environment) and waits until the pod runs it. Deploy is skipped while `BUNNY_APP_ID` isn't set. A
+  rollback is a deploy of an earlier commit's image: rerun its Deploy run.
+- The app runs one pod in one region with a volume at `/data`. Each pod gets its own volume, so a second pod would
+  replicate another database to the same bucket path: never scale it up. With a volume, a deploy stops the old pod
+  before starting the new one (a few seconds down). SIGTERM goes to Litestream, which stops the server and makes
+  a last sync; the app has 30 s before SIGKILL.
 - Renovate (`renovate.json`): packages that run on the server (Go modules, the Go version, libvips) weekly on
   Wednesdays; build and browser tooling monthly on the 15th; a 3-day minimum release age, which npm also
   enforces through `.npmrc`. templ and sqlc updates need `npm run generate` pushed by hand.

@@ -68,12 +68,25 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Test image processing in the Docker image
         run: docker build --target libvips-test .
       - name: Build the Docker image
-        run: docker build .
+        run: docker build --tag "$IMAGE" .
+      # deploy.yml deploys the image once every job of this workflow passes
+      - name: Push the image to GHCR
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE"
 
   # Fails when actions.lock is out of sync with the workflows or a locked commit no longer verifies upstream
   verify-lockfile:

@@ -1,0 +1,33 @@
+name: Deploy
+
+# This workflow runs when the Build workflow finishes successfully on main
+# and it deploys the image pushed
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event != 'pull_request' &&
+      vars.BUNNY_APP_ID != ''
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    # One deploy at a time; a newer one waits for the running one
+    concurrency:
+      group: bunny-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Deploy to Bunny Magic Containers
+        timeout-minutes: 10
+        env:
+          BUNNY_APP_ID: ${{ vars.BUNNY_APP_ID }}
+          BUNNYNET_API_KEY: ${{ secrets.BUNNYNET_API_KEY }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: node .github/scripts/deploy.js

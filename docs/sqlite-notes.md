@@ -515,7 +515,16 @@ Magic Containers) is chosen at Step 4.
 - Volumes are mounted as root, when the container starts (not at build or pre-deploy). The image runs as `nobody`.
   Railway's only documented fix is `RAILWAY_RUN_UID=0`, which runs the server as root. To keep `nobody`: start as
   root, `chown` the mount, and drop to `nobody` (Debian's `setpriv`, in util-linux).
-- Railway's volume backups (manual or scheduled, incremental) can't be downloaded: a second layer at most.
+- Railway's volume backups (manual or scheduled, incremental, kept 6 days to 89 days) can't be downloaded, and
+  restore only into the same project: a second layer at most. The CLI now manages volume files
+  (`railway volume files list|download|upload`, `railway volume browse`).
+- Shutdown (docs read 2026-11-23, `deployments/deployment-teardown`, `variables/reference`): after SIGTERM, a
+  deployment gets `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` before SIGKILL, and the default is **0**. Litestream's
+  final sync needs time: set it to 30 (the server takes up to 10 s, then Litestream's final sync up to 30 s).
+  `RAILWAY_DEPLOYMENT_OVERLAP_SECONDS` (default 0) doesn't apply with a volume.
+- Storage type: not documented (volumes give 3,000 read and 3,000 write IOPS; backups are copy-on-write). Forum
+  questions about fsync and locks on volumes have no answer. Railway runs its own Postgres and MySQL on the same
+  volumes, which need working locks and fsync, so they aren't a network filesystem in practice.
 - Today's backups: the private repo `notedimatteo-backups` runs `supabase db dump` daily against Postgres
   (`go-migration-notes.md`, "Production data").
 
@@ -530,12 +539,57 @@ Magic Containers) is chosen at Step 4.
   - Bound to a node in a region. If the node is down for maintenance, the pod waits for it; after a hardware failure
     the volume comes back empty. No automatic backups or replication: Bunny recommends exporting to object storage.
     Litestream covers both.
-  - Containers in a pod share a group that owns the volume, and new files are group-writable; fresh volumes'
-    owner and mode aren't documented. Test whether `nobody` can write.
-  - Redeploy behavior (stop before start, or overlap) isn't documented. Two processes writing the same file through
-    different volumes would break replication: test it.
+  - Storage: local to the node (a hardware failure "requires a disk replacement", and a pod can't move while its
+    volume's node is down), so not a network filesystem.
+  - Containers in a pod share a group that owns the volume, and files created in it are group-writable whatever
+    the umask (volumes created from August 2026); the top-level directory has the sticky bit. A non-root user
+    should be able to write: test with `nobody`.
+  - Redeploys (`rolling-updates`, read 2026-11-23): with a volume, the old pod is stopped and its volume unmounted
+    before the new pod starts, so a single pod has a short downtime, and two processes never share the file.
+    A new pod that doesn't become healthy within ten minutes is removed and the old pods come back.
+  - Shutdown (`graceful-shutdown`): SIGTERM to PID 1 (Litestream), then SIGKILL after
+    `terminationGracePeriodSeconds`: 30 s for apps created after 2026-02-01, 1 s before (set through the API,
+    `PUT /apps/APP_ID/`). A new app gets 30 s.
+  - Restarts (`restart-policy`): automatic on a non-zero exit, every few seconds; the container's file system is
+    new each time, the volume stays.
+  - Sandbox: gVisor. `fcntl` and `flock` are fully supported, and gVisor's `posixLock`
+    (`pkg/sentry/syscalls/linux/sys_file.go`) puts OFD locks (ncruces) and process locks (Litestream) in the same
+    lock table with different owners, so they conflict as on Linux. Both processes are in the same sandbox. Still
+    worth confirming on Bunny, along with the WAL's shared memory (`-shm`, `mmap`).
   - No SSH, upload, or download documented: the restore on start replaces them.
   - 10 MB/s read and write per volume, up to 100 GB, 2 volumes per app, $0.10/GB a month on the provisioned size.
+- Deploy (set up 2026-11-23): like tqp, a separate `deploy.yml` triggered by `workflow_run` when Build completes
+  on `main`; it runs only if Build succeeded, so every job passed. GitHub runs `workflow_run` workflows only from
+  the default branch's copy, so it does nothing until merged. `.github/scripts/deploy.js` replaces both
+  `BunnyWay/actions/container-update-image` and tqp's wait script:
+  - The action (v0.2.2, `src/action.ts`) makes two calls: `GET /mc/apps/{id}` to find the container's id in
+    `containerTemplates`, then `PATCH /mc/apps/{id}/containers/{containerId}` with `{id, imageTag}`. It doesn't
+    await the PATCH, so a failed update doesn't fail the step. The script makes the same calls (`{imageTag}`),
+    then polls `GET /overview` every 10 s for 15 minutes.
+  - Done when the app is `active` and every pod is `ready` with container `app` `ready` on an image ending in
+    `:<sha>` (before any `@sha256:` digest). It fails on an app `failing` or `suspended`, or a region `failing`.
+    Unlike tqp, `inactive` isn't a failure: with a volume the old pod stops first, so for a while there are no
+    pods. It logs each pod's status and messages.
+  - Schemas from the OpenAPI spec (`https://api-mc.opsbunny.net/docs/public/swagger.json`, linked from
+    `bunny.net/docs/llms.txt`): app status `unknown active progressing inactive failing suspended`, pod
+    `notScheduled scheduled ready deleting`, container `notStarted started ready`.
+  - Tested with a fake `fetch` (`node --import mock.mjs`): an old pod, no pods (`inactive`), a starting pod, then
+    the new one ready → success; a `failing` app → exit 1.
+  - The job's `if` uses `vars.BUNNY_APP_ID`, which must be a repository variable: a job's `if` is evaluated
+    before its environment's variables load. The API key is a secret of the `production` environment. The tag
+    is `github.event.workflow_run.head_sha`, the commit Build tagged the image with.
+  - The `docker` job logs in to GHCR with `GITHUB_TOKEN` (`packages: write`) and pushes only on `main`. `gh actions-lock`
+    added `deploy.yml`'s checkout to `actions.lock`; `--verify` passes.
+- App settings to create (dashboard or API):
+  - One container named `app`, image `ghcr.io/matteocontrini/notedimatteo:<tag>`. The GHCR package is private by
+    default: connect the registry with a GitHub token that can read packages (Bunny's "Image Registries").
+  - One region, exactly one instance, no autoscaling: each pod gets its own volume, and two pods would replicate two
+    databases to the same bucket path.
+  - A volume mounted at `/data` (1 GB is plenty: the file is 1.5 MB), `DATABASE_PATH=/data/notedimatteo.db`.
+  - The variables: `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `STORAGE_PUBLIC_BASE_URL`, the `STORAGE_S3_*` ones,
+    `SITE_URL`, and the four `LITESTREAM_*` (the dev bucket while testing, production's after).
+  - The endpoint on port 6200, a health check on `/healthz`, and `terminationGracePeriodSeconds` 30 (the default
+    for new apps; check it in `GET /apps/{id}`).
 - Fits phase 4 of the redesign, which considers Bunny as the CDN in front of imgproxy.
 - Bunny Database ("SQLite-compatible", public preview since 2026-02) would put queries over the network and may not
   run `ext/unicode`: not pursued.
