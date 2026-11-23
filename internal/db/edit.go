@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -72,7 +71,7 @@ func (db *DB) SavePost(ctx context.Context, number int, edit PostEdit) (*Editabl
 			return fmt.Errorf("lock post: %w", err)
 		}
 
-		now := time.Now()
+		now := currentTime()
 		revision := post.BodyRevision
 		if edit.Body != post.Body {
 			revision++
@@ -109,6 +108,7 @@ func (db *DB) SavePost(ctx context.Context, number int, edit PostEdit) (*Editabl
 			RendererVersion: markdown.Version,
 			BodyRevision:    revision,
 			HTML:            edit.HTML,
+			RenderedAt:      now,
 		})
 		if err != nil {
 			return fmt.Errorf("save post HTML: %w", err)

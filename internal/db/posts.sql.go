@@ -116,8 +116,7 @@ type PostsRow struct {
 
 // Posts and CountPosts take the same optional filters: a NULL parameter
 // doesn't filter. Keep their WHERE clauses identical.
-// Published posts, newest first. Each post's tags come in the order they were
-// typed in.
+// Returns published posts, newest first, with tags in typed order.
 // No cached HTML if it's from another body revision or renderer version
 // LIMIT NULL returns every row
 func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error) {
@@ -165,13 +164,13 @@ func (q *Queries) Posts(ctx context.Context, arg PostsParams) ([]PostsRow, error
 }
 
 const savePostHTML = `-- name: SavePostHTML :exec
-INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html)
-VALUES ($1, $2, $3, $4)
+INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html, "renderedAt")
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT ("postId") DO UPDATE
 SET "rendererVersion" = EXCLUDED."rendererVersion",
     "bodyRevision"    = EXCLUDED."bodyRevision",
     html              = EXCLUDED.html,
-    "renderedAt"      = CURRENT_TIMESTAMP
+    "renderedAt"      = EXCLUDED."renderedAt"
 `
 
 type SavePostHTMLParams struct {
@@ -179,6 +178,7 @@ type SavePostHTMLParams struct {
 	RendererVersion int
 	BodyRevision    int
 	HTML            string
+	RenderedAt      time.Time
 }
 
 // Caches a post's rendered body.
@@ -188,6 +188,7 @@ func (q *Queries) SavePostHTML(ctx context.Context, arg SavePostHTMLParams) erro
 		arg.RendererVersion,
 		arg.BodyRevision,
 		arg.HTML,
+		arg.RenderedAt,
 	)
 	return err
 }

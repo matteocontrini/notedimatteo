@@ -4,13 +4,12 @@ FROM sessions
 WHERE token = @token;
 
 -- name: CreateSession :exec
--- lastActivityAt has no database default, so the insert sets it.
-INSERT INTO sessions (token, "lastActivityAt")
-VALUES (@token, CURRENT_TIMESTAMP);
+INSERT INTO sessions (token, "createdAt", "lastActivityAt")
+VALUES (@token, @now::timestamptz, @now::timestamptz);
 
 -- name: TouchSession :exec
 UPDATE sessions
-SET "lastActivityAt" = CURRENT_TIMESTAMP
+SET "lastActivityAt" = @now::timestamptz
 WHERE id = @id;
 
 -- name: DeleteSession :exec

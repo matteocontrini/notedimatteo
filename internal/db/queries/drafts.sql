@@ -32,10 +32,9 @@ FROM posts
 WHERE "publishedAt" IS NULL;
 
 -- name: CreateDraft :one
--- Creates an empty note with the next post number. The insert sets
--- publishedAt and updatedAt to NULL, because their defaults are the current time.
-INSERT INTO posts (number, category, "hideTitle", body, "publishedAt", "updatedAt")
-SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', NULL, NULL
+-- Creates an empty note with the next post number.
+INSERT INTO posts (number, category, "hideTitle", body, "createdAt")
+SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', @created_at::timestamptz
 FROM posts
 RETURNING number;
 

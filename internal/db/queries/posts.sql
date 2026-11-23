@@ -2,8 +2,7 @@
 -- doesn't filter. Keep their WHERE clauses identical.
 
 -- name: Posts :many
--- Published posts, newest first. Each post's tags come in the order they were
--- typed in.
+-- Returns published posts, newest first, with tags in typed order.
 SELECT p.id,
        p.number,
        p.category,
@@ -57,10 +56,10 @@ WHERE p."publishedAt" IS NOT NULL
 
 -- name: SavePostHTML :exec
 -- Caches a post's rendered body.
-INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html)
-VALUES (@post_id, @renderer_version, @body_revision, @html)
+INSERT INTO post_html_cache ("postId", "rendererVersion", "bodyRevision", html, "renderedAt")
+VALUES (@post_id, @renderer_version, @body_revision, @html, @rendered_at)
 ON CONFLICT ("postId") DO UPDATE
 SET "rendererVersion" = EXCLUDED."rendererVersion",
     "bodyRevision"    = EXCLUDED."bodyRevision",
     html              = EXCLUDED.html,
-    "renderedAt"      = CURRENT_TIMESTAMP;
+    "renderedAt"      = EXCLUDED."renderedAt";

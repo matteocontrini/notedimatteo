@@ -50,7 +50,7 @@ SELECT unnest(@names::text[])
 ON CONFLICT DO NOTHING;
 
 -- name: AddPostTags :exec
--- Links the tags to the post, numbering them in the order of names.
+-- Adds the tags to the post and saves their order in position.
 INSERT INTO posts_tags ("postId", "tagName", "position")
 SELECT @post_id, t.name, (t.ordinality - 1)::int
 FROM unnest(@names::text[]) WITH ORDINALITY AS t(name, ordinality);

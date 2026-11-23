@@ -1,7 +1,7 @@
--- A post's tags keep the order they were typed in, which position records.
--- Saves have always inserted a post's tags in that order, so the rows' physical
--- order (ctid) is the best record of it: rows usually stay where they were
--- inserted, but Postgres can reuse space freed by deleted rows.
+-- Add a position column to keep each post's tags in the order they were typed.
+-- Fill it from the physical row order (ctid), because saves have always inserted
+-- tags in typed order. A few posts may get a different order, where Postgres
+-- reused space freed by deleted rows.
 
 -- +goose Up
 ALTER TABLE posts_tags ADD COLUMN "position" INTEGER;

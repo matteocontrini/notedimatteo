@@ -108,6 +108,7 @@ func (db *DB) SavePostHTML(ctx context.Context, postID, bodyRevision int, html s
 		RendererVersion: markdown.Version,
 		BodyRevision:    bodyRevision,
 		HTML:            html,
+		RenderedAt:      currentTime(),
 	})
 	if err != nil {
 		return fmt.Errorf("save post HTML: %w", err)

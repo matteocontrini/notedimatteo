@@ -24,7 +24,7 @@ func (db *DB) SessionByToken(ctx context.Context, token string) (*Session, error
 }
 
 func (db *DB) CreateSession(ctx context.Context, token string) error {
-	if err := db.queries.CreateSession(ctx, token); err != nil {
+	if err := db.queries.CreateSession(ctx, CreateSessionParams{Token: token, Now: currentTime()}); err != nil {
 		return fmt.Errorf("create session: %w", err)
 	}
 	return nil
@@ -32,7 +32,7 @@ func (db *DB) CreateSession(ctx context.Context, token string) error {
 
 // TouchSession sets a session's last activity to now.
 func (db *DB) TouchSession(ctx context.Context, id int) error {
-	if err := db.queries.TouchSession(ctx, id); err != nil {
+	if err := db.queries.TouchSession(ctx, TouchSessionParams{ID: id, Now: currentTime()}); err != nil {
 		return fmt.Errorf("update session activity: %w", err)
 	}
 	return nil

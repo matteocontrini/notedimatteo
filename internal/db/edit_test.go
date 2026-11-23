@@ -32,7 +32,7 @@ func TestSavePost(t *testing.T) {
 	if post.Title != "Title" || post.Category != "til" || post.Slug != "" || post.UpdatedAt == nil || post.PublishedAt != nil {
 		t.Errorf("saved %+v", post)
 	}
-	// Tags keep the order they were typed in, not the order of their names
+	// Check that tags keep the typed order, not alphabetical order
 	if !slices.Equal(post.Tags, []string{"zz-new-tag", "go"}) {
 		t.Errorf("tags = %v", post.Tags)
 	}

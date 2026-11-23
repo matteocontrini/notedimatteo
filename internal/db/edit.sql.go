@@ -21,7 +21,7 @@ type AddPostTagsParams struct {
 	Names  []string
 }
 
-// Links the tags to the post, numbering them in the order of names.
+// Adds the tags to the post and saves their order in position.
 func (q *Queries) AddPostTags(ctx context.Context, arg AddPostTagsParams) error {
 	_, err := q.db.Exec(ctx, addPostTags, arg.PostID, arg.Names)
 	return err

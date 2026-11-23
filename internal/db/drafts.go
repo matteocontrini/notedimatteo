@@ -31,7 +31,7 @@ func (db *DB) CountDrafts(ctx context.Context) (int, error) {
 // CreateDraft creates an empty note with the next post number, and returns
 // that number.
 func (db *DB) CreateDraft(ctx context.Context) (int, error) {
-	number, err := db.queries.CreateDraft(ctx)
+	number, err := db.queries.CreateDraft(ctx, currentTime())
 	if err != nil {
 		return 0, fmt.Errorf("create draft: %w", err)
 	}

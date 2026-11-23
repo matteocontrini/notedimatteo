@@ -32,7 +32,8 @@ Working notes, measurements, and the prototype's findings: `sqlite-notes.md`.
 Changes that don't depend on SQLite, checked by today's tests and by production, so the move only changes the
 dialect. The revisions work (branch `post-revisions`) merges after the move.
 
-- [ ] Go sets every time, rounded to milliseconds; drop the time defaults and `CURRENT_TIMESTAMP` from the queries
+- [x] Go sets every time, rounded to milliseconds; drop the time defaults and `CURRENT_TIMESTAMP` from the queries
+  (`00005`)
 - [ ] Make `title` and `slug` `NOT NULL DEFAULT ''`, and drop `COALESCE` and `NULLIF`
 - [x] Keep tags in the order typed: a `position` column on `posts_tags`, filled from the rows' current order (`00004`)
 - [ ] Group the archive by month in Go, in Europe/Rome

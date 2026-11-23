@@ -5,14 +5,18 @@ start without redoing them. Remove notes that stop being true.
 
 ## Step 0 (preparing on Postgres)
 
-- Times: the defaults are on `posts."createdAt"`, `"updatedAt"`, `"publishedAt"`, `post_html_cache."renderedAt"`,
-  and `sessions."createdAt"`. `CURRENT_TIMESTAMP` is in `CreateSession`, `TouchSession`, and `SavePostHTML`;
-  `CreateDraft` relies on the `createdAt` default and passes `NULL` for `publishedAt` and `updatedAt` only because
-  their defaults are the current time. After the change, those queries take the time as a parameter.
-- Precision: Prisma wrote milliseconds; Go has written microseconds since cutover (seen locally:
-  `2026-11-22 12:27:59.656983+01`). The SQLite format keeps milliseconds, so rounding in Go
-  (`time.Now().Truncate(time.Millisecond)`, also on the times in the save transaction) makes the copy exact. The copy
-  truncates the microsecond values written before the change: harmless.
+- Times (done 2026-11-23, `00005_times_from_go.sql`):
+  - The migration drops the defaults of `posts."createdAt"`, `"updatedAt"`, `"publishedAt"`,
+    `post_html_cache."renderedAt"`, and `sessions."createdAt"`, and truncates every stored time to milliseconds.
+    Prisma wrote milliseconds; Go wrote microseconds from cutover until this migration (seen locally:
+    `2026-11-22 12:27:59.656983+01`).
+  - `CreateDraft`, `CreateSession`, `TouchSession`, and `SavePostHTML` take the time as a parameter. `CreateDraft` no
+    longer passes `NULL` for `publishedAt` and `updatedAt` (their defaults used to be the current time), and
+    `CreateSession` now sets `createdAt` too.
+  - `currentTime()` in `internal/db/db.go` truncates `time.Now()` to milliseconds; the save transaction uses it too.
+    `TestStoredTimes` checks the six columns (it reports all six if the truncation goes).
+  - Checked on a copy of the production copy through the real server: no defaults or sub-millisecond times left,
+    and login, a new draft, and a publishing save store millisecond times.
 - Title and slug: on the production copy, 442 titles and 516 slugs are `NULL`, none are `''`, and 86 posts have
   one without the other. Every query maps `NULL` to `''` (`COALESCE` in `Posts`, `Drafts`, `PostForEdit`) and back
   (`NULLIF` in `UpdatePost`), so Go never sees `NULL`. The migration: `UPDATE … SET title = '' WHERE title IS NULL`

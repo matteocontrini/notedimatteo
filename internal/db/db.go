@@ -20,6 +20,12 @@ const (
 	connectTimeout  = 10 * time.Second
 )
 
+// currentTime returns the current time truncated to milliseconds, the precision
+// of every stored time.
+func currentTime() time.Time {
+	return time.Now().Truncate(time.Millisecond)
+}
+
 type DB struct {
 	pool *pgxpool.Pool
 	// conn runs queries and starts transactions. It's the pool, except in tests,

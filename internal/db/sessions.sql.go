@@ -11,13 +11,17 @@ import (
 )
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (token, "lastActivityAt")
-VALUES ($1, CURRENT_TIMESTAMP)
+INSERT INTO sessions (token, "createdAt", "lastActivityAt")
+VALUES ($1, $2::timestamptz, $2::timestamptz)
 `
 
-// lastActivityAt has no database default, so the insert sets it.
-func (q *Queries) CreateSession(ctx context.Context, token string) error {
-	_, err := q.db.Exec(ctx, createSession, token)
+type CreateSessionParams struct {
+	Token string
+	Now   time.Time
+}
+
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
+	_, err := q.db.Exec(ctx, createSession, arg.Token, arg.Now)
 	return err
 }
 
@@ -51,11 +55,16 @@ func (q *Queries) SessionByToken(ctx context.Context, token string) (SessionByTo
 
 const touchSession = `-- name: TouchSession :exec
 UPDATE sessions
-SET "lastActivityAt" = CURRENT_TIMESTAMP
-WHERE id = $1
+SET "lastActivityAt" = $1::timestamptz
+WHERE id = $2
 `
 
-func (q *Queries) TouchSession(ctx context.Context, id int) error {
-	_, err := q.db.Exec(ctx, touchSession, id)
+type TouchSessionParams struct {
+	Now time.Time
+	ID  int
+}
+
+func (q *Queries) TouchSession(ctx context.Context, arg TouchSessionParams) error {
+	_, err := q.db.Exec(ctx, touchSession, arg.Now, arg.ID)
 	return err
 }

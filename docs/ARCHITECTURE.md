@@ -62,6 +62,8 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   schema with `IF NOT EXISTS`, so on the production database it only recorded version 1. Migrations have no Down.
 - Production Postgres runs in UTC; archive months group by the database session's time zone (a TODO).
 - A post's tags keep the order they were typed in: `posts_tags.position`, numbered from 0 by each save.
+- Go sets every time the database stores, truncated to milliseconds (`currentTime` in `internal/db`); no column
+  has a time default.
 
 ## Markdown
 

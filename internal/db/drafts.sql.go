@@ -24,16 +24,15 @@ func (q *Queries) CountDrafts(ctx context.Context) (int, error) {
 }
 
 const createDraft = `-- name: CreateDraft :one
-INSERT INTO posts (number, category, "hideTitle", body, "publishedAt", "updatedAt")
-SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', NULL, NULL
+INSERT INTO posts (number, category, "hideTitle", body, "createdAt")
+SELECT COALESCE(MAX(number), 0) + 1, 'note', FALSE, '', $1::timestamptz
 FROM posts
 RETURNING number
 `
 
-// Creates an empty note with the next post number. The insert sets
-// publishedAt and updatedAt to NULL, because their defaults are the current time.
-func (q *Queries) CreateDraft(ctx context.Context) (int, error) {
-	row := q.db.QueryRow(ctx, createDraft)
+// Creates an empty note with the next post number.
+func (q *Queries) CreateDraft(ctx context.Context, createdAt time.Time) (int, error) {
+	row := q.db.QueryRow(ctx, createDraft, createdAt)
 	var number int
 	err := row.Scan(&number)
 	return number, err
