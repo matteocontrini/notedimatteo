@@ -5,6 +5,8 @@ It builds on the Go server: `go-migration-plan.md` (done 2026-11-21) and `ARCHIT
 
 Working notes and open questions: `redesign-notes.md`.
 
+Before phase 2: the move from PostgreSQL to SQLite (`sqlite-plan.md`).
+
 ## Phases
 
 Each phase reaches production on its own. Phase 4 comes before phase 5; the others can happen in any order.
