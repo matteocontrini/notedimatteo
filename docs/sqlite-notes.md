@@ -157,6 +157,23 @@ start without redoing them. Remove notes that stop being true.
 - `TEST_DATABASE_PATH=<copy> go test ./internal/db` passes, and the file's checksum doesn't change.
 - Note: the work is on the local branch `sqlite`; `git archive HEAD` there gives the new code, not production's.
 
+## Cutover (2026-11-24)
+
+- Backup `de4a171` of the backups repo (run by hand at 21:30 UTC; the last edit was 20:05 UTC): 684 posts, all
+  published; 99 tags; 1,122 links; 11 sessions; 684 cached pages. `gh` (run through 1Password's `op plugin`) hung
+  with no prompt, so the files came from `git clone --depth 1` over SSH instead.
+- `pgcopy` into a new file: every count equal, checks passed, 107 ms.
+- Upload: the official `litestream/litestream:0.5.18` image with `litestream.yml` minus `exec`, on a Docker volume
+  holding the file, `--env-file .env.r2-prod`; the snapshot (1 MB compressed) was up in 2 s, then `docker stop`.
+  A `litestream restore` into another file gave an identical `.dump` of all five tables.
+- Railway deploy `355bac0d` (commit `15fce32`, root image) with an empty volume at `/data`: "restore completed" in
+  1.6 s, then the server (Railway sets `PORT=8080`). Litestream logged "detected database behind replica" and
+  fetched the latest L0 file, then replicated normally.
+- Production compared with a local server on the same file: 2,596 logged-out paths, 0 differences (6 minutes).
+- A save of post 684 reached the bucket: a restore shows its new `updated_at` and body revision.
+- Rollback: the Postgres service is unchanged; the previous deployment needs `DATABASE_URL` back, and anything
+  written to SQLite since would have to be copied back by hand.
+
 ## Prototype (2026-11-22)
 
 - Built in the session's scratchpad (`…/scratchpad/sqlite`, likely gone by now): a separate Go module with the
@@ -503,8 +520,23 @@ Magic Containers) is chosen at Step 4.
     local file and is uploaded at the next start. After that first second, a login followed at once by
     `docker stop` was uploaded by the final sync (checked with debug logs and a restore).
   - Afterwards, the test folder was deleted from the dev bucket (`rclone purge`).
-- Backups repo: its Action can run `litestream restore` from R2 into a file and commit `sqlite3 .dump` output,
-  keeping today's text history. It needs a read-only R2 token.
+- Backups repo (2026-11-24): its `backup.yml` restores the latest copy with the `litestream/litestream:0.5.18`
+  image (`restore -o … "s3://<bucket>/notedimatteo?endpoint=<endpoint>"`), checks `integrity_check` and that
+  `posts` has rows, then commits `notedimatteo.sql` (`sqlite3 .dump`) daily at 01:31 UTC and on push. The Postgres
+  files are gone (git history keeps them).
+  - A token that can only read the production bucket: the keys are repository secrets, the bucket and endpoint
+    variables (an account ID gives no access on its own). `.env.r2-prod-ro` has another read-only token for local
+    tests.
+  - The dump leaves out `sessions` (login tokens; `last_activity_at` changes on every visit), `post_html_cache`
+    (rebuilt when missing; half the size), and Litestream's `_litestream_seq` and `_litestream_lock` tables. It
+    keeps `goose_db_version`, so a server starts on `sqlite3 new.db < notedimatteo.sql` without migrating. 670 KB,
+    one line per row (`.dump` escapes newlines), so an edit is a one-line diff and an unchanged day makes no
+    commit.
+  - Tested locally: the restore takes 6 s; the dump reloads with `integrity_check` ok, no `foreign_key_check` rows,
+    and every post and link. `-timestamp 2026-11-24T21:45:00Z` restores post 684 at revision 10, before the 21:50
+    edit (revision 11). A missing file fails the check ("no such table: posts").
+  - The runner (Ubuntu 24.04) has `sqlite3` 3.45.1 and Docker. A restored file is in WAL mode: `sqlite3 -readonly`
+    can't open it ("unable to open database file").
 - Rejected (2026-11-23): the server uploading a daily `VACUUM INTO` snapshot (a day of writes at risk), a one-off
   server mode importing from Postgres when the file is empty, and uploading the file with `railway ssh`.
 
@@ -528,8 +560,8 @@ Magic Containers) is chosen at Step 4.
 - Storage type: not documented (volumes give 3,000 read and 3,000 write IOPS; backups are copy-on-write). Forum
   questions about fsync and locks on volumes have no answer. Railway runs its own Postgres and MySQL on the same
   volumes, which need working locks and fsync, so they aren't a network filesystem in practice.
-- Today's backups: the private repo `notedimatteo-backups` runs `supabase db dump` daily against Postgres
-  (`go-migration-notes.md`, "Production data").
+- Before the move, the private repo `notedimatteo-backups` ran `supabase db dump` daily against Postgres
+  (`go-migration-notes.md`, "Production data"); now it dumps the restored SQLite file (see "Litestream").
 
 ### Bunny Magic Containers
 

@@ -175,6 +175,9 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
   With a volume, Railway stops the old deployment before starting the new one, so each deploy has a few seconds of
   downtime. SIGTERM goes to Litestream, which stops the server and makes a last sync:
   `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30` gives it 30 s before SIGKILL (Railway's default is 0).
+- The bucket keeps 7 days of changes, restorable to any point. For a longer history, the private repo
+  `notedimatteo-backups` restores the latest copy daily with a read-only token and commits a text dump
+  (`notedimatteo.sql`, without sessions and cached HTML).
 - The Build workflow's `docker` job also pushes the image to GHCR on `main`
   (`ghcr.io/matteocontrini/notedimatteo:<commit>`), and the Deploy workflow (`deploy.yml`, triggered by
   `workflow_run`) can deploy it to Bunny Magic Containers with `.github/scripts/deploy.js`. It's off while the

@@ -76,23 +76,23 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 - [x] Choose the host for now: Railway
 - [x] Run the image as root, because Railway mounts volumes as owned by root
 - [x] Undeploy the Bunny test app (it uses the production bucket) and delete the `BUNNY_APP_ID` variable
-- [ ] On the Railway service: turn on "Wait for CI", and set the health check path to `/healthz`
-- [ ] Replace the `supabase db dump` Action: restore from R2 and commit a text dump; test a restore, including to an
-  earlier point in time
+- [x] On the Railway service: turn on "Wait for CI", and set the health check path to `/healthz`
 - [x] Update `ARCHITECTURE.md`, `README.md`, `.env.example`, CI, and Renovate
 
 ### Step 5: Cutover
 
 - [x] Turn off Railway's deploys from `main` before merging the `sqlite` branch
-- [ ] Stop writing, run the backup workflow, import its dump into a local Postgres, copy that with `pgcopy`, and
+- [x] Stop writing, run the backup workflow, import its dump into a local Postgres, copy that with `pgcopy`, and
   replicate the file to R2 with Litestream
-- [ ] On the Railway service: add a volume at `/data`; set `DATABASE_PATH=/data/notedimatteo.db`, the four
+- [x] On the Railway service: add a volume at `/data`; set `DATABASE_PATH=/data/notedimatteo.db`, the four
   `LITESTREAM_*` for the production bucket, and `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`; remove `DATABASE_URL`
   and `BODY_SIZE_LIMIT`; turn deploys from `main` back on
-- [ ] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
-- [ ] Keep the Railway services (server and Postgres) for a while as the rollback, then delete them
+- [x] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
+- [ ] Keep the Postgres service for a while as the rollback, then delete it (the backups repo no longer reads it)
 - [ ] Remove the copy command
 
 ### Afterwards
 
+- [x] Replace the backups repo's Action: restore from R2 with a read-only token and commit a text dump, for history
+  beyond Litestream's 7 days and a copy outside Cloudflare; test a restore, including to an earlier point in time
 - [ ] Optional: make search ignore accents (`piu` finds 9 posts today, 123 with `più`)
