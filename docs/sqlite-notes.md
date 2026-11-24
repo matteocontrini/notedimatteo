@@ -143,7 +143,8 @@ start without redoing them. Remove notes that stop being true.
 - `cmd/pgcopy <postgres URL> <sqlite file>`: refuses an existing file, migrates it, reads Postgres in one
   read-only repeatable-read transaction, inserts every table in one SQLite transaction (ids kept; times as
   `db.Time`, bools bound as 0/1), then compares row counts, runs `integrity_check` and `foreign_key_check`, and
-  checkpoints the WAL. 122 ms. pgx is a direct dependency again until Step 5.
+  checkpoints the WAL. 122 ms. Removed after the cutover (2026-11-24; it's in git history); pgx stays in `go.mod`
+  only as an indirect dependency of sqlc, and the server binary doesn't contain it.
 - Comparison: the old server built from `origin/main` (`136663c`, what production runs: `git archive` into the
   scratchpad, symlinked `node_modules` and `.libvips`, `vite build`, `go build`) on the imported database, the new
   one on a copy of the file, both with the same variables. A Python script fetched 2,574 paths logged out (every

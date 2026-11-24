@@ -60,7 +60,8 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 
 ### Step 3: Copy
 
-- [x] Add a command that copies a Postgres database into a new SQLite file, sessions included (`cmd/pgcopy`)
+- [x] Add a command that copies a Postgres database into a new SQLite file, sessions included (`cmd/pgcopy`,
+  removed after the cutover)
 - [x] Compare the copy of production with Postgres: every page from the old and new servers is identical
 
 ### Step 4: Deployment
@@ -88,8 +89,8 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
   `LITESTREAM_*` for the production bucket, and `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`; remove `DATABASE_URL`
   and `BODY_SIZE_LIMIT`; turn deploys from `main` back on
 - [x] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
-- [ ] Keep the Postgres service for a while as the rollback, then delete it (the backups repo no longer reads it)
-- [ ] Remove the copy command
+- [x] Keep the Postgres service for a while as the rollback, then delete it (the backups repo no longer reads it)
+- [x] Remove the copy command
 
 ### Afterwards
 
