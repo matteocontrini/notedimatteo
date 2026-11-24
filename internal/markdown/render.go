@@ -8,19 +8,12 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// nodeRenderer drops raw HTML tags, keeping the text between them, and renders
-// the nodes added by imageTransformer.
+// nodeRenderer renders the nodes added by imageTransformer.
 type nodeRenderer struct{}
 
 func (r *nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(ast.KindHTMLBlock, renderNothing)
-	reg.Register(ast.KindRawHTML, renderNothing)
 	reg.Register(kindImage, renderImage)
 	reg.Register(kindLiteral, renderLiteral)
-}
-
-func renderNothing(util.BufWriter, []byte, ast.Node, bool) (ast.WalkStatus, error) {
-	return ast.WalkSkipChildren, nil
 }
 
 func renderImage(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {

@@ -79,7 +79,7 @@ never build URLs by hand, so a redesign only touches `internal/views` and the CS
 
 ## Markdown
 
-- goldmark with strikethrough; raw HTML is dropped (inline tags removed, text kept).
+- goldmark with strikethrough; HTML isn't parsed, so tags like `<details>` show as text.
 - `[img width=… height=…]path[/img]` shows the `_preview` variant of an uploaded image, lazy-loaded and linked
   to the original (or to `link`, which must be http(s) or a path on the site).
 - Rendered HTML is cached in `post_html_cache` with `markdown.Version`. Bump the version whenever the output
