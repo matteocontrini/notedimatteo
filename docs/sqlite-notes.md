@@ -512,9 +512,12 @@ Magic Containers) is chosen at Step 4.
 
 - A service with a volume can't run two deployments at once: the old one stops before the new one starts, so each
   deploy has a short downtime (accepted). One volume per service, no replicas.
-- Volumes are mounted as root, when the container starts (not at build or pre-deploy). The image runs as `nobody`.
-  Railway's only documented fix is `RAILWAY_RUN_UID=0`, which runs the server as root. To keep `nobody`: start as
-  root, `chown` the mount, and drop to `nobody` (Debian's `setpriv`, in util-linux).
+- Volumes are mounted as root, when the container starts (not at build or pre-deploy). Railway's documented fix
+  for non-root images is `RAILWAY_RUN_UID=0`, which overrides the image's `USER`; for our own image, removing
+  `USER nobody` does the same everywhere. Decided 2026-11-24: run as root. As `nobody` the server could still read
+  and change the database and read every secret in its environment; running as root mainly makes escaping the
+  container easier. The alternative was a startup script that `chown`s the mount and drops to `nobody` with
+  `setpriv` (in the image, from util-linux).
 - Railway's volume backups (manual or scheduled, incremental, kept 6 days to 89 days) can't be downloaded, and
   restore only into the same project: a second layer at most. The CLI now manages volume files
   (`railway volume files list|download|upload`, `railway volume browse`).
@@ -590,6 +593,30 @@ Magic Containers) is chosen at Step 4.
     `SITE_URL`, and the four `LITESTREAM_*` (the dev bucket while testing, production's after).
   - The endpoint on port 6200, a health check on `/healthz`, and `terminationGracePeriodSeconds` 30 (the default
     for new apps; check it in `GET /apps/{id}`).
+- **Litestream fails on Bunny (2026-11-23).** The test app (`wcbidSRYxoXRv7D`, Milan, image `f8c76b7`) started
+  fine: "no backup found, starting fresh", migration, server listening, 0 restarts. But every Litestream sync failed
+  with `locking protocol (15)` (`SQLITE_PROTOCOL`), with "timeout waiting for db initialization" warnings, so
+  nothing reached the bucket. The same image replicates fine on Docker (runc) and against R2.
+  - The volume, from `/proc/self/mountinfo` in the pod:
+    `/data rw - 9p none rw,trans=fd,...,cache=remote_revalidating,disable_fifo_open,directfs`.
+  - With `cache=remote_revalidating` (gVisor's mode for shared gofer mounts, whose files can change outside the
+    sandbox), memory-mapped files aren't coherent between processes, so SQLite's WAL index (`-shm`) can't be
+    shared. Only `cache=fscache` (exclusive file access) keeps it coherent, since all processes map it through the
+    same Sentry. Sources: openclaw PR #172220 (SQLite "database is locked" in gVisor over 9p with a WAL replicator;
+    WAL only on `trans=fd` + `cache=fscache`), gke-labs/kube-agents #610 (WAL on a gVisor 9p
+    `cache=remote_revalidating` volume corrupted two databases in three days). Older, different cause: gVisor's
+    VFS1 lacked `F_GETLK` (gVisor #5113, Litestream #183 on Cloud Run and DigitalOcean App Platform, fixed there in
+    2024 with a new runtime).
+  - So the driver (ncruces OFD locks vs Litestream's POSIX locks) isn't the cause: modernc or mattn would fail the
+    same way. Even the server alone, with 2 connections each mapping `-shm`, isn't proven safe on this mount; a safe
+    setup there is one connection without `-shm` (`locking_mode=EXCLUSIVE` or a rollback journal), which rules out
+    Litestream.
+  - Bunny's logs: they appear in the dashboard minutes late; the API has no endpoint to read them (only syslog
+    forwarding, `/log/forwarding`). Mount inspection without a shell: override the command with
+    `sh -c "grep ' /data ' /proc/self/mountinfo; exec litestream replicate"`, or a second `busybox` container in
+    the pod with the volume mounted.
+  - Asked Bunny support (2026-11-23) whether multi-process SQLite on volumes is supported or a setting makes it
+    work. Alternatives: Railway (normal containers), or Bunny with in-process snapshots instead of Litestream.
 - Fits phase 4 of the redesign, which considers Bunny as the CDN in front of imgproxy.
 - Bunny Database ("SQLite-compatible", public preview since 2026-02) would put queries over the network and may not
   run `ext/unicode`: not pursued.

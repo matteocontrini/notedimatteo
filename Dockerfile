@@ -55,5 +55,4 @@ COPY --from=build /out/server /usr/local/bin/server
 COPY --from=litestream/litestream:0.5.18 /usr/local/bin/litestream /usr/local/bin/litestream
 COPY litestream.yml /etc/litestream.yml
 
-USER nobody
 ENTRYPOINT ["litestream", "replicate"]

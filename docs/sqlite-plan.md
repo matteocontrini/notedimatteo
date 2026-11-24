@@ -24,7 +24,7 @@ Working notes, measurements, and the prototype's findings: `sqlite-notes.md`.
 | Tags        | Kept in the order typed (a `position` column); `json_group_array` decoded in Go                                     |
 | Archive     | Months grouped in Go in Europe/Rome (done in Step 0)                                                                |
 | Search      | Unicode-aware `LIKE`, so results stay the same as Postgres's `ILIKE`                                                |
-| Hosting     | Bunny Magic Containers (decided 2026-11-23); one instance in one region with the file on a volume; a short downtime on every deploy is accepted |
+| Hosting     | Railway, one instance with the file on a volume; a short downtime on every deploy is accepted. Bunny Magic Containers was chosen first, but its volumes don't let two processes share SQLite (asked support) |
 | Litestream  | `litestream replicate -restore-if-db-not-exists -exec server`: restores from R2 when the volume has no database, then streams changes to R2 while running the server |
 
 ## Steps
@@ -68,23 +68,28 @@ From Step 1 on, the code expects SQLite: production can't deploy it until the cu
 - [x] Add Litestream to the image, running the server with `litestream replicate` (`litestream.yml`), and test
   replication, shutdown, and restore locally
 - [x] Test against R2 with a dev bucket and token, including the first start with an empty bucket
-- [ ] Create production's private R2 bucket and a token for it only
-- [x] Choose the host: Bunny Magic Containers
-- [x] Deploy from CI: on `main`, the Build workflow's `docker` job pushes the image to GHCR, and the Deploy workflow
-  (`deploy.yml`) runs `.github/scripts/deploy.js` once Build passes
-- [ ] Create the Bunny app (settings in the notes) and test it with the dev bucket: `nobody` writes to the new
-  volume, the first start restores, a redeploy stops the old pod first and syncs, and locks work under gVisor
+- [x] Create production's private R2 bucket and a token for it only
+- [x] Deploy to Bunny from CI: the Build workflow pushes the image to GHCR, and the Deploy workflow (`deploy.yml`)
+  runs `.github/scripts/deploy.js` (off while `BUNNY_APP_ID` isn't set)
+- [x] Test on a Bunny app: Litestream fails with `locking protocol`, because the volume is a shared 9p mount in
+  gVisor (notes); asked Bunny support
+- [x] Choose the host for now: Railway
+- [x] Run the image as root, because Railway mounts volumes as owned by root
+- [x] Undeploy the Bunny test app (it uses the production bucket) and delete the `BUNNY_APP_ID` variable
+- [ ] On the Railway service: turn on "Wait for CI", and set the health check path to `/healthz`
 - [ ] Replace the `supabase db dump` Action: restore from R2 and commit a text dump; test a restore, including to an
   earlier point in time
 - [x] Update `ARCHITECTURE.md`, `README.md`, `.env.example`, CI, and Renovate
 
 ### Step 5: Cutover
 
-- [x] Turn off Railway's deploys from `main` before merging the `sqlite` branch, which deploys to Bunny
+- [x] Turn off Railway's deploys from `main` before merging the `sqlite` branch
 - [ ] Stop writing, run the backup workflow, import its dump into a local Postgres, copy that with `pgcopy`, and
   replicate the file to R2 with Litestream
+- [ ] On the Railway service: add a volume at `/data`; set `DATABASE_PATH=/data/notedimatteo.db`, the four
+  `LITESTREAM_*` for the production bucket, and `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`; remove `DATABASE_URL`
+  and `BODY_SIZE_LIMIT`; turn deploys from `main` back on
 - [ ] Deploy with an empty volume, so the first start restores from R2; check pages, login, a save, and an upload
-- [ ] Point the domain at the Bunny app
 - [ ] Keep the Railway services (server and Postgres) for a while as the rollback, then delete them
 - [ ] Remove the copy command
 
