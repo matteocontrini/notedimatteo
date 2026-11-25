@@ -5,6 +5,8 @@ import {
 	hiddenBlankLines,
 	hiddenLinesOfRun,
 	insertParagraph,
+	joinParagraphs,
+	paragraphs,
 } from './paragraphs';
 import { run, stateOf } from './testing';
 
@@ -66,6 +68,25 @@ describe('hidden blank lines', () => {
 		expect(hiddenBlankLines(stateOf('A\n|'))).toEqual([]);
 	});
 
+	it('include the lines with only markers between paragraphs of a quote', () => {
+		expect(hiddenBlankLines(stateOf('> A\n>\n> B|'))).toEqual([{ first: 2, last: 2 }]);
+		// Three lines with only markers show an empty paragraph in the quote
+		expect(hiddenBlankLines(stateOf('> A\n>\n>\n>\n> B|'))).toEqual([
+			{ first: 2, last: 2 },
+			{ first: 4, last: 4 },
+		]);
+		expect(hiddenBlankLines(stateOf('> A\n> > B\n>\n> C|'))).toEqual([{ first: 3, last: 3 }]);
+	});
+
+	it('around a quote are the space between it and the blocks around it', () => {
+		expect(hiddenBlankLines(stateOf('A\n\n> B\n\nC|'))).toEqual([
+			{ first: 2, last: 2 },
+			{ first: 4, last: 4 },
+		]);
+		// The quote's last line and the blank line after it make one gap
+		expect(hiddenBlankLines(stateOf('> A\n>\n\nB|'))).toEqual([{ first: 2, last: 3 }]);
+	});
+
 	it("don't include blank lines inside code blocks", () => {
 		expect(hiddenBlankLines(stateOf('A\n\n```\nx\n\ny\n```\n\nB|'))).toEqual([
 			{ first: 2, last: 2 },
@@ -100,6 +121,35 @@ describe('Enter', () => {
 		expect(run(insertParagraph, 'A\n|')).toBe('A\n\n|');
 	});
 
+	it('in a quote starts a paragraph in the quote', () => {
+		expect(run(enter, '> A|')).toBe('> A\n>\n> |');
+		expect(run(enter, '> Hello wor|ld')).toBe('> Hello wor\n>\n> |ld');
+		expect(run(enter, '> > A|')).toBe('> > A\n> >\n> > |');
+		expect(run(enter, '> > A\n>\n> B|')).toBe('> > A\n>\n> B\n>\n> |');
+	});
+
+	it('at the start of a paragraph in a quote adds an empty paragraph above it', () => {
+		expect(run(enter, '> A\n>\n> |B')).toBe('> A\n>\n> \n>\n> |B');
+	});
+
+	it('before the quote markers moves the quote down', () => {
+		expect(run(enter, 'A\n\n|> B')).toBe('A\n\n\n\n|> B');
+	});
+
+	it('on a line with only markers right below a paragraph adds the line between them', () => {
+		expect(run(enter, '> A\n> |')).toBe('> A\n>\n> |');
+	});
+
+	it('on an empty paragraph at the end of a quote leaves the quote', () => {
+		expect(run(enter, '> A\n>\n> |')).toBe('> A\n\n|');
+		expect(run(enter, '> A\n>\n>|')).toBe('> A\n\n|');
+	});
+
+	it('continues lists inside a quote, and leaves them for a paragraph in the quote', () => {
+		expect(run(enter, '> - a|')).toBe('> - a\n> - |');
+		expect(run(enter, '> - a\n> - |')).toBe('> - a\n>\n> |');
+	});
+
 	it('leaves code blocks to the plain line break, except after the closing fence', () => {
 		expect(run(insertParagraph, '```\nco|de\n```')).toBeNull();
 		expect(run(insertParagraph, '```\ncode\n```|')).toBe('```\ncode\n```\n\n|');
@@ -122,15 +172,28 @@ describe('Enter', () => {
 		expect(run(enter, '```\n    a|')).toBe('```\n    a\n    |');
 	});
 
-	it('continues lists and quotes', () => {
+	it('continues lists, and starts paragraphs in quotes', () => {
 		expect(run(continueMarkup, '- a|')).toBe('- a\n- |');
 		expect(run(continueMarkup, '1. a|')).toBe('1. a\n2. |');
-		expect(run(continueMarkup, '> a|')).toBe('> a\n> |');
+		expect(run(continueMarkup, '> a|')).toBe('> a\n>\n> |');
 		expect(run(continueMarkup, 'text|')).toBeNull();
 	});
 
 	it('on an empty list item leaves the list and starts a paragraph', () => {
 		expect(run(continueMarkup, '- a\n- |')).toBe('- a\n\n|');
 		expect(run(continueMarkup, '- a\n- b\n- |')).toBe('- a\n- b\n\n|');
+	});
+});
+
+describe('Backspace and Delete between two paragraphs', () => {
+	it("before the next paragraph's quote markers join the paragraphs", () => {
+		expect(run(joinParagraphs, '> A\n>\n|> B', paragraphs)).toBe('> A|B');
+		expect(run(joinParagraphs, '> A\n>\n>| B', paragraphs)).toBe('> A|B');
+	});
+
+	it('elsewhere are left to the usual commands', () => {
+		expect(run(joinParagraphs, '> A\n>\n> |B', paragraphs)).toBeNull();
+		expect(run(joinParagraphs, '> A|\n>\n> B', paragraphs)).toBeNull();
+		expect(run(joinParagraphs, 'A\n\n|B', paragraphs)).toBeNull();
 	});
 });

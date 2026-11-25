@@ -132,6 +132,35 @@ test('editing the body: paragraphs, lists, code blocks, and pasting', async ({ p
 		await body.press('Tab');
 		await expect(body).not.toBeFocused();
 	});
+
+	await test.step('Enter in a quote starts a paragraph in it, and on an empty one leaves it', async () => {
+		await body.press('ControlOrMeta+End');
+		await body.press('Enter');
+		await body.pressSequentially('> Prima frase');
+		await body.press('Enter');
+		await body.pressSequentially('Seconda frase');
+		const quote = body.locator('.cm-md-quote');
+		await expect(quote).toHaveText(['> Prima frase', '> Seconda frase']);
+		await expect(body.locator('.cm-md-gap-quote')).toHaveCount(1);
+
+		// Backspace at the start of the paragraph joins it to the one above
+		await body.press('Home');
+		await body.press('Backspace');
+		await expect(quote).toHaveText(['> Prima fraseSeconda frase']);
+		await body.press('Enter');
+		await expect(quote).toHaveText(['> Prima frase', '> Seconda frase']);
+
+		await body.press('End');
+		await body.press('Enter');
+		await body.press('Enter');
+		await body.pressSequentially('Fuori');
+
+		await preview(page, async (content) => {
+			await expect(content.locator('blockquote p')).toHaveText(['Prima frase', 'Seconda frase']);
+			await expect(content.locator('p').last()).toHaveText('Fuori');
+		});
+	});
+
 	await test.step('text pasted in a quote stays in it', async () => {
 		await body.press('ControlOrMeta+End');
 		await body.press('Enter');

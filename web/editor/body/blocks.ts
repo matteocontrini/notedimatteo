@@ -22,6 +22,17 @@ import {
 // codeBlockNodes are the parse tree nodes of code blocks, fenced or indented
 export const codeBlockNodes = new Set(['FencedCode', 'CodeBlock']);
 
+// Return the quote markers at the start of a line, like "> " or "> > ", or ""
+// outside a quote.
+export const quoteMarkers = (text: string) => /^(?: {0,3}> ?)+/.exec(text)?.[0] ?? '';
+
+// Return the quote markers of pos's line, or "" when pos comes before them.
+export const markersBefore = (state: EditorState, pos: number) => {
+	const line = state.doc.lineAt(pos);
+	const markers = quoteMarkers(line.text);
+	return pos - line.from >= markers.length ? markers : '';
+};
+
 // insideCodeBlock reports whether pos is inside a code block's code. After a
 // closing fence it isn't. A fence without its closing fence yet, as while
 // typing it, runs to the end of the text.
@@ -160,9 +171,17 @@ const blockTheme = EditorView.theme({
 	'.cm-md-quote-first': { paddingTop: '0.25rem' },
 	'.cm-md-quote-last': { paddingBottom: '0.25rem' },
 	'.cm-md-quote-close': { display: 'none' },
+	// Continue the quote's border across the gap between its paragraphs.
+	// paragraphs.ts adds the gap.
+	'.cm-md-gap-quote': {
+		marginLeft: '0.75rem',
+		borderLeft: '6px solid var(--editor-quote-border)',
+	},
 	// Citations show quotation marks instead of the border. The category comes
 	// from data-category on the editor's container, as on the site's <article>.
-	"[data-category='cit'] & .cm-line.cm-md-quote": { borderLeft: 'none' },
+	"[data-category='cit'] & .cm-line.cm-md-quote, [data-category='cit'] & .cm-md-gap-quote": {
+		borderLeft: 'none',
+	},
 	"[data-category='cit'] & .cm-md-quote-first": {
 		paddingTop: '0.5rem',
 		textIndent: '28px',

@@ -6,7 +6,7 @@
 import type { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import TurndownService from 'turndown';
-import { insideCodeBlock } from './blocks';
+import { insideCodeBlock, markersBefore } from './blocks';
 
 // formattedHTML reports whether the HTML has formatting that Markdown keeps;
 // without it, the plain text that comes with it pastes the same.
@@ -96,14 +96,6 @@ export const htmlToMarkdown = (html: string) => {
 	return markdown === '' ? null : markdown;
 };
 
-// quoteMarkers returns the quote markers at the start of pos's line, like "> "
-// or "> > ", or "" when pos isn't after them.
-const quoteMarkers = (state: EditorState, pos: number) => {
-	const line = state.doc.lineAt(pos);
-	const markers = /^(?: {0,3}> ?)+/.exec(line.text)?.[0] ?? '';
-	return pos - line.from >= markers.length ? markers : '';
-};
-
 // textToPaste returns the text to paste at the cursor, from the clipboard's
 // HTML and plain text, or null to leave the paste to CodeMirror. Inside a
 // quote, every line after the first gets the quote's markers, so the pasted
@@ -112,7 +104,7 @@ export const textToPaste = (state: EditorState, html: string, plain: string) => 
 	const pos = state.selection.main.from;
 	if (insideCodeBlock(state, pos)) return null;
 
-	const markers = quoteMarkers(state, pos);
+	const markers = markersBefore(state, pos);
 	const text = htmlToMarkdown(html) ?? (markers ? plain.replace(/\r\n?/g, '\n') : null);
 	if (text === null || !markers) return text;
 	return text
