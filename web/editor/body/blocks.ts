@@ -33,23 +33,41 @@ export const markersBefore = (state: EditorState, pos: number) => {
 	return pos - line.from >= markers.length ? markers : '';
 };
 
-// insideCodeBlock reports whether pos is inside a code block's code. After a
-// closing fence it isn't. A fence without its closing fence yet, as while
-// typing it, runs to the end of the text.
-export const insideCodeBlock = (state: EditorState, pos: number) => {
+// Return the start of the code block whose code holds pos, and whether the
+// block is fenced. After a closing fence, pos isn't in the code. A fence
+// without its closing fence yet, as while typing it, runs to the end of the
+// text.
+const codeBlockAt = (state: EditorState, pos: number) => {
 	for (let node = syntaxTree(state).resolveInner(pos, -1); node.parent; node = node.parent) {
 		if (node.name === 'FencedCode') {
 			const fences = node.getChildren('CodeMark');
 			const closing = fences.length > 1 ? fences[fences.length - 1] : undefined;
-			return pos > node.from && (!closing || pos < closing.from);
+			const inside = pos > node.from && (!closing || pos < closing.from);
+			return inside ? { from: node.from, fenced: true } : undefined;
 		}
-		if (node.name === 'CodeBlock') return node.from < pos && pos < node.to;
+		if (node.name === 'CodeBlock') {
+			return node.from < pos && pos < node.to ? { from: node.from, fenced: false } : undefined;
+		}
 	}
-	return false;
+	return undefined;
+};
+
+// insideCodeBlock reports whether pos is inside a code block's code.
+export const insideCodeBlock = (state: EditorState, pos: number) =>
+	codeBlockAt(state, pos) !== undefined;
+
+// Return the text that each line of the code block at from needs before its
+// code, like "> " in a quote. Turn list markers into spaces, because only the
+// block's first line has them.
+const codeLinePrefix = (state: EditorState, from: number, fenced: boolean) => {
+	const first = state.doc.lineAt(from);
+	const before = fenced ? first.text.slice(0, from - first.from) : quoteMarkers(first.text);
+	return before.replace(/[^>\s]/g, ' ');
 };
 
 // closeFence, at the end of an opening fence without its closing fence,
 // adds the closing fence and puts the cursor on the empty line between them.
+// In a quote or a list, both lines get the prefix that the fence line has.
 // When text follows, a blank line keeps it out of the code block.
 export const closeFence: StateCommand = ({ state, dispatch }) => {
 	const { doc, selection } = state;
@@ -65,16 +83,52 @@ export const closeFence: StateCommand = ({ state, dispatch }) => {
 	if (fences.length !== 1) return false;
 
 	const marker = doc.sliceString(fences[0].from, fences[0].to);
-	const textBelow = line.number < doc.lines && !/^\s*$/.test(doc.line(line.number + 1).text);
-	const insert = `\n\n${marker}${textBelow ? '\n' : ''}`;
+	const prefix = codeLinePrefix(state, block.from, true);
+	const below = line.number < doc.lines ? doc.line(line.number + 1).text : '';
+	const textBelow = /\S/.test(below.slice(quoteMarkers(below).length));
+	const insert = `\n${prefix}\n${prefix}${marker}${textBelow ? `\n${prefix.trimEnd()}` : ''}`;
 	dispatch(
 		state.update({
 			changes: { from: pos, insert },
-			selection: EditorSelection.cursor(pos + 1),
+			selection: EditorSelection.cursor(pos + 1 + prefix.length),
 			scrollIntoView: true,
 			userEvent: 'input',
 		}),
 	);
+	return true;
+};
+
+// Start a new line in a code block inside a quote or a list. The new line gets
+// the prefix that each line of the block needs, like "> ", and the indentation
+// of the line above. Leave other code blocks to insertNewlineAndIndent.
+export const continueCodeLine: StateCommand = ({ state, dispatch }) => {
+	let applies = true;
+	const changes = state.changeByRange((range) => {
+		const block = codeBlockAt(state, range.from);
+		const prefix = block ? codeLinePrefix(state, block.from, block.fenced) : '';
+		const line = state.doc.lineAt(range.from);
+		const column = range.from - line.from;
+		if (!prefix) {
+			applies = false;
+			return { range };
+		}
+		// Before the prefix, as after Home, add an empty code line above
+		if (range.empty && column < Math.min(prefix.length, line.text.trimEnd().length)) {
+			const above = `${prefix.trimEnd()}\n`;
+			return {
+				changes: { from: line.from, insert: above },
+				range: EditorSelection.cursor(range.head + above.length),
+			};
+		}
+		const indent = /^\s*/.exec(line.text.slice(prefix.length, column))![0];
+		const insert = `\n${prefix}${indent}`;
+		return {
+			changes: { from: range.from, to: range.to, insert },
+			range: EditorSelection.cursor(range.from + insert.length),
+		};
+	});
+	if (!applies) return false;
+	dispatch(state.update(changes, { scrollIntoView: true, userEvent: 'input' }));
 	return true;
 };
 

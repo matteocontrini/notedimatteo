@@ -27,7 +27,14 @@ import {
 	StateField,
 } from '@codemirror/state';
 import { Decoration, type DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view';
-import { closeFence, codeBlockNodes, insideCodeBlock, markersBefore, quoteMarkers } from './blocks';
+import {
+	closeFence,
+	codeBlockNodes,
+	continueCodeLine,
+	insideCodeBlock,
+	markersBefore,
+	quoteMarkers,
+} from './blocks';
 
 const isBlank = (text: string) => !/\S/.test(text);
 
@@ -321,12 +328,14 @@ export const joinParagraphs: StateCommand = ({ state, dispatch }) => {
 
 // Handle Enter: start paragraphs, in quotes too, and continue lists. After a
 // code block's opening fence, add the closing fence. In code blocks, insert a
-// line break that keeps the indentation of the line above.
+// line break that keeps the indentation of the line above, and the quote
+// markers in a quote.
 export const enter: StateCommand = (target) =>
 	quoteParagraph(target) ||
+	closeFence(target) ||
+	continueCodeLine(target) ||
 	continueMarkup(target) ||
 	insertParagraph(target) ||
-	closeFence(target) ||
 	insertNewlineAndIndent(target);
 
 const paragraphKeymap = Prec.high(

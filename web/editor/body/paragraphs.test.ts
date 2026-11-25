@@ -168,6 +168,29 @@ describe('Enter', () => {
 		expect(run(enter, '```|\ncode\n```')).toBe('```\n|\ncode\n```');
 	});
 
+	it('in a code block inside a quote keeps the quote markers', () => {
+		expect(run(enter, '> ```\n> co|de\n> ```')).toBe('> ```\n> co\n> |de\n> ```');
+		expect(run(enter, '> ```\n>     a|\n> ```')).toBe('> ```\n>     a\n>     |\n> ```');
+		expect(run(enter, '> > ```\n> > a|\n> > ```')).toBe('> > ```\n> > a\n> > |\n> > ```');
+		// On an empty code line with only ">"
+		expect(run(enter, '> ```\n> a\n>|\n> ```')).toBe('> ```\n> a\n>\n> |\n> ```');
+		// Indented code
+		expect(run(enter, '>     co|de')).toBe('>     co\n>     |de');
+		// In a list inside the quote, the list marker becomes spaces
+		expect(run(enter, '> - ```\n>   a|\n>   ```')).toBe('> - ```\n>   a\n>   |\n>   ```');
+	});
+
+	it('before the quote markers in a code block adds an empty code line above', () => {
+		expect(run(enter, '> ```\n|> code\n> ```')).toBe('> ```\n>\n|> code\n> ```');
+	});
+
+	it('after an opening fence in a quote or a list adds the closing fence with the same markers', () => {
+		expect(run(enter, '> ```|')).toBe('> ```\n> |\n> ```');
+		expect(run(enter, '> ```|\n> text')).toBe('> ```\n> |\n> ```\n>\n> text');
+		expect(run(enter, '> - ```|')).toBe('> - ```\n>   |\n>   ```');
+		expect(run(enter, '- ```|')).toBe('- ```\n  |\n  ```');
+	});
+
 	it('keeps the indentation of the line above in code blocks', () => {
 		expect(run(enter, '```\n    a|')).toBe('```\n    a\n    |');
 	});
