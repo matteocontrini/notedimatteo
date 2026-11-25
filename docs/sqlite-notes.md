@@ -127,8 +127,9 @@ start without redoing them. Remove notes that stop being true.
   (`~/.nvm/versions/node/v26.13.1`).
 - Smoke test of the built server on a new file: it migrates, serves `/`, the `sqlite3` CLI reads the file while it
   runs (WAL), and a clean shutdown checkpoints and removes `-wal` and `-shm`.
-- The local `.env` still has `DATABASE_URL`: `npm run dev` needs `DATABASE_PATH` (`.env.example`; `/*.db*` is
-  ignored by git).
+- The local dev database moved to `notedimatteo.sqlite` on 2026-11-25, copied from the local Postgres with
+  `pgcopy` (restored from history for the run): 34 posts, 8 sessions. Git and Docker ignore `/*.db*` and
+  `/*.sqlite*` files at the root.
 
 ## Step 3 (done 2026-11-23)
 
@@ -247,7 +248,9 @@ Workload: 1,200 home pages, 120 searches, and 120 reads of all posts, 4 goroutin
   `x/sys` (`ext/unicode` adds `x/text`).
 - sqlc depends on v0.32.0, but the tools share the module graph: sqlc builds with v0.38.0 (checked). It imports
   the deprecated `go-sqlite3/embed`, which now prints "If you're reading this, you're unnecessarily importing
-  github.com/ncruces/go-sqlite3/embed." on every `sqlc generate`: harmless, until sqlc drops the import.
+  github.com/ncruces/go-sqlite3/embed." on every `sqlc generate`: harmless. sqlc's `main` no longer imports it
+  (checked 2026-11-25), but the latest release is still v1.31.1 (2026-04-22): the line goes away with the next one.
+  The server doesn't import `embed`.
 - `ext/unicode`: Unicode-aware `upper`, `lower`, `LIKE` (`strings.EqualFold` rules, through a regexp cached per
   statement), `REGEXP`, collations, plus `casefold`, `unaccent`, `normalize`, `initcap`. Overriding `LIKE` turns off
   SQLite's LIKE optimization (indexes for prefix patterns): no query here uses it.

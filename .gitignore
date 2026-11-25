@@ -18,6 +18,9 @@ Thumbs.db
 /*.db
 /*.db-wal
 /*.db-shm
+/*.sqlite
+/*.sqlite-wal
+/*.sqlite-shm
 
 # Env
 .env
