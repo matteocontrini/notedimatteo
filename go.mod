@@ -10,7 +10,8 @@ require (
 	github.com/davidbyttow/govips/v2 v2.20.0
 	github.com/ncruces/go-sqlite3 v0.38.0
 	github.com/pressly/goose/v3 v3.30.1
-	github.com/yuin/goldmark v1.8.7
+	github.com/yuin/goldmark v1.4.13
+	github.com/yuin/goldmark/v2 v2.1.16
 )
 
 require (
