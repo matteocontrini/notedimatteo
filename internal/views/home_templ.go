@@ -97,7 +97,7 @@ func Home(page Page, groups []PostGroup, p Pagination) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for _, item := range group.Posts {
-					templ_7745c5c3_Err = post(item, false, page.IsLoggedIn).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = post(item, false, page.IsLoggedIn, true).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

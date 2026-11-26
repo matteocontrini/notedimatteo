@@ -73,14 +73,16 @@ templ pagination(p Pagination) {
 	}
 }
 
-templ post(item PostItem, showDate, canEdit bool) {
+// post shows a post. With collapse, site.ts shortens long quotes and adds a
+// button that shows all of each one.
+templ post(item PostItem, showDate, canEdit, collapse bool) {
 	<article class="mt-4" data-category={ item.Category }>
 		if item.Title != "" && !item.HideTitle {
 			<div>
 				<h3 class="inline font-semibold">{ item.Title }</h3>
 			</div>
 		}
-		<div class="post-content mt-4">
+		<div class="post-content mt-4" data-collapse?={ collapse }>
 			@templ.Raw(item.HTML)
 		</div>
 		<div class="mt-4 flex flex-wrap gap-2 text-sm">

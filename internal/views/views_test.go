@@ -56,7 +56,7 @@ func TestPost(t *testing.T) {
 		HTML: "<p>Rendered <del>body</del></p>",
 	}
 
-	html := render(t, post(item, false, false))
+	html := render(t, post(item, false, false, false))
 	if !strings.Contains(html, item.HTML) {
 		t.Error("body HTML is escaped or missing")
 	}
@@ -70,7 +70,7 @@ func TestPost(t *testing.T) {
 		t.Error("edit link is shown without canEdit")
 	}
 
-	html = render(t, post(item, true, true))
+	html = render(t, post(item, true, true, false))
 	if !strings.Contains(html, "16 aprile 2026") {
 		t.Error("date is missing with showDate")
 	}
@@ -79,7 +79,7 @@ func TestPost(t *testing.T) {
 	}
 
 	item.HideTitle = true
-	if strings.Contains(render(t, post(item, false, false)), "Title") {
+	if strings.Contains(render(t, post(item, false, false, false)), "Title") {
 		t.Error("hidden title is shown")
 	}
 }

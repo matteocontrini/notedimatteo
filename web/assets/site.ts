@@ -82,6 +82,30 @@ function setUpConfirmations() {
 	}
 }
 
+// Shorten quotes in listings that are much taller than the collapsed height,
+// and add a button that shows the whole quote
+function setUpCollapsedQuotes() {
+	for (const quote of document.querySelectorAll<HTMLElement>('[data-collapse] > blockquote')) {
+		const fullHeight = quote.scrollHeight;
+		quote.classList.add('collapsed');
+		if (fullHeight < quote.clientHeight * 1.5) {
+			quote.classList.remove('collapsed');
+			continue;
+		}
+
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'expand-quote';
+		button.textContent = 'Mostra tutto';
+		button.addEventListener('click', () => {
+			quote.classList.remove('collapsed');
+			button.remove();
+		});
+		quote.after(button);
+	}
+}
+
 setUpThemeSelect();
 setUpTagSort();
 setUpConfirmations();
+setUpCollapsedQuotes();

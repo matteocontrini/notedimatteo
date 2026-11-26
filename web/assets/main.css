@@ -146,6 +146,41 @@
 		}
 	}
 
+	/* A long quote in a listing, shortened by site.ts until the reader expands it */
+	.post-content blockquote.collapsed {
+		max-height: 32rem;
+		overflow: hidden;
+		mask-image: linear-gradient(to bottom, black 75%, transparent);
+	}
+
+	/* Show the button of a shortened quote like the post's meta links, after
+	   the elision mark that quotes use for cut text */
+	.post-content button.expand-quote {
+		@apply -mt-1 mb-4 ml-4 h-auto border-0 bg-transparent p-0 text-sm text-slate-500;
+
+		&::before {
+			@apply mr-1.5 text-[#0067B9];
+			content: '[…]' / '';
+		}
+
+		&:hover,
+		.dark &:hover {
+			@apply bg-transparent underline;
+		}
+
+		&:focus-visible {
+			@apply rounded-sm outline-2 outline-offset-2 outline-sky-700;
+		}
+
+		.dark & {
+			@apply bg-transparent text-slate-500;
+
+			&::before {
+				@apply text-sky-500;
+			}
+		}
+	}
+
 	.post-content {
 		p {
 			@apply mb-2.5 last:mb-0;

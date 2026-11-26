@@ -9,7 +9,7 @@ import (
 templ PostPage(page Page, item PostItem) {
 	@layout(page) {
 		<div class="lg:w-7/12">
-			@post(item, true, page.IsLoggedIn)
+			@post(item, true, page.IsLoggedIn, false)
 		</div>
 	}
 }
@@ -25,7 +25,7 @@ templ Listing(page Page, heading, emptyMessage string, items []PostItem, p Pagin
 					<p class="mt-4 text-slate-500">{ emptyMessage }</p>
 				} else {
 					for _, item := range items {
-						@post(item, true, page.IsLoggedIn)
+						@post(item, true, page.IsLoggedIn, true)
 						<hr class="my-6"/>
 					}
 				}
@@ -54,7 +54,7 @@ templ Search(page Page, query string, items []PostItem) {
 					</h2>
 					<hr class="my-6"/>
 					for _, item := range items {
-						@post(item, true, page.IsLoggedIn)
+						@post(item, true, page.IsLoggedIn, true)
 						<hr class="my-6"/>
 					}
 				}

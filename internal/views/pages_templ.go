@@ -48,7 +48,7 @@ func PostPage(page Page, item PostItem) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = post(item, true, page.IsLoggedIn).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = post(item, true, page.IsLoggedIn, false).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -134,7 +134,7 @@ func Listing(page Page, heading, emptyMessage string, items []PostItem, p Pagina
 				}
 			} else {
 				for _, item := range items {
-					templ_7745c5c3_Err = post(item, true, page.IsLoggedIn).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = post(item, true, page.IsLoggedIn, true).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -264,7 +264,7 @@ func Search(page Page, query string, items []PostItem) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for _, item := range items {
-					templ_7745c5c3_Err = post(item, true, page.IsLoggedIn).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = post(item, true, page.IsLoggedIn, true).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

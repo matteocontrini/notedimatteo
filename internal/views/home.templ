@@ -7,7 +7,7 @@ templ Home(page Page, groups []PostGroup, p Pagination) {
 				for i, group := range groups {
 					<h2 class={ "mb-8 text-2xl font-semibold", templ.KV("mt-10", i != 0) }>{ group.Heading }</h2>
 					for _, item := range group.Posts {
-						@post(item, false, page.IsLoggedIn)
+						@post(item, false, page.IsLoggedIn, true)
 						<hr class="my-6"/>
 					}
 				}
